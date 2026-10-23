@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Menu na barra (ícone de cofrinho): modo discreto, Touch ID, privacidade, sair.
     private func setupMenu() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: "NotchInvest")
+        item.button?.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: "Pilinha")
         let menu = NSMenu(); menu.delegate = self
         item.menu = menu; statusItem = item
     }
@@ -67,7 +67,7 @@ extension AppDelegate: NSMenuDelegate {
         menu.addItem(.separator())
         let e = NSMenuItem(title: "Cadastrar carteira…", action: #selector(showEditor), keyEquivalent: ","); e.target = self; menu.addItem(e)
         let p = NSMenuItem(title: "O que este app faz…", action: #selector(showPrivacyInfo), keyEquivalent: ""); p.target = self; menu.addItem(p)
-        menu.addItem(NSMenuItem(title: "Sair", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Sair do Pilinha", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 }
 

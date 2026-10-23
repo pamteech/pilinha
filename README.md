@@ -1,9 +1,12 @@
-# 🐷 notch-invest
+# 🐷 Pilinha
 
-> **Seus investimentos morando no entalhe do Mac, cuidados por um porquinho que sorri quando o dinheiro rende.**
+> **Seus investimentos morando no entalhe do Mac, cuidados pela Pilinha, um porquinho que sorri quando o dinheiro rende.**
 
 App de entalhe (notch) do Mac para acompanhar investimentos: renda fixa pelo CDI, ações e FIIs da B3 e bitcoin, tudo
 numa ilhazinha preta em volta da câmera. **Só leitura, sem banco, dados só no seu Mac.**
+
+> 🐷 **Pilinha** é o nome do app *e* do porquinho que mora no entalhe — "pila" é gíria gaúcha pra dinheiro, e a Pilinha é quem
+> cuida das suas pilas. (O repositório e o código continuam como `notch-invest`/`NotchInvest*` por compatibilidade.)
 
 <p align="center">
   <img src="personagem/opcao2d/previews/feliz.gif" width="96" alt="porquinho feliz">
@@ -80,19 +83,19 @@ O teste `PrivacyTests.testRequestsCarryOnlyPublicTickers` (via `NetworkAudit`) c
 Requisitos: macOS 14+ e **só as Command Line Tools** (`xcode-select --install`, Swift 6). Xcode não é necessário.
 ```bash
 git clone https://github.com/pamteech/notch-invest.git && cd notch-invest
-./Support/build-app.sh --install     # compila em release, monta NotchInvest.app, copia para ~/Applications e liga o LaunchAgent
+./Support/build-app.sh --install     # compila em release, monta Pilinha.app, copia para ~/Applications e liga o LaunchAgent
 ```
 Pronto: o porquinho aparece no entalhe e volta sozinho depois de reiniciar o Mac. Na primeira vez, clique em **Cadastrar**
 (ou ✎) e preencha a carteira.
 
-Sem instalar: `./Support/build-app.sh` gera `build/NotchInvest.app` (abra com `open build/NotchInvest.app`).
+Sem instalar: `./Support/build-app.sh` gera `build/Pilinha.app` (abra com `open build/Pilinha.app`).
 Para desenvolver: `swift run NotchInvestApp`. Para conferir os cálculos no terminal: `swift run notch-invest-cli portfolio.example.json`.
 
 ### Atualizar
 ```bash
 cd notch-invest && git pull && ./Support/build-app.sh --install
 ```
-> Como a assinatura é ad-hoc, depois de recompilar o macOS pode perguntar uma vez se o NotchInvest pode ler o token
+> Como a assinatura é ad-hoc, depois de recompilar o macOS pode perguntar uma vez se o Pilinha pode ler o token
 > no Keychain: clique em **Permitir sempre**.
 
 ### Testes
@@ -104,11 +107,12 @@ Se as Command Line Tools forem antigas (Swift 5.x) e o `swift test` reclamar de 
 `softwareupdate --list` ou rode os testes no Xcode. No Linux: `swift test`.
 
 ### Iniciar junto com o Mac (LaunchAgent)
-O `--install` cria `~/Library/LaunchAgents/com.pamtech.notchinvest.plist` apontando para
-`~/Applications/NotchInvest.app/Contents/MacOS/NotchInvest` (RunAtLoad, reabre se travar, log em `~/.notchinvest/app.log`).
+O `--install` cria `~/Library/LaunchAgents/com.pamtech.pilinha.plist` apontando para
+`~/Applications/Pilinha.app/Contents/MacOS/Pilinha` (RunAtLoad, reabre se travar, log em `~/.notchinvest/app.log`).
+Se existir a instalação antiga (`NotchInvest.app` / `com.pamtech.notchinvest`), o `--install` remove ela sozinho. Os dados continuam em `~/.notchinvest`.
 ```bash
-launchctl bootout   gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.notchinvest.plist   # desligar
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.notchinvest.plist   # ligar de novo
+launchctl bootout   gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.pilinha.plist   # desligar
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.pilinha.plist   # ligar de novo
 ```
 
 ### Ícone
@@ -170,7 +174,7 @@ Para regenerar o porquinho: `cd personagem/opcao2d && python anima2d.py` (Pillow
 - [x] 📉 Gráfico da evolução da carteira
 - [x] 💸 Proventos (brapi + lançamento manual)
 - [x] 🧮 Valor líquido (IR regressivo, IOF, isenção de LCI/LCA)
-- [x] 📦 NotchInvest.app com ícone próprio, só com Command Line Tools
+- [x] 📦 Pilinha.app com ícone próprio, só com Command Line Tools
 - [ ] 🎯 Metas (ex. reserva de emergência) com progresso no porquinho
 - [ ] 🧾 IR sobre ações/cripto na venda e JCP líquido
 

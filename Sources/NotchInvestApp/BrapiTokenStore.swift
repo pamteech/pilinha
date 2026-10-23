@@ -34,7 +34,7 @@ enum BrapiTokenStore {
         var add = base
         add[kSecValueData as String] = Data(t.utf8)
         add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly   // não vai pro iCloud
-        add[kSecAttrLabel as String] = "NotchInvest — token brapi"
+        add[kSecAttrLabel as String] = "Pilinha — token brapi"
         return SecItemAdd(add as CFDictionary, nil) == errSecSuccess
     }
     @discardableResult

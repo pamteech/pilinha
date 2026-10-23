@@ -9,7 +9,7 @@ func fetchData(_ url: URL, headers: [String: String] = [:]) async throws -> Data
     var req = URLRequest(url: url)
     req.timeoutInterval = 15
     req.setValue("application/json", forHTTPHeaderField: "Accept")
-    req.setValue("NotchInvest/0.1", forHTTPHeaderField: "User-Agent")
+    req.setValue("Pilinha/0.2", forHTTPHeaderField: "User-Agent")
     for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
     #if canImport(FoundationNetworking)
     return try await withCheckedThrowingContinuation { cont in

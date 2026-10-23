@@ -208,7 +208,7 @@ final class EditorWindow: NSObject, NSWindowDelegate {
         if window == nil {
             let w = NSWindow(contentRect: .init(x: 0, y: 0, width: 700, height: 580), styleMask: [.titled, .closable, .resizable, .miniaturizable],
                              backing: .buffered, defer: false)
-            w.title = "Cadastro da carteira"; w.isReleasedWhenClosed = false; w.delegate = self
+            w.title = "Pilinha — Cadastro da carteira"; w.isReleasedWhenClosed = false; w.delegate = self
             w.contentView = NSHostingView(rootView: EditorView(onSaved: onSaved))
             w.center(); window = w
         }

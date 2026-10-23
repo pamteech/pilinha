@@ -2,6 +2,16 @@ import Foundation
 import NotchInvestCore
 
 // Uso: notch-invest-cli [caminho/portfolio.json]
+if let a = CommandLine.arguments.dropFirst().first, ["-h", "--help", "help"].contains(a) {
+    print("""
+    Pilinha 🐷 — conferir a carteira no terminal (mesmos cálculos do app de entalhe)
+
+    Uso: notch-invest-cli [caminho/portfolio.json]
+      sem argumento, lê \(Portfolio.defaultURL.path)
+      -h, --help   mostra esta ajuda
+    """)
+    exit(0)
+}
 let path = CommandLine.arguments.dropFirst().first.map { URL(fileURLWithPath: $0) } ?? Portfolio.defaultURL
 do {
     let p = try Portfolio.load(from: path)

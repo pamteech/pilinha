@@ -112,7 +112,7 @@ struct PrivacyInfoView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("O que este app faz").font(.title2.bold())
+                Text("O que o Pilinha faz").font(.title2.bold())
                 Group {
                     item("checkmark.shield", "Só mostra números", "Ele lê um arquivo que você mesma preenche e mostra o total e as variações. Nada além disso.")
                     item("building.columns", "Não acessa banco nem Nubank", "Não pede senha de banco, não se conecta à sua conta e não usa Open Finance.")
@@ -158,7 +158,7 @@ struct PrivacyInfoView: View {
             .padding(22)
         }
         .frame(width: 520, height: 620)
-        .confirmationDialog("Apagar todos os dados do NotchInvest?", isPresented: $confirmErase) {
+        .confirmationDialog("Apagar todos os dados do Pilinha?", isPresented: $confirmErase) {
             Button("Apagar a pasta \(LocalData.folder.path)", role: .destructive) { erase() }
             Button("Cancelar", role: .cancel) {}
         } message: {
@@ -198,7 +198,7 @@ final class PrivacyWindow {
         if window == nil {
             let w = NSWindow(contentRect: .init(x: 0, y: 0, width: 520, height: 620), styleMask: [.titled, .closable],
                              backing: .buffered, defer: false)
-            w.title = "O que este app faz"; w.isReleasedWhenClosed = false
+            w.title = "Pilinha — O que este app faz"; w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: PrivacyInfoView(onErased: onErased).environmentObject(privacy))
             w.center(); window = w
         }
