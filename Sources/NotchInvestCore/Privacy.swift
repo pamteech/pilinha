@@ -102,6 +102,7 @@ public enum NetworkAudit {
         }
         for s in p.stocks {
             out.append(.init(site: "brapi.dev", purpose: "cotação e proventos de \(s.ticker.uppercased())", url: BrapiService.url(s.ticker, dividends: true)))
+            out.append(.init(site: "Yahoo Finance", purpose: "cotação de \(s.ticker.uppercased()) (reserva / sem token)", url: YahooFinanceService.url(s.ticker)))
         }
         if !p.crypto.isEmpty {
             out.append(.init(site: "CoinGecko", purpose: "preço do bitcoin/cripto em reais", url: CoinGeckoService.url(p.crypto.map(\.coinId))))

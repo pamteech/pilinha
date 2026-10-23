@@ -44,7 +44,8 @@ numa ilhazinha preta em volta da câmera. **Só leitura, sem banco, dados só no
 - 📉 **Aba Evolução:** um ponto por dia do patrimônio em `~/.notchinvest/history.json`, com gráfico Swift Charts (Dia / Semana / Mês / Tudo). No modo discreto o eixo mostra só ganho em %.
 - 🧮 **Bruto × líquido:** IR regressivo (22,5% até 180 dias → 20% até 360 → 17,5% até 720 → 15%) e IOF nos primeiros 30 dias, aporte por aporte. LCI/LCA isentas.
 - 🌿 **Proventos:** dividendos/rendimentos dos últimos 12 meses pela brapi (estimativa com a quantidade atual) ou lançados à mão (o manual vale no lugar da brapi).
-- 🔑 **Token da brapi no Keychain**, digitado no cadastro; nunca no JSON nem em log.
+- 📈 **Cotações sem token:** qualquer ação, FII ou ETF da B3 pelo Yahoo Finance (fonte reserva). Com token da brapi, a brapi vem primeiro e o Yahoo só entra se ela falhar.
+- 🔑 **Token da brapi opcional**, no Keychain, digitado no cadastro; nunca no JSON nem em log. Serve para os proventos automáticos (sem token, só os lançados à mão).
 - 🛡️ **Tela "O que este app faz"**, com botões para abrir a pasta dos dados e apagar tudo.
 - 🖥️ **Sem entalhe?** Em monitor externo, ela vira uma pílula sob a barra de menus.
 
@@ -70,7 +71,8 @@ numa ilhazinha preta em volta da câmera. **Só leitura, sem banco, dados só no
 | Para quê | Site | O que é enviado |
 |---|---|---|
 | Taxa do CDI | `api.bcb.gov.br` (série SGS 12) | só um intervalo de datas |
-| Cotações e proventos B3 | `brapi.dev` | só o código público, ex. `PETR4?dividends=true` (+ seu token no cabeçalho, se cadastrado) |
+| Cotações e proventos B3 (com token) | `brapi.dev` | só o código público, ex. `PETR4?dividends=true` (+ seu token no cabeçalho) |
+| Cotações B3 (sem token / reserva) | `query1.finance.yahoo.com` | só o código público, ex. `PETR4.SA?range=1d&interval=1d` |
 | Bitcoin em R$ | `api.coingecko.com` | só o id público, ex. `bitcoin` |
 | Gráficos | `tradingview.com` | só se você abrir a aba; a URL leva só o símbolo |
 
@@ -155,7 +157,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.pilinha.plis
 ## 🗂️ Estrutura
 ```
 Sources/
-  NotchInvestCore/   modelo, CDI, IR/IOF, proventos, histórico, validação do cadastro, cotações (BCB, brapi, CoinGecko),
+  NotchInvestCore/   modelo, CDI, IR/IOF, proventos, histórico, validação do cadastro, cotações (BCB, brapi, Yahoo Finance, CoinGecko),
                      humores, privacidade, TradingView — multiplataforma e testado
   NotchInvestApp/    app SwiftUI/AppKit: janela no entalhe, ilha, abas, gráficos, modo discreto/Touch ID, menu
     Resources/Cofrinho/   folhas de animação do porquinho (128 px e @2x, 24 fps)
@@ -173,6 +175,7 @@ Para regenerar o porquinho: `cd personagem/opcao2d && python anima2d.py` (Pillow
 - [x] 🧾 Tela de cadastro (sem editar JSON)
 - [x] 📉 Gráfico da evolução da carteira
 - [x] 💸 Proventos (brapi + lançamento manual)
+- [x] 📈 Yahoo Finance como fonte de cotação sem token
 - [x] 🧮 Valor líquido (IR regressivo, IOF, isenção de LCI/LCA)
 - [x] 📦 Pilinha.app com ícone próprio, só com Command Line Tools
 - [ ] 🎯 Metas (ex. reserva de emergência) com progresso no porquinho
@@ -182,7 +185,7 @@ Para regenerar o porquinho: `cd personagem/opcao2d && python anima2d.py` (Pillow
 - Feito por **Pam Tech**.
 - A técnica de janela no entalhe foi **inspirada no [Coucou](https://github.com/Louis-CFM/coucou) (licença MIT)**, reescrita do zero
   (veja `NOTICE`). **Este projeto não usa o nome Coucou, o personagem Mochi, ícones, sons nem nenhum outro asset dele.**
-- Porquinho original deste projeto. Dados públicos: Banco Central do Brasil (SGS), brapi.dev, CoinGecko. Gráficos: TradingView.
+- Porquinho original deste projeto. Dados públicos: Banco Central do Brasil (SGS), brapi.dev, Yahoo Finance, CoinGecko. Gráficos: TradingView.
 
 ## 📄 Licença
 [MIT](LICENSE) © 2026 Pam Tech

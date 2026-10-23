@@ -37,9 +37,9 @@ public struct Snapshot: Sendable {
 }
 
 public struct PortfolioEngine: Sendable {
-    let bcb = BCBService(), brapi: BrapiService, gecko = CoinGeckoService()
+    let bcb = BCBService(), stocks: StockQuoteProvider, gecko = CoinGeckoService()
     /// Token da brapi vem do Keychain (app) ou da variável BRAPI_TOKEN (CLI).
-    public init(brapiToken: String? = ProcessInfo.processInfo.environment["BRAPI_TOKEN"]) { brapi = BrapiService(token: brapiToken) }
+    public init(brapiToken: String? = ProcessInfo.processInfo.environment["BRAPI_TOKEN"]) { stocks = StockQuoteProvider(brapiToken: brapiToken) }
 
     public func snapshot(_ p: Portfolio, now: Date = Date()) async -> Snapshot {
         var items: [LineItem] = [], errors: [String] = []
@@ -63,12 +63,12 @@ public struct PortfolioEngine: Sendable {
         var cash: [CashDividend] = []
         for s in p.stocks {
             do {
-                let q = try await brapi.quoteWithDividends(s.ticker)
+                let q = try await stocks.quote(s.ticker)
                 cash += q.dividends
                 items.append(LineItem(name: s.ticker, category: s.ticker.hasSuffix("11") ? "fii" : "acao",
                                       invested: s.averagePrice.map { $0 * s.quantity }, current: q.price * s.quantity,
                                       dayChange: q.changePct.map { let v = q.price * s.quantity; return v - v / (1 + $0 / 100) }))
-            } catch { errors.append("\(s.ticker): \(error)") }
+            } catch { errors.append("\(error)") }
         }
         if !p.crypto.isEmpty {
             do {

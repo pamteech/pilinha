@@ -122,7 +122,8 @@ struct PrivacyInfoView: View {
                 }
                 Text("Sites que ele consulta (só para buscar preços públicos)").font(.headline)
                 site("Banco Central (api.bcb.gov.br)", "taxa do CDI, para calcular a renda fixa")
-                site("brapi.dev", "cotação das ações/FIIs — envia só o código, ex. PETR4")
+                site("brapi.dev", "cotação e proventos das ações/FIIs (com token) — envia só o código, ex. PETR4")
+                site("Yahoo Finance", "cotação das ações/FIIs sem token ou reserva — envia só o código, ex. PETR4.SA")
                 site("CoinGecko", "preço do bitcoin em reais — envia só \"bitcoin\"")
                 site("TradingView", "só se você abrir a aba Gráficos; o login é feito no site deles")
                 Text("Nenhuma dessas consultas leva quanto você tem, quanto investiu ou seu nome.")

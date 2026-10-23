@@ -103,7 +103,7 @@ struct EditorView: View {
     // MARK: ações
     var stockSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("Ticker da B3 (PETR4, MXRF11…). Preço médio é opcional e serve para mostrar o ganho. FIIs precisam do token da brapi.")
+            hint("Ticker da B3 (PETR4, MXRF11…). Preço médio é opcional e serve para mostrar o ganho. Cotação de qualquer ação/FII/ETF funciona sem token (Yahoo Finance).")
             ForEach($state.draft.stocks) { $s in
                 HStack {
                     TextField("Ticker", text: $s.ticker).frame(width: 90)
@@ -140,7 +140,7 @@ struct EditorView: View {
     // MARK: proventos
     var dividendSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("Os proventos vêm da brapi automaticamente (estimativa com a quantidade atual). Se quiser o valor exato que caiu na conta, lance aqui: o lançamento manual vale no lugar da brapi para aquele ticker.")
+            hint("Com token da brapi, os proventos vêm automaticamente (estimativa com a quantidade atual). Se quiser o valor exato que caiu na conta, lance aqui: o lançamento manual vale no lugar da brapi para aquele ticker.")
             ForEach($state.draft.dividends) { $d in
                 HStack {
                     TextField("Ticker", text: $d.ticker).frame(width: 90)
@@ -158,7 +158,7 @@ struct EditorView: View {
     // MARK: token
     var tokenSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("A brapi.dev exige um token grátis para FIIs (ex. MXRF11). Crie em brapi.dev/dashboard e cole aqui. Ele fica no Keychain deste Mac (não vai para o portfolio.json, nem para o iCloud, nem para logs).")
+            hint("Opcional. Sem token, as cotações vêm do Yahoo Finance e os proventos só pelos lançamentos manuais. Com o token grátis da brapi.dev (crie em brapi.dev/dashboard), as cotações vêm da brapi (o Yahoo vira reserva) e os proventos entram automaticamente. Ele fica no Keychain deste Mac (não vai para o portfolio.json, nem para o iCloud, nem para logs).")
             HStack {
                 Image(systemName: state.hasToken ? "checkmark.seal.fill" : "xmark.seal").foregroundStyle(state.hasToken ? .green : .secondary)
                 Text(state.hasToken ? "Token guardado no Keychain" : "Nenhum token guardado")
