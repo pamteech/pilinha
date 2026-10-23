@@ -1,0 +1,6 @@
+.build/
+*.xcodeproj/xcuserdata/
+.DS_Store
+.env
+portfolio.json
+*.blend1

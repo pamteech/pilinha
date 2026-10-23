@@ -1,0 +1,72 @@
+{
+  "owner": "exemplo (valores fictícios)",
+  "fixedIncome": [
+    {
+      "name": "Caixinha Reserva",
+      "kind": "caixinha",
+      "cdiPercent": 100,
+      "deposits": [
+        {
+          "date": "2026-01-05",
+          "amount": 1000
+        },
+        {
+          "date": "2026-06-01",
+          "amount": 500
+        }
+      ]
+    },
+    {
+      "name": "CDB Nubank 110%",
+      "kind": "cdb",
+      "cdiPercent": 110,
+      "deposits": [
+        {
+          "date": "2026-03-02",
+          "amount": 2000
+        }
+      ]
+    },
+    {
+      "name": "Tesouro Selic 2029",
+      "kind": "tesouro",
+      "cdiPercent": 100,
+      "deposits": [
+        {
+          "date": "2026-02-02",
+          "amount": 1500
+        }
+      ]
+    }
+  ],
+  "stocks": [
+    {
+      "ticker": "PETR4",
+      "quantity": 10,
+      "averagePrice": 35.0
+    },
+    {
+      "ticker": "MXRF11",
+      "quantity": 50,
+      "averagePrice": 9.8
+    }
+  ],
+  "crypto": [
+    {
+      "coinId": "bitcoin",
+      "symbol": "BTC",
+      "quantity": 0.002,
+      "averagePriceBRL": 350000
+    }
+  ],
+  "tradingview": {
+    "layoutURL": "https://www.tradingview.com/chart/",
+    "layouts": [],
+    "panelWidth": 720,
+    "panelHeight": 460,
+    "symbols": {
+      "bitcoin": "BINANCE:BTCBRL"
+    },
+    "preferWidget": false
+  }
+}
