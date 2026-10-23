@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Pilinha",
+    "slug": "pilinha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/pilinha-icon.png",
+    "scheme": "pilinha",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "com.pamtech.pilinha",
+      "supportsTablet": false,
+      "icon": "./assets/images/pilinha-icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#14101a",
+          "image": "./assets/images/pilinha-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "platforms": [
+      "ios"
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "bab2b20b-ae57-4ec1-b9bc-fadb0be99792"
+      }
+    },
+    "owner": "pamssoares"
+  }
+}
