@@ -82,7 +82,7 @@ O teste `PrivacyTests.testRequestsCarryOnlyPublicTickers` (via `NetworkAudit`) c
 ## 🚀 Instalação no Mac
 Requisitos: macOS 14+ e **só as Command Line Tools** (`xcode-select --install`, Swift 6). Xcode não é necessário.
 ```bash
-git clone https://github.com/pamteech/notch-invest.git && cd notch-invest
+git clone https://github.com/pamteech/pilinha.git && cd notch-invest
 ./Support/build-app.sh --install     # compila em release, monta Pilinha.app, copia para ~/Applications e liga o LaunchAgent
 ```
 Pronto: o porquinho aparece no entalhe e volta sozinho depois de reiniciar o Mac. Na primeira vez, clique em **Cadastrar**
