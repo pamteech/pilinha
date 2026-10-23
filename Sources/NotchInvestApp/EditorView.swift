@@ -15,7 +15,7 @@ final class EditorState: ObservableObject {
 
     init() {
         let p = (try? Portfolio.load(from: Portfolio.defaultURL)) ?? Portfolio()
-        draft = PortfolioDraft(p); original = draft
+        let d = PortfolioDraft(p); draft = d; original = d
     }
     var dirty: Bool { draft != original }
 
