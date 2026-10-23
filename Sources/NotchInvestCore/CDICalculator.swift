@@ -33,6 +33,16 @@ public enum CDICalculator {
         return (inv, gross)
     }
 
+    /// Valor líquido (sem IR regressivo e IOF) se resgatar tudo em `end`; cada aporte tem seu próprio prazo.
+    public static func netValue(of asset: FixedIncomeAsset, rates: [CDIDailyRate], until end: Date = Date()) -> Double {
+        asset.deposits.reduce(0) { acc, d in
+            guard let date = DateParsing.iso.date(from: d.date) else { return acc }
+            let g = grossValue(principal: d.amount, start: date, cdiPercent: asset.cdiPercent, rates: rates, until: end)
+            return acc + FixedIncomeTax.breakdown(principal: d.amount, gross: g, days: FixedIncomeTax.days(from: date, to: end),
+                                                  exempt: asset.isTaxExempt).net
+        }
+    }
+
     /// Taxa anualizada equivalente (252 d.u.) a partir da taxa diária.
     public static func annualized(dailyPercent: Double) -> Double {
         (pow(1 + dailyPercent / 100, 252) - 1) * 100

@@ -101,7 +101,7 @@ public enum NetworkAudit {
             out.append(.init(site: "Banco Central (api.bcb.gov.br)", purpose: "taxa do CDI", url: BCBService.url(from: start, to: now)))
         }
         for s in p.stocks {
-            out.append(.init(site: "brapi.dev", purpose: "cotação de \(s.ticker.uppercased())", url: BrapiService.url(s.ticker)))
+            out.append(.init(site: "brapi.dev", purpose: "cotação e proventos de \(s.ticker.uppercased())", url: BrapiService.url(s.ticker, dividends: true)))
         }
         if !p.crypto.isEmpty {
             out.append(.init(site: "CoinGecko", purpose: "preço do bitcoin/cripto em reais", url: CoinGeckoService.url(p.crypto.map(\.coinId))))
@@ -113,6 +113,7 @@ public enum NetworkAudit {
     public static func privateTokens(_ p: Portfolio) -> [String] {
         var nums: [Double] = []
         for f in p.fixedIncome { nums += f.deposits.map(\.amount) }
+        for m in p.manualDividends ?? [] { nums.append(m.amount) }
         for s in p.stocks { nums.append(s.quantity); if let a = s.averagePrice { nums.append(a) } }
         for c in p.crypto { nums.append(c.quantity); if let a = c.averagePriceBRL { nums.append(a) } }
         var t = Set<String>()

@@ -9,12 +9,25 @@ final class CofrinhoSprites {
     static let shared = CofrinhoSprites()
     private var cache: [String: [CGImage]] = [:]
 
+    /// NotchInvest.app: sprites em Contents/Resources/<bundle SwiftPM>/Cofrinho (build-app.sh copia para lá).
+    /// `swift run`: Bundle.module. Procura primeiro no .app para não depender do caminho da pasta de build.
+    static func spriteURL(_ name: String) -> URL? {
+        let fm = FileManager.default
+        if let res = Bundle.main.resourceURL {
+            for sub in ["NotchInvest_NotchInvestApp.bundle/Cofrinho", "NotchInvest_NotchInvestApp.bundle/Contents/Resources/Cofrinho", "Cofrinho"] {
+                let u = res.appendingPathComponent(sub).appendingPathComponent(name + ".png")
+                if fm.fileExists(atPath: u.path) { return u }
+            }
+        }
+        return Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "Cofrinho")
+            ?? Bundle.module.url(forResource: name, withExtension: "png")
+    }
+
     /// Quadros do humor. `retina` escolhe a folha @2x (256 px por quadro).
     func frames(_ mood: CofrinhoMood, retina: Bool) -> [CGImage] {
         let name = mood.sheetName(retina: retina)
         if let c = cache[name] { return c }
-        guard let url = Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "Cofrinho")
-                ?? Bundle.module.url(forResource: name, withExtension: "png"),
+        guard let url = Self.spriteURL(name),
               let src = CGImageSourceCreateWithURL(url as CFURL, nil),
               let sheet = CGImageSourceCreateImageAtIndex(src, 0, nil) else {
             cache[name] = []; return []

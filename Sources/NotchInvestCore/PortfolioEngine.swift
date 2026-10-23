@@ -8,6 +8,9 @@ public struct LineItem: Sendable, Identifiable {
     public let current: Double
     /// Variação do dia em R$ (nil se a fonte não informa).
     public var dayChange: Double? = nil
+    /// Renda fixa: valor se resgatar hoje, já sem IR/IOF. Demais: nil (= igual ao bruto).
+    public var net: Double? = nil
+    public var netOrCurrent: Double { net ?? current }
     public var gain: Double? { invested.map { current - $0 } }
     public var gainPct: Double? { invested.flatMap { $0 > 0 ? (current / $0 - 1) * 100 : nil } }
 }
@@ -17,6 +20,9 @@ public struct Snapshot: Sendable {
     public let cdiAnnual: Double?
     public let updatedAt: Date
     public let errors: [String]
+    public var dividends = Dividends.Summary()
+    public var totalNet: Double { items.reduce(0) { $0 + $1.netOrCurrent } }
+    public var totalTaxes: Double { total - totalNet }
     public var total: Double { items.reduce(0) { $0 + $1.current } }
     public var totalInvested: Double { items.reduce(0) { $0 + ($1.invested ?? $1.current) } }
     /// Ganho total em % (para o modo "só porcentagens").
@@ -31,8 +37,9 @@ public struct Snapshot: Sendable {
 }
 
 public struct PortfolioEngine: Sendable {
-    let bcb = BCBService(), brapi = BrapiService(), gecko = CoinGeckoService()
-    public init() {}
+    let bcb = BCBService(), brapi: BrapiService, gecko = CoinGeckoService()
+    /// Token da brapi vem do Keychain (app) ou da variável BRAPI_TOKEN (CLI).
+    public init(brapiToken: String? = ProcessInfo.processInfo.environment["BRAPI_TOKEN"]) { brapi = BrapiService(token: brapiToken) }
 
     public func snapshot(_ p: Portfolio, now: Date = Date()) async -> Snapshot {
         var items: [LineItem] = [], errors: [String] = []
@@ -45,16 +52,19 @@ public struct PortfolioEngine: Sendable {
                 cdiAnnual = rates.last.map { CDICalculator.annualized(dailyPercent: $0.percent) }
                 for a in p.fixedIncome {
                     let v = CDICalculator.value(of: a, rates: rates, until: now)
+                    let net = CDICalculator.netValue(of: a, rates: rates, until: now)
                     // rendimento do último dia útil: taxa do dia × %CDI sobre o valor anterior
                     let lastPct = (rates.last?.percent ?? 0) / 100 * a.cdiPercent / 100
                     items.append(LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,
-                                          dayChange: v.gross - v.gross / (1 + lastPct)))
+                                          dayChange: v.gross - v.gross / (1 + lastPct), net: net))
                 }
             } catch { errors.append("CDI: \(error)") }
         }
+        var cash: [CashDividend] = []
         for s in p.stocks {
             do {
-                let q = try await brapi.quote(s.ticker)
+                let q = try await brapi.quoteWithDividends(s.ticker)
+                cash += q.dividends
                 items.append(LineItem(name: s.ticker, category: s.ticker.hasSuffix("11") ? "fii" : "acao",
                                       invested: s.averagePrice.map { $0 * s.quantity }, current: q.price * s.quantity,
                                       dayChange: q.changePct.map { let v = q.price * s.quantity; return v - v / (1 + $0 / 100) }))
@@ -71,7 +81,9 @@ public struct PortfolioEngine: Sendable {
                 }
             } catch { errors.append("cripto: \(error)") }
         }
-        return Snapshot(items: items, cdiAnnual: cdiAnnual, updatedAt: now, errors: errors)
+        var snap = Snapshot(items: items, cdiAnnual: cdiAnnual, updatedAt: now, errors: errors)
+        snap.dividends = Dividends.summary(stocks: p.stocks, brapi: cash, manual: p.manualDividends ?? [], now: now)
+        return snap
     }
 }
 

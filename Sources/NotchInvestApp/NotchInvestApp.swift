@@ -21,11 +21,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let charts = ChartWebController()
     let privacy = PrivacyController()
     let privacyWindow = PrivacyWindow()
+    let editorWindow = EditorWindow()
     var statusItem: NSStatusItem?
     func applicationDidFinishLaunching(_ n: Notification) {
         notch = NotchWindowController(model: model, charts: charts, privacy: privacy)
         notch?.showWindow(nil)
         model.onShowPrivacyInfo = { [weak self] in self?.showPrivacyInfo() }
+        model.onShowEditor = { [weak self] in self?.showEditor() }
         setupMenu()
         model.start()
     }
@@ -40,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func setMode(_ s: NSMenuItem) { if let m = s.representedObject as? String, let pm = PrivacyMode(rawValue: m) { privacy.set(pm) } }
     @objc func toggleLock() { privacy.lockEnabled.toggle() }
     @objc func lockNow() { privacy.relock() }
+    @objc func showEditor() { editorWindow.show { [weak self] in Task { await self?.model.refresh() } } }
     @objc func showPrivacyInfo() { privacyWindow.show(privacy: privacy) { [weak self] in Task { await self?.model.refresh() } } }
 }
 
@@ -62,13 +65,14 @@ extension AppDelegate: NSMenuDelegate {
             let n = NSMenuItem(title: "Esconder agora", action: #selector(lockNow), keyEquivalent: ""); n.target = self; menu.addItem(n)
         }
         menu.addItem(.separator())
+        let e = NSMenuItem(title: "Cadastrar carteira…", action: #selector(showEditor), keyEquivalent: ","); e.target = self; menu.addItem(e)
         let p = NSMenuItem(title: "O que este app faz…", action: #selector(showPrivacyInfo), keyEquivalent: ""); p.target = self; menu.addItem(p)
         menu.addItem(NSMenuItem(title: "Sair", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 }
 
 enum IslandTab: String, CaseIterable, Identifiable {
-    case carteira = "Carteira", graficos = "Gráficos"
+    case carteira = "Carteira", evolucao = "Evolução", graficos = "Gráficos"
     var id: String { rawValue }
 }
 
@@ -83,8 +87,11 @@ final class PortfolioModel: ObservableObject {
     @Published var loading = false
     /// Transição "ganhou dinheiro hoje" em andamento (toca uma vez, depois volta ao humor).
     @Published var celebrating = false
+    /// Patrimônio dia a dia (só local, ~/.notchinvest/history.json).
+    @Published var history = History.load()
     private var timer: Timer?
     var onShowPrivacyInfo: (() -> Void)?
+    var onShowEditor: (() -> Void)?
     /// Ligado pelo NotchWindowController: abre/fecha a ilha (redimensiona a janela + anima).
     var onRequestExpand: ((Bool) -> Void)?
     func requestExpand(_ open: Bool) {
@@ -101,6 +108,7 @@ final class PortfolioModel: ObservableObject {
     func size(for t: IslandTab) -> CGSize {
         switch t {
         case .carteira: return IslandSize.open
+        case .evolucao: return CGSize(width: 520, height: 320)
         case .graficos:
             let c = portfolio?.tradingview
             let w = c?.panelWidth ?? TradingView.defaultPanel.width, h = c?.panelHeight ?? TradingView.defaultPanel.height
@@ -133,14 +141,19 @@ final class PortfolioModel: ObservableObject {
             if let perm = LocalData.permissions(), perm & 0o077 != 0 { try? LocalData.restrict() }
             portfolio = p
             let previous = snapshot?.total
-            let new = await PortfolioEngine().snapshot(p)
+            let new = await PortfolioEngine(brapiToken: BrapiTokenStore.read()).snapshot(p)
             snapshot = new
             loadError = nil
+            // Só grava o dia se o total veio completo (sem erro de cotação), para o gráfico não "despencar".
+            if new.errors.isEmpty {
+                history.record(total: new.total, invested: new.totalInvested, net: new.totalNet)
+                try? history.save()
+            }
             if CofrinhoMood.shouldCelebrate(previousTotal: previous, newTotal: new.total, dayChangePct: new.dayChangePct) {
                 celebrating = true
             }
         } catch {
-            loadError = "Crie ~/.notchinvest/portfolio.json"
+            loadError = "Cadastre a carteira (botão ✎ ou menu ▸ Cadastrar carteira…)"
         }
     }
 }

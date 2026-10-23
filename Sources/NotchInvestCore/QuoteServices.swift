@@ -60,21 +60,27 @@ public struct BrapiService: Sendable {
     struct R: Decodable { let symbol: String; let regularMarketPrice: Double?; let regularMarketChangePercent: Double? }
 
     /// Só o ticker público (ex. PETR4); quantidade e preço médio nunca saem do Mac.
-    public static func url(_ ticker: String) -> URL {
+    /// `dividends: true` pede também o histórico de proventos (parâmetro fixo, nada da carteira).
+    public static func url(_ ticker: String, dividends: Bool = false) -> URL {
         let t = ticker.uppercased().filter { $0.isLetter || $0.isNumber }
-        return URL(string: "https://brapi.dev/api/quote/\(t)")!
+        return URL(string: "https://brapi.dev/api/quote/\(t)" + (dividends ? "?dividends=true" : ""))!
     }
 
     public func quote(_ ticker: String) async throws -> (price: Double, changePct: Double?) {
+        let r = try await quoteWithDividends(ticker, dividends: false); return (r.price, r.changePct)
+    }
+
+    /// O token vai só no cabeçalho Authorization (nunca na URL, nunca em log).
+    public func quoteWithDividends(_ ticker: String, dividends: Bool = true) async throws -> (price: Double, changePct: Double?, dividends: [CashDividend]) {
         var headers: [String: String] = [:]
         if let token, !token.isEmpty { headers["Authorization"] = "Bearer \(token)" }
-        let data = try await fetchData(Self.url(ticker), headers: headers)
+        let data = try await fetchData(Self.url(ticker, dividends: dividends), headers: headers)
         if let e = try? JSONDecoder().decode(ErrResp.self, from: data), e.error == true {
-            throw QuoteError.badResponse("\(ticker): \(e.message ?? "erro brapi") (defina BRAPI_TOKEN)")
+            throw QuoteError.badResponse("\(ticker): \(e.message ?? "erro brapi") (cadastre o token da brapi)")
         }
         let r = try JSONDecoder().decode(Resp.self, from: data)
         guard let q = r.results.first, let p = q.regularMarketPrice else { throw QuoteError.badResponse(ticker) }
-        return (p, q.regularMarketChangePercent)
+        return (p, q.regularMarketChangePercent, dividends ? ((try? Dividends.parseBrapi(data)) ?? []) : [])
     }
 }
 

@@ -43,6 +43,7 @@ struct NotchRootView: View {
                     IslandTabBar()
                     switch model.tab {
                     case .carteira: ExpandedView()
+                    case .evolucao: HistoryChartView()
                     case .graficos: ChartsView()
                     }
                 }
@@ -92,7 +93,9 @@ struct ExpandedView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let err = model.loadError {
-                HStack { Text(err).foregroundStyle(.orange); Spacer(); RefreshButton() }
+                HStack { Text(err).foregroundStyle(.orange)
+                    Button("Cadastrar") { model.onShowEditor?() }.buttonStyle(.link)
+                    Spacer(); RefreshButton() }
             } else if model.snapshot == nil {
                 HStack { Text("Carregando…").foregroundStyle(.secondary); Spacer(); RefreshButton() }
             }
@@ -117,6 +120,10 @@ struct ExpandedView: View {
                     VStack(alignment: .trailing, spacing: 4) {
                         HStack(spacing: 6) {
                             PrivacyButton()
+                            Button { model.onShowEditor?() } label: {
+                                Image(systemName: "pencil").font(.system(size: 11, weight: .semibold))
+                                    .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))
+                            }.buttonStyle(.plain).help("Cadastrar carteira").accessibilityLabel("Cadastrar carteira")
                             Button { model.onShowPrivacyInfo?() } label: {
                                 Image(systemName: "info.circle").font(.system(size: 11, weight: .semibold))
                                     .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))
@@ -126,6 +133,7 @@ struct ExpandedView: View {
                         if let c = s.cdiAnnual { Text(String(format: "CDI %.2f%% a.a.", c)).foregroundStyle(.secondary) }
                     }
                 }
+                NetSummaryRow(snapshot: s)
                 ScrollView {
                     ForEach(s.items) { i in
                         HStack {
@@ -147,6 +155,32 @@ struct ExpandedView: View {
         .foregroundStyle(.white)
     }
 }
+/// Bruto × líquido (IR/IOF da renda fixa) e proventos dos últimos 12 meses.
+struct NetSummaryRow: View {
+    @EnvironmentObject var privacy: PrivacyController
+    let snapshot: Snapshot
+    var body: some View {
+        let s = snapshot, u = privacy.unlocked
+        HStack(spacing: 10) {
+            if s.totalTaxes > 0.005 {
+                if let net = privacy.mode.money(s.totalNet, unlocked: u) {
+                    Label("Líquido \(net)", systemImage: "banknote").help("Se resgatar hoje: bruto menos IR regressivo e IOF da renda fixa")
+                } else {
+                    let pct = s.totalInvested > 0 ? (s.totalNet / s.totalInvested - 1) * 100 : 0
+                    Label(String(format: "Líquido %+.2f%%", pct), systemImage: "banknote")
+                }
+                if let tx = privacy.mode.money(s.totalTaxes, unlocked: u) { Text("IR/IOF \(tx)").foregroundStyle(.secondary) }
+            }
+            if s.dividends.last12m > 0 {
+                Label(privacy.mode.money(s.dividends.last12m, unlocked: u).map { "Proventos 12m \($0)" } ?? "Proventos 12m ✓",
+                      systemImage: "leaf").help("FIIs/ações: brapi (estimativa com a quantidade atual) ou lançamentos manuais")
+            }
+            Spacer()
+        }
+        .font(.caption).foregroundStyle(.white.opacity(0.85)).labelStyle(.titleAndIcon)
+    }
+}
+
 /// Abas da ilha aberta.
 struct IslandTabBar: View {
     @EnvironmentObject var model: PortfolioModel

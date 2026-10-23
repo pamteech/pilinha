@@ -4,3 +4,4 @@
 .env
 portfolio.json
 *.blend1
+build/
