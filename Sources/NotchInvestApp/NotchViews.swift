@@ -134,7 +134,7 @@ struct ExpandedView: View {
                     }
                 }
                 NetSummaryRow(snapshot: s)
-                ScrollView {
+                ScrollView(showsIndicators: true) {
                     ForEach(s.items) { i in
                         HStack {
                             Text(i.category.uppercased()).font(.caption2).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
@@ -147,6 +147,11 @@ struct ExpandedView: View {
                             }
                         }.font(.system(size: 12))
                     }
+                }
+                if !s.errors.isEmpty {
+                    Text("⚠️ " + s.errors.joined(separator: " · "))
+                        .font(.caption2).foregroundStyle(.orange).lineLimit(3)
+                        .textSelection(.enabled)
                 }
                 Text("Atualizado \(s.updatedAt.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2).foregroundStyle(.secondary)

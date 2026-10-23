@@ -38,7 +38,7 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
 enum IslandSize {
     static let hoverMargin: CGFloat = 6
     static let closedExtraWidth: CGFloat = 160          // espaço para porquinho + valores ao redor do entalhe
-    static let open = CGSize(width: 480, height: 280)
+    static let open = CGSize(width: 480, height: 420)
     static func closed(notchWidth: CGFloat, notchHeight: CGFloat) -> CGSize {
         CGSize(width: notchWidth + closedExtraWidth, height: notchHeight)
     }
