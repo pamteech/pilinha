@@ -11,6 +11,7 @@ export default function Layout() {
         <Tabs.Screen name="carteira" options={{ title: 'Carteira' }} />
         <Tabs.Screen name="evolucao" options={{ title: 'Evolução' }} />
         <Tabs.Screen name="proventos" options={{ title: 'Proventos' }} />
+        <Tabs.Screen name="graficos" options={{ title: 'Gráficos' }} />
         <Tabs.Screen name="cadastro" options={{ title: 'Cadastro' }} />
       </Tabs>
     </PilinhaProvider>

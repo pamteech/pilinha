@@ -13,12 +13,24 @@ Privacidade: só leitura, sem conexão com banco, dados só no aparelho (carteir
 - [x] Telas: porquinho + total + dia, carteira, evolução (gráfico SVG; modo discreto mostra só %), proventos, cadastro (renda fixa, ações/FIIs, bitcoin, token brapi).
 - [x] `eas.json` com perfis development / preview / production e submit.
 
+## Marco 2 — pronto no código (falta validar num build real)
+- [x] Widgets (tela inicial: pequeno/médio; tela bloqueada: circular, retangular, em linha) via **@bacons/apple-targets** (`mobile/targets/widget`, SwiftUI/WidgetKit). Porquinho + total + variação do dia.
+- [x] Dados pelo App Group `group.com.pamtech.pilinha`: o app grava um resumo JSON (`pilinha.widget`) com `ExtensionStorage` e chama `reloadWidget`. **Modo discreto:** o resumo vai sem nenhum valor em R$ (só % e humor). A opção "esconder valores" agora fica salva.
+- [x] Linha do tempo do widget: relê a cada ~20 min. O widget **não** busca cotações sozinho; mostra o último resumo do app (o app atualiza a cada 5 min quando aberto).
+- [x] Live Activity / Ilha Dinâmica: módulo nativo local `mobile/modules/pilinha-activity` (ActivityKit) + `ActivityConfiguration` no mesmo alvo do widget. Botão na tela inicial (avisa se a bolsa está fechada; pregão ≈ seg–sex 10h–18h). Atualiza a cada refresh do app.
+- [x] Proventos lançados à mão no Cadastro.
+- [x] Aba Gráficos: TradingView oficial em webview (só domínios tradingview.com), login por e-mail e senha.
+- [x] Exportar/importar carteira (JSON igual ao `~/.notchinvest/portfolio.json` do Mac) por folha de compartilhar / seletor de arquivos, com validação.
+
+## Ainda não verificado (só num `eas build` de verdade)
+- Compilação do Swift (no Linux só deu para checar a sintaxe com `swiftc -parse`) e do módulo nativo.
+- Assinatura do alvo do widget e do App Group: o EAS precisa criar o App Group e o perfil do widget; o `ios.appleTeamId` ainda falta no app.json.
+- Live Activity com o app fechado: sem servidor de push, ela só muda quando o app roda; o iOS a encerra depois de ~8 h.
+
 ## Próximos
 - [ ] Credenciais Apple no EAS (primeiro `eas build` interativo) e envio ao TestFlight.
-- [ ] Lançar proventos à mão no cadastro (o núcleo já suporta).
-- [ ] TradingView em webview (login por e-mail e senha; o Google bloqueia login em webview).
-- [ ] Exportar/importar carteira entre Mac e iPhone (arquivo JSON compatível com `portfolio.json`) — decisão pendente.
-- [ ] Widgets (tela inicial e bloqueada) e Live Activity / Ilha Dinâmica via **expo-apple-targets** (`@bacons/apple-targets`): alvo `widget` em `mobile/targets/`, escrito em SwiftUI; dados passados por App Group (`group.com.pamtech.pilinha`) com o resumo já calculado (humor, % do dia; valores só se o modo discreto estiver desligado). Live Activity precisa de um módulo nativo para iniciar/atualizar (ActivityKit). O iOS atualiza widgets a cada ~15–30 min.
+- [ ] (Opcional) widget buscar cotações sozinho (exigiria repassar a carteira ao App Group).
+- [ ] (Opcional) atualizar a Live Activity por push (precisa de servidor; fora do escopo local).
 
 ## Observação
 O Yahoo responde 429 para alguns User-Agents completos de navegador (visto em 23/10/2026); o app usa `Mozilla/5.0` curto. Vale conferir o app do Mac, que usa um UA longo de Chrome.

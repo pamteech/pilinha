@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 import { Card, Screen, Txt } from '../components/ui';
-import { FixedIncomeKind, Portfolio, kindLabel, parseISO } from '../core';
+import { FixedIncomeKind, Portfolio, kindLabel, parseISO, parsePortfolio, serializePortfolio } from '../core';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { usePilinha } from '../lib/store';
 import { T } from '../lib/theme';
 const num = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
@@ -17,6 +20,26 @@ export default function Cadastro() {
   const [st, setSt] = useState({ ticker: '', qty: '', avg: '' });
   const [btc, setBtc] = useState({ qty: '', avg: '' });
   const [tok, setTok] = useState('');
+  const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
+  const addDv = () => {
+    const t = dv.ticker.trim().toUpperCase(), a = num(dv.amount);
+    if (!/^[A-Z0-9]{4,7}$/.test(t) || !parseISO(dv.date) || !(a > 0)) return bad('Código, data (AAAA-MM-DD) e valor que caiu na conta.');
+    save({ ...p, manualDividends: [...(p.manualDividends ?? []), { ticker: t, date: dv.date, amount: a }] }); setDv({ ticker: '', date: '', amount: '' });
+  };
+  const exportar = async () => {
+    try {
+      const f = new File(Paths.cache, 'portfolio.json'); if (f.exists) f.delete(); f.create(); f.write(serializePortfolio(p));
+      await Sharing.shareAsync(f.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Exportar carteira' });
+    } catch (e) { bad(`Não deu para exportar: ${(e as Error).message}`); }
+  };
+  const importar = async () => {
+    try {
+      const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'public.json', '*/*'], copyToCacheDirectory: true });
+      if (r.canceled || !r.assets?.[0]) return;
+      const np = parsePortfolio(await new File(r.assets[0].uri).text());
+      Alert.alert('Importar carteira', 'Isso substitui a carteira deste iPhone. Continuar?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Importar', onPress: () => save(np) }]);
+    } catch (e) { bad((e as Error).message); }
+  };
   const bad = (m: string) => Alert.alert('Confere aí', m);
   const addFI = () => {
     const amount = num(fi.amount), cdi = num(fi.cdi);
@@ -64,6 +87,21 @@ export default function Cadastro() {
         <Input placeholder="Quantidade (ex. 0,0015)" keyboardType="decimal-pad" value={btc.qty} onChangeText={qty => setBtc({ ...btc, qty })} />
         <Input placeholder="Preço médio em R$ (opcional)" keyboardType="decimal-pad" value={btc.avg} onChangeText={avg => setBtc({ ...btc, avg })} />
         <Btn title="Salvar bitcoin" onPress={addBtc} />
+      </Card>
+      <Card>
+        <Txt style={{ fontWeight: '700' }}>Proventos lançados à mão</Txt>
+        <Txt dim>O valor que caiu na conta. Para o código, o lançamento manual substitui o da brapi.</Txt>
+        {(p.manualDividends ?? []).map((m, i) => <Row key={i} label={`${m.ticker} · ${m.date}`} onDelete={() => save({ ...p, manualDividends: (p.manualDividends ?? []).filter((_, j) => j !== i) })} />)}
+        <Input placeholder="Código (ex. MXRF11)" autoCapitalize="characters" value={dv.ticker} onChangeText={ticker => setDv({ ...dv, ticker })} />
+        <Input placeholder="Data AAAA-MM-DD" value={dv.date} onChangeText={date => setDv({ ...dv, date })} />
+        <Input placeholder="Valor recebido" keyboardType="decimal-pad" value={dv.amount} onChangeText={amount => setDv({ ...dv, amount })} />
+        <Btn title="Adicionar provento" onPress={addDv} />
+      </Card>
+      <Card>
+        <Txt style={{ fontWeight: '700' }}>Levar a carteira entre Mac e iPhone</Txt>
+        <Txt dim>Mesmo formato do portfolio.json do Mac (~/.notchinvest). O arquivo tem os valores: mande só por AirDrop ou guarde no Arquivos.</Txt>
+        <Btn title="Exportar arquivo" onPress={exportar} />
+        <Btn title="Importar arquivo" onPress={importar} />
       </Card>
       <Card>
         <Txt style={{ fontWeight: '700' }}>Token da brapi (opcional, só para proventos)</Txt>

@@ -10,6 +10,19 @@ npm run typecheck # tsc --noEmit
 npm run smoke     # testa as APIs reais (mostra só ok/erro)
 ```
 
+## Estrutura
+- `src/core` — cálculos (CDI, IR/IOF, cotações, proventos, histórico, import/export). Testado com jest.
+- `src/app` — telas (expo-router): Pilinha, Carteira, Evolução, Proventos, Gráficos (TradingView), Cadastro.
+- `targets/widget` — widgets e Live Activity em SwiftUI (gerado no Xcode pelo `@bacons/apple-targets`).
+- `modules/pilinha-activity` — módulo nativo para iniciar/parar a Live Activity.
+- `ios/` não vai pro git: é gerado por `npx expo prebuild -p ios` (o EAS gera sozinho).
+
+Widgets e Live Activity **não funcionam no Expo Go**; só no app instalado pelo TestFlight (ou num build `development`).
+
+## Antes do primeiro build
+Coloque o Team ID da conta Apple (developer.apple.com → Membership, 10 letras/números) em `app.json`:
+`"ios": { "appleTeamId": "XXXXXXXXXX", ... }`. O EAS também pergunta e cria o App Group `group.com.pamtech.pilinha` e os perfis do app e do widget.
+
 ## Mandar para o TestFlight (no Mac da Pamella, sem Xcode)
 1. `npm i -g eas-cli`
 2. `eas login` (conta Expo **pamssoares**)
