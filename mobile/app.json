@@ -19,7 +19,8 @@
         "com.apple.security.application-groups": [
           "group.com.pamtech.pilinha"
         ]
-      }
+      },
+      "appleTeamId": "KLQPAH2X2H"
     },
     "plugins": [
       "expo-router",
