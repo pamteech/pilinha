@@ -4,7 +4,7 @@ import { annualized, netValue, value } from './cdi';
 import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote } from './quotes';
 import { CashDividend, DividendSummary, summary } from './dividends';
 
-export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null }
+export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null }
 export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary }
 const chg = (v: number, pct: number | null) => (pct == null ? null : v - v / (1 + pct / 100));
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -41,7 +41,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
     const r = qs[i];
     if (r.status === 'rejected') { errors.push(msg(r.reason)); return; }
     const q = r.value, v = q.price * s.quantity; cash = cash.concat(q.dividends);
-    items.push({ name: s.ticker.toUpperCase(), category: s.ticker.endsWith('11') ? 'fii' : 'acao', invested: s.averagePrice != null ? s.averagePrice * s.quantity : null, current: v, dayChange: chg(v, q.changePct), net: null });
+    items.push({ name: s.ticker.toUpperCase(), category: s.ticker.endsWith('11') ? 'fii' : 'acao', invested: s.averagePrice != null ? s.averagePrice * s.quantity : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.price, avgPrice: s.averagePrice ?? null });
   });
   if (p.crypto.length) {
     try {
@@ -49,7 +49,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       for (const c of p.crypto) {
         const q = px[c.coinId]; if (!q) { errors.push(`${c.symbol}: sem preço`); continue; }
         const v = q.price * c.quantity;
-        items.push({ name: c.symbol, category: 'cripto', invested: c.averagePriceBRL != null ? c.averagePriceBRL * c.quantity : null, current: v, dayChange: chg(v, q.change24h), net: null });
+        items.push({ name: c.symbol, category: 'cripto', invested: c.averagePriceBRL != null ? c.averagePriceBRL * c.quantity : null, current: v, dayChange: chg(v, q.change24h), net: null, unitPrice: q.price, avgPrice: c.averagePriceBRL ?? null });
       }
     } catch (e) { errors.push(`cripto: ${msg(e)}`); }
   }
