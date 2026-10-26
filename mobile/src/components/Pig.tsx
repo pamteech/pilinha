@@ -21,7 +21,8 @@ export function Pig({ mood, size = 160, badge = false }: { mood: Mood; size?: nu
         <View style={{ width: size, height: size, overflow: 'hidden' }}>
           <Image source={sheets[mood]} style={{ width: size * n, height: size, transform: [{ translateX: -f * size }] }} />
         </View>
-        {badge && <View style={{ position: 'absolute', right: 4, top: 4, backgroundColor: T.card, borderWidth: 1, borderColor: T.line, borderRadius: 12, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}><MaterialCommunityIcons name={b.icon as any} size={26} color={b.tone === 'up' ? T.up : b.tone === 'down' ? T.down : T.dim} /></View>}
+        {/* Selo redondo e discreto (não parece botão) */}
+        {badge && <View pointerEvents="none" accessibilityLabel={b.text} style={{ position: 'absolute', right: size * 0.06, top: size * 0.06, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999, width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}><MaterialCommunityIcons name={b.icon as any} size={18} color={b.tone === 'up' ? T.up : b.tone === 'down' ? T.down : T.dim} /></View>}
       </View>
       {badge && <Text style={{ color: T.dim, fontSize: 13, marginTop: 2 }}>{b.text}</Text>}
     </View>

@@ -28,16 +28,19 @@ function Lock({ children }: { children: React.ReactNode }) {
     </View>)}</View>
   );
 }
+// Garante que abrir o app (ou um link) sempre tenha as abas por baixo.
+export const unstable_settings = { initialRouteName: '(tabs)', anchor: '(tabs)' };
 export default function Layout() {
   const [fontsOk] = useFonts({ Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold });
   if (!fontsOk) return null;
   return (
     <PilinhaProvider><Lock>
       <StatusBar style="light" />
-      <Stack screenOptions={{ header: ({ options, route }) => <Header title={options.title ?? route.name} back />, contentStyle: { backgroundColor: T.bg } }}>
+      {/* Raiz: as abas ficam embaixo e só Ajustes/Alertas sobem por cima com voltar. Qualquer outra rota fica sem header próprio. */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="alertas" options={{ title: 'Alertas de preço' }} />
-        <Stack.Screen name="ajustes" options={{ title: 'Ajustes' }} />
+        <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas de preço" back /> }} />
+        <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
       </Stack>
     </Lock></PilinhaProvider>
   );
