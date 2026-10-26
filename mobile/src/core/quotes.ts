@@ -72,3 +72,15 @@ export async function cryptoBRL(ids: string[], f: Fetcher = defaultFetcher) {
   for (const [k, v] of Object.entries<any>(j ?? {})) if (typeof v?.brl === 'number') out[k] = { price: v.brl, change24h: v.brl_24h_change ?? null };
   return out;
 }
+
+/** Selic meta (% a.a.), série 432 do BCB: último valor. */
+export const selicURL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json';
+export async function selicAnnual(f: Fetcher = defaultFetcher): Promise<number> {
+  const j = await f(selicURL); const v = parseFloat(j?.[0]?.valor);
+  if (!isFinite(v)) throw new Error('Selic indisponível'); return v;
+}
+/** TR mensal (% a.m.), série 226 do BCB: último valor (null se indisponível). */
+export const trURL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.226/dados/ultimos/1?formato=json';
+export async function trMonthly(f: Fetcher = defaultFetcher): Promise<number | null> {
+  try { const j = await f(trURL); const v = parseFloat(j?.[0]?.valor); return isFinite(v) ? v : null; } catch { return null; }
+}

@@ -13,7 +13,8 @@
       "icon": "./assets/images/pilinha-icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "NSFaceIDUsageDescription": "O Pilinha usa o Face ID para abrir o app e mostrar os valores escondidos."
       },
       "entitlements": {
         "com.apple.security.application-groups": [
@@ -27,7 +28,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#14101a",
+          "backgroundColor": "#3E2A55",
           "image": "./assets/images/pilinha-icon.png",
           "imageWidth": 120
         }
@@ -41,6 +42,19 @@
           "ios": {
             "deploymentTarget": "17.0"
           }
+        }
+      ],
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#3E2A55"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Pilinha usa o Face ID para abrir o app e mostrar os valores escondidos."
         }
       ]
     ],

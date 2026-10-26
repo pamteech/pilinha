@@ -5,7 +5,7 @@ import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote } from './quot
 import { CashDividend, DividendSummary, summary } from './dividends';
 
 export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null }
-export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary }
+export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary; cash?: CashDividend[] }
 const chg = (v: number, pct: number | null) => (pct == null ? null : v - v / (1 + pct / 100));
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -54,5 +54,5 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       }
     } catch (e) { errors.push(`cripto: ${msg(e)}`); }
   }
-  return { items, cdiAnnual, updatedAt: now, errors, dividends: summary(p.stocks, cash, p.manualDividends ?? [], now) };
+  return { items, cdiAnnual, updatedAt: now, errors, dividends: summary(p.stocks, cash, p.manualDividends ?? [], now), cash };
 }

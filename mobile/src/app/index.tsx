@@ -4,13 +4,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Pig } from '../components/Pig';
 import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../components/ui';
-import { Mood, lastDays, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, shouldCelebrate, total, totalNet } from '../core';
+import { goalProgress, Mood, lastDays, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, shouldCelebrate, total, totalNet } from '../core';
 import { usePilinha } from '../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../lib/widget';
 import { isTradingHours } from '../core';
 import { T, S, R } from '../lib/theme';
 export default function Home() {
-  const { snap, loading, refresh, hidden, setHidden, portfolio, history } = usePilinha();
+  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings } = usePilinha();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
   const base = moodFrom(d, loading && !snap, !!snap?.errors.length);
   const [mood, setMood] = useState<Mood>(base); const prev = useRef<number | null>(null);
@@ -31,7 +31,7 @@ export default function Home() {
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
       <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge /></View>
-      <Pressable onPress={() => setHidden(!hidden)}>
+      <Pressable onPress={toggleHidden}>
         <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
           <Eyebrow>Seu patrimônio {hidden ? '· toque para mostrar' : ''}</Eyebrow>
           <Txt style={{ color: T.onDark, fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -0.5, marginTop: S.xs }}>{money(tot, hidden)}</Txt>
@@ -57,6 +57,7 @@ export default function Home() {
       )}
       {empty && <Card><Txt>Cadastre a carteira na aba Cadastro. Tudo fica só neste iPhone.</Txt></Card>}
       {snap?.errors.map(e => <View key={e} style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center', paddingHorizontal: S.xs }}><MaterialCommunityIcons name="alert-outline" size={16} color={T.down} /><Txt style={{ color: T.down, fontSize: 13, flex: 1 }}>{e}</Txt></View>)}
+      {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
       {snap && <Txt dim style={{ textAlign: 'center', fontSize: 12 }}>Atualizado {snap.updatedAt.toLocaleTimeString('pt-BR')} · puxe para atualizar</Txt>}
@@ -90,6 +91,19 @@ function Movers({ m }: { m: { up: Mover[]; down: Mover[] } }) {
     <Card>
       <SectionTitle first>Maiores altas e quedas do dia</SectionTitle>
       <View style={{ flexDirection: 'row', gap: S.xl }}>{col('Altas', m.up, true)}{col('Quedas', m.down, false)}</View>
+    </Card>
+  );
+}
+
+function Goal({ total, target, hidden }: { total: number; target: number; hidden: boolean }) {
+  const g = goalProgress(total, target); if (!g) return null;
+  return (
+    <Card>
+      <SectionTitle first right={<Txt style={{ fontWeight: '700', color: g.done ? T.up : T.text }}>{g.pct.toFixed(0)}%</Txt>}>Meta do cofrinho</SectionTitle>
+      <View style={{ height: 10, borderRadius: 999, backgroundColor: T.champLight, overflow: 'hidden' }}>
+        <View style={{ width: `${g.pct}%`, height: '100%', backgroundColor: g.done ? T.up : T.navy2, borderRadius: 999 }} />
+      </View>
+      <Txt dim style={{ fontSize: 13 }}>{g.done ? `Meta de ${money(target, hidden)} alcançada!` : hidden ? 'Valores escondidos' : `${money(total, false)} de ${money(target, false)} · faltam ${money(g.remaining, false)}`}</Txt>
     </Card>
   );
 }
