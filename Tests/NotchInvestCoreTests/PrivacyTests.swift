@@ -44,7 +44,7 @@ import Foundation
         #expect(!(reqs.isEmpty))
         for r in reqs {
             #expect(r.url.scheme == "https")
-            #expect(["api.bcb.gov.br", "brapi.dev", "query1.finance.yahoo.com", "api.coingecko.com"].contains(r.url.host ?? ""))
+            #expect(["api.bcb.gov.br", "brapi.dev", "query1.finance.yahoo.com", "query2.finance.yahoo.com", "api.coingecko.com"].contains(r.url.host ?? ""))
         }
         #expect(BrapiService.url("petr4?x=1&y=2").query == nil)   // ticker não injeta parâmetros
         #expect(NetworkAudit.leaksNothing(q))

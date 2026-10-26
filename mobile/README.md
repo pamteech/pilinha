@@ -34,3 +34,9 @@ Coloque o Team ID da conta Apple (developer.apple.com → Membership, 10 letras/
 6. No App Store Connect → TestFlight: adicione a namorada como testadora (e-mail do Apple ID dela). Ela instala o app **TestFlight** e aceita o convite.
 
 Perfis em `eas.json`: `development` (dev client), `preview` (instalação interna por link), `production` (TestFlight/App Store).
+
+## Submit para o TestFlight
+
+`eas.json` já tem `submit.production.ios.ascAppId = 6826469667` (app com.pamtech.pilinha no App Store Connect), então `eas submit -p ios --latest` não pergunta mais o app.
+Para ficar 100% não interativo (ex. `eas build --auto-submit` sem login da Apple) falta uma **App Store Connect API Key**, que só a Pamella pode criar:
+App Store Connect > Usuários e Acesso > Integrações > App Store Connect API > gerar chave (papel App Manager), baixar o `.p8` e cadastrar no EAS com `eas credentials` (iOS > App Store Connect API Key). A chave nunca vai para o repositório.

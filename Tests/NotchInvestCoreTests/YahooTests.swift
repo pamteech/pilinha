@@ -30,6 +30,11 @@ import Foundation
         #expect(u.path == "/v8/finance/chart/BBAS3X1Y2.SA")
         #expect(u.query == "range=1d&interval=1d")
     }
+    @Test func fallbackHostAndShortUA() {
+        #expect(YahooFinanceService.url("bbas3", host: "query2").host == "query2.finance.yahoo.com")
+        #expect(YahooFinanceService.url("bbas3", host: "evil.com").host == "query1.finance.yahoo.com")
+        #expect(YahooFinanceService.browserUA == "Mozilla/5.0")
+    }
 
     final class Calls: @unchecked Sendable { var log: [String] = []; let l = NSLock()
         func add(_ s: String) { l.lock(); log.append(s); l.unlock() } }

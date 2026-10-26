@@ -88,11 +88,13 @@ public struct BrapiService: Sendable {
 /// Só o ticker público vai na URL (ex. BBAS3.SA); nada da carteira.
 public struct YahooFinanceService: Sendable {
     public init() {}
-    static let browserUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    /// UA curto: o Yahoo devolve HTTP 429 para alguns UAs completos de navegador (igual ao app do iPhone).
+    static let browserUA = "Mozilla/5.0"
 
-    public static func url(_ ticker: String) -> URL {
+    public static func url(_ ticker: String, host: String = "query1") -> URL {
         let t = ticker.uppercased().filter { $0.isLetter || $0.isNumber }
-        return URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/\(t).SA?range=1d&interval=1d")!
+        let h = host == "query2" ? "query2" : "query1"
+        return URL(string: "https://\(h).finance.yahoo.com/v8/finance/chart/\(t).SA?range=1d&interval=1d")!
     }
 
     struct Resp: Decodable { let chart: Chart }
@@ -115,9 +117,15 @@ public struct YahooFinanceService: Sendable {
         return (p, prev.flatMap { $0 > 0 ? (p / $0 - 1) * 100 : nil })
     }
 
+    /// query1 e, se der erro (ex. HTTP 429), query2.
     public func quote(_ ticker: String) async throws -> (price: Double, changePct: Double?) {
-        let data = try await fetchData(Self.url(ticker), headers: ["User-Agent": Self.browserUA])
-        return try Self.parse(data, ticker: ticker)
+        do {
+            let data = try await fetchData(Self.url(ticker), headers: ["User-Agent": Self.browserUA])
+            return try Self.parse(data, ticker: ticker)
+        } catch {
+            let data = try await fetchData(Self.url(ticker, host: "query2"), headers: ["User-Agent": Self.browserUA])
+            return try Self.parse(data, ticker: ticker)
+        }
     }
 }
 
