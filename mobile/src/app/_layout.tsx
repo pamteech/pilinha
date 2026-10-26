@@ -22,7 +22,7 @@ function Header({ title }: { title: string }) {
       </View>
       <View>
         <Eyebrow>Pilinha</Eyebrow>
-        <Text style={{ color: T.onDark, fontSize: 21, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
+        <Text style={{ color: T.onDark, fontSize: 21, lineHeight: 27, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
       </View>
     </View>
   );

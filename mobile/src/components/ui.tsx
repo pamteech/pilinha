@@ -1,13 +1,13 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text as RNText, TextProps, TextStyle, View, ViewStyle } from 'react-native';
-import { T, S, R, fontFor } from '../lib/theme';
+import { T, S, R, fontFor, lineHeightFor } from '../lib/theme';
 // Text com Manrope (a família muda conforme o peso).
-export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined }]} />; };
+export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
 export const Eyebrow = ({ children, color = T.champ }: { children: React.ReactNode; color?: string }) => (
   <Text style={{ fontSize: 11, letterSpacing: 2.2, textTransform: 'uppercase', color, fontWeight: '600' }}>{children}</Text>);
 export const screenPad = { paddingHorizontal: S.lg, paddingTop: S.lg, paddingBottom: S.xxl, gap: S.lg } as const;
 export const Screen = ({ children }: { children: React.ReactNode }) => (
-  <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad}>{children}</ScrollView>);
+  <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}>{children}</ScrollView>);
 // Título de seção dentro de card: mais espaço acima do que abaixo.
 export const SectionTitle = ({ children, right, first }: { children: React.ReactNode; right?: React.ReactNode; first?: boolean }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: first ? 0 : S.sm, marginBottom: S.xs }}>
@@ -21,7 +21,7 @@ export function Measure({ height, children }: { height: number; children: (w: nu
 export const Card = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
   <View style={[{ backgroundColor: T.card, borderRadius: R.card, padding: S.lg, gap: S.sm, borderWidth: 1, borderColor: T.line }, style]}>{children}</View>);
 export const Txt = ({ children, style, dim }: { children: React.ReactNode; style?: TextStyle; dim?: boolean }) => (
-  <Text style={[{ color: dim ? T.dim : T.text, fontSize: 15, lineHeight: 22 }, style]}>{children}</Text>);
+  <Text style={[{ color: dim ? T.dim : T.text, fontSize: 15 }, (StyleSheet.flatten(style)?.fontSize ?? 15) <= 16 ? { lineHeight: 22 } : null, style]}>{children}</Text>);
 export const money = (v: number, hidden: boolean) => (hidden ? 'R$ ••••' : require('../core').brl(v));
 export const colorFor = (v: number | null | undefined) => (v == null ? T.dim : v >= 0 ? T.up : T.down);
 // Linha compacta de um ativo: renda fixa mostra a % do dia; ações/FIIs/cripto mostram a cotação e o PM.

@@ -12,3 +12,7 @@ export const fontFor = (w?: string | number) => { const n = Number(w ?? 400) || 
 // Escala de espaçamento única (4/8/12/16/24/32) usada em todas as telas.
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 export const R = { card: 18, inner: 12, pill: 999 } as const;
+// No iOS, Manrope com lineHeight menor que ~1.2x o tamanho corta o topo do texto.
+// Regra única: nunca abaixo de 1.25x o fontSize (textos grandes como o patrimônio).
+export const MIN_LH = 1.25;
+export const lineHeightFor = (fontSize = 15, lineHeight?: number) => Math.max(lineHeight ?? 0, Math.ceil(fontSize * MIN_LH));

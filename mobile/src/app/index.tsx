@@ -23,15 +23,18 @@ export default function Home() {
     try { if (live) await stopLiveActivity(); else if (snap) await startLiveActivity(snap, hidden); } catch {}
     setLive(liveActivityRunning());
   };
+  // O spinner só aparece no puxar-para-atualizar: com refreshing=true na abertura o iOS deixa a lista deslocada para cima.
+  const [pulling, setPulling] = useState(false);
+  const onPull = async () => { setPulling(true); try { await refresh(); } finally { setPulling(false); } };
   const empty = !portfolio.fixedIncome.length && !portfolio.stocks.length && !portfolio.crypto.length;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={T.pink} />}>
+    <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
+      refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
       <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge /></View>
       <Pressable onPress={() => setHidden(!hidden)}>
         <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
           <Eyebrow>Seu patrimônio {hidden ? '· toque para mostrar' : ''}</Eyebrow>
-          <Txt style={{ color: T.onDark, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 }}>{money(tot, hidden)}</Txt>
+          <Txt style={{ color: T.onDark, fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -0.5, marginTop: S.xs }}>{money(tot, hidden)}</Txt>
           {snap && <Txt style={{ color: T.onDarkDim, fontSize: 13 }}>Líquido se resgatar hoje: {money(totalNet(snap), hidden)}</Txt>}
           <View style={{ flexDirection: 'row', gap: S.md, marginTop: S.md }}>
             <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
