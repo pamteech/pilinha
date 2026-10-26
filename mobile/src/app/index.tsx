@@ -31,16 +31,16 @@ export default function Home() {
       <Pressable onPress={() => setHidden(!hidden)}>
         <View style={{ backgroundColor: T.navy, borderRadius: 18, padding: 18, gap: 6 }}>
           <Eyebrow>Seu patrimônio {hidden ? '· toque para mostrar' : ''}</Eyebrow>
-          <Txt style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '800', letterSpacing: -0.5 }}>{money(tot, hidden)}</Txt>
-          {snap && <Txt style={{ color: '#C9D1DC', fontSize: 13 }}>Líquido se resgatar hoje: {money(totalNet(snap), hidden)}</Txt>}
+          <Txt style={{ color: T.onDark, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 }}>{money(tot, hidden)}</Txt>
+          {snap && <Txt style={{ color: T.onDarkDim, fontSize: 13 }}>Líquido se resgatar hoje: {money(totalNet(snap), hidden)}</Txt>}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
             <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
-              <Eyebrow color="#9FB0C4">Hoje</Eyebrow>
-              <Txt style={{ color: d == null ? '#FFFFFF' : d >= 0 ? '#8FD1AE' : '#E8A3AD', fontWeight: '700' }}>{pct(d)}{snap && !hidden ? ` · ${money(dayChange(snap), false)}` : ''}</Txt>
+              <Eyebrow color={T.onDarkDim}>Hoje</Eyebrow>
+              <Txt style={{ color: d == null ? T.onDark : d >= 0 ? T.upOnDark : T.downOnDark, fontWeight: '700' }}>{pct(d)}{snap && !hidden ? ` · ${money(dayChange(snap), false)}` : ''}</Txt>
             </View>
             {snap?.cdiAnnual != null && <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
-              <Eyebrow color="#9FB0C4">CDI</Eyebrow>
-              <Txt style={{ color: '#FFFFFF', fontWeight: '700' }}>{snap.cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Txt>
+              <Eyebrow color={T.onDarkDim}>CDI</Eyebrow>
+              <Txt style={{ color: T.onDark, fontWeight: '700' }}>{snap.cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Txt>
             </View>}
           </View>
         </View>

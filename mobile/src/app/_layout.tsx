@@ -12,17 +12,17 @@ import { T } from '../lib/theme';
 const icon = (name: React.ComponentProps<typeof MaterialCommunityIcons>['name']) => ({ color, size }: { color: any; size: number }) => (
   <MaterialCommunityIcons name={name} color={color} size={size} />
 );
-// Cabeçalho no estilo Lastro: faixa navy, selo com cofrinho em champagne, eyebrow e título.
+// Cabeçalho no estilo Lastro: faixa roxa escura, selo com cofrinho em lilás, eyebrow e título.
 function Header({ title }: { title: string }) {
   const top = useSafeAreaInsets().top;
   return (
     <View style={{ backgroundColor: T.navy, paddingTop: top + 10, paddingBottom: 16, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.navy2, borderWidth: 1, borderColor: 'rgba(183,151,90,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: T.navy2, borderWidth: 1, borderColor: 'rgba(208,176,224,0.5)', alignItems: 'center', justifyContent: 'center' }}>
         <MaterialCommunityIcons name="piggy-bank-outline" size={22} color={T.champ} />
       </View>
       <View>
         <Eyebrow>Pilinha</Eyebrow>
-        <Text style={{ color: '#FFFFFF', fontSize: 21, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
+        <Text style={{ color: T.onDark, fontSize: 21, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
       </View>
     </View>
   );

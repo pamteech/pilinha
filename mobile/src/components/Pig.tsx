@@ -17,7 +17,7 @@ export function Pig({ mood, size = 160, badge = false }: { mood: Mood; size?: nu
   const b = moodBadge(mood);
   return (
     <View style={{ alignItems: 'center' }}>
-      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: halo[mood] ?? 'transparent' }}>
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: halo[mood] ?? T.champLight }}>
         <View style={{ width: size, height: size, overflow: 'hidden' }}>
           <Image source={sheets[mood]} style={{ width: size * n, height: size, transform: [{ translateX: -f * size }] }} />
         </View>
