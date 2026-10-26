@@ -141,7 +141,16 @@ struct ExpandedView: View {
                             Text(i.name)
                             Spacer()
                             if let v = privacy.mode.money(i.current, unlocked: privacy.unlocked) { Text(v).monospacedDigit() }
-                            if let g = i.gainPct {
+                            if let px = i.unitPrice {
+                                // Ações/FIIs/cripto: cotação do momento + preço médio (no lugar da %).
+                                VStack(alignment: .trailing, spacing: 0) {
+                                    Text(BRL.format(px)).monospacedDigit()
+                                        .foregroundStyle(i.averagePrice.map { px >= $0 ? Color.green : Color.red } ?? Color.white)
+                                    if let pm = i.averagePrice, let t = privacy.mode.money(pm, unlocked: privacy.unlocked) {
+                                        Text("PM " + t).font(.system(size: 9)).monospacedDigit().foregroundStyle(.secondary)
+                                    }
+                                }.frame(minWidth: 78, alignment: .trailing)
+                            } else if let g = i.gainPct {
                                 Text(String(format: "%+.2f%%", g)).monospacedDigit()
                                     .foregroundStyle(g >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)
                             }

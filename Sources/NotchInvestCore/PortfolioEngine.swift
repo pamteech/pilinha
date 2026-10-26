@@ -10,6 +10,10 @@ public struct LineItem: Sendable, Identifiable {
     public var dayChange: Double? = nil
     /// Renda fixa: valor se resgatar hoje, já sem IR/IOF. Demais: nil (= igual ao bruto).
     public var net: Double? = nil
+    /// Ações/FIIs/cripto: cotação do momento (R$ por unidade).
+    public var unitPrice: Double? = nil
+    /// Ações/FIIs/cripto: preço médio pago por unidade, se cadastrado.
+    public var averagePrice: Double? = nil
     public var netOrCurrent: Double { net ?? current }
     public var gain: Double? { invested.map { current - $0 } }
     public var gainPct: Double? { invested.flatMap { $0 > 0 ? (current / $0 - 1) * 100 : nil } }
@@ -67,7 +71,8 @@ public struct PortfolioEngine: Sendable {
                 cash += q.dividends
                 items.append(LineItem(name: s.ticker, category: s.ticker.hasSuffix("11") ? "fii" : "acao",
                                       invested: s.averagePrice.map { $0 * s.quantity }, current: q.price * s.quantity,
-                                      dayChange: q.changePct.map { let v = q.price * s.quantity; return v - v / (1 + $0 / 100) }))
+                                      dayChange: q.changePct.map { let v = q.price * s.quantity; return v - v / (1 + $0 / 100) },
+                                      unitPrice: q.price, averagePrice: s.averagePrice))
             } catch { errors.append("\(error)") }
         }
         if !p.crypto.isEmpty {
@@ -77,7 +82,8 @@ public struct PortfolioEngine: Sendable {
                     guard let px = prices[c.coinId]?.price else { errors.append("\(c.symbol): sem preço"); continue }
                     items.append(LineItem(name: c.symbol, category: "cripto",
                                           invested: c.averagePriceBRL.map { $0 * c.quantity }, current: px * c.quantity,
-                                          dayChange: prices[c.coinId]?.change24h.map { let v = px * c.quantity; return v - v / (1 + $0 / 100) }))
+                                          dayChange: prices[c.coinId]?.change24h.map { let v = px * c.quantity; return v - v / (1 + $0 / 100) },
+                                          unitPrice: px, averagePrice: c.averagePriceBRL))
                 }
             } catch { errors.append("cripto: \(error)") }
         }
