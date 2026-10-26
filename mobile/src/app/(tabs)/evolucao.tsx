@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Card, Measure, Screen, SectionTitle, Txt, colorFor } from '../components/ui';
-import { BenchPoint, CDIDailyRate, HistoryRange, benchmarkSeries, cdiRates, gainPct, inRange, parseISO, pct, selicAnnual, trMonthly } from '../core';
-import { usePilinha } from '../lib/store';
-import { T, S, R } from '../lib/theme';
+import { Card, Measure, Screen, SectionTitle, Txt, colorFor } from '../../components/ui';
+import { BenchPoint, CDIDailyRate, HistoryRange, benchmarkSeries, cdiRates, gainPct, inRange, parseISO, pct, selicAnnual, trMonthly } from '../../core';
+import { usePilinha } from '../../lib/store';
+import { T, S, R } from '../../lib/theme';
 const ranges: HistoryRange[] = ['Dia', 'Semana', 'Mês', 'Tudo'];
 const C = { carteira: T.pink, cdi: '#B58BC7', poupanca: '#A08F5A' };
 const line = (ys: number[], W: number, H: number, min: number, span: number) =>

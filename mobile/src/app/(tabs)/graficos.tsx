@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Txt } from '../components/ui';
-import { isTradingViewURL, tradingViewSymbol, tradingViewURL } from '../core';
-import { usePilinha } from '../lib/store';
-import { T, S, R } from '../lib/theme';
+import { Txt } from '../../components/ui';
+import { isTradingViewURL, tradingViewSymbol, tradingViewURL } from '../../core';
+import { usePilinha } from '../../lib/store';
+import { T, S, R } from '../../lib/theme';
 // TradingView oficial. Login por e-mail e senha: o Google bloqueia login dentro de webview
 // (se a conta foi criada com Google, use "Esqueci a senha" no TradingView para criar uma senha).
 export default function Graficos() {

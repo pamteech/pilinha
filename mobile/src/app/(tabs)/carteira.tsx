@@ -1,8 +1,8 @@
 import { View } from 'react-native';
-import { Card, SectionTitle, Screen, Txt, AssetRow, money } from '../components/ui';
-import { groupItems } from '../core';
-import { usePilinha } from '../lib/store';
-import { S } from '../lib/theme';
+import { Card, SectionTitle, Screen, Txt, AssetRow, money } from '../../components/ui';
+import { groupItems } from '../../core';
+import { usePilinha } from '../../lib/store';
+import { S } from '../../lib/theme';
 const cat: Record<string, string> = { caixinha: 'Caixinha', cdb: 'CDB', tesouro: 'Tesouro', lci: 'LCI', lca: 'LCA', acao: 'Ação', fii: 'FII', cripto: 'Cripto' };
 export default function Carteira() {
   const { snap, hidden } = usePilinha();

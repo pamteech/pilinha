@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { Card, Eyebrow, Screen, SectionTitle, Txt, money } from '../components/ui';
-import { CashDividend, defaultFetcher, dividendCalendar, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA, CalendarEntry } from '../core';
-import { usePilinha } from '../lib/store';
-import { T, S } from '../lib/theme';
+import { Card, Eyebrow, Screen, SectionTitle, Txt, money } from '../../components/ui';
+import { CashDividend, defaultFetcher, dividendCalendar, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA, CalendarEntry } from '../../core';
+import { usePilinha } from '../../lib/store';
+import { T, S } from '../../lib/theme';
 const Row = ({ e, hidden, last }: { e: CalendarEntry; hidden: boolean; last: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderBottomWidth: last ? 0 : 1, borderBottomColor: T.line }}>
     <View style={{ width: 64 }}><Txt style={{ fontWeight: '600', fontSize: 14 }}>{toBR(e.date).slice(0, 5)}</Txt><Txt dim style={{ fontSize: 11 }}>{toBR(e.date).slice(6)}</Txt></View>

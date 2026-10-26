@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
-import { Card, Screen, Txt } from '../components/ui';
-import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../core';
+import { Card, Screen, Txt } from '../../components/ui';
+import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../../core';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { usePilinha } from '../lib/store';
-import { T, S, R } from '../lib/theme';
-import { SectionTitle } from '../components/ui';
+import { usePilinha } from '../../lib/store';
+import { T, S, R } from '../../lib/theme';
+import { SectionTitle } from '../../components/ui';
 const num = parseNumberBR;
 const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance="light" {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
 const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
