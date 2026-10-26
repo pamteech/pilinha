@@ -39,13 +39,14 @@ export function lastDays(h: HistoryPoint[], n = 7, now: Date = new Date()): Hist
   const cut = new Date(now.getTime() - n * 86_400_000).toISOString().slice(0, 10);
   return h.filter(p => p.day > cut);
 }
-/** Selo e frase do humor do porquinho. */
-export function moodBadge(m: Mood): { emoji: string; text: string } {
+/** Ícone (MaterialCommunityIcons), tom e frase do humor do porquinho. */
+export type MoodTone = 'up' | 'down' | 'neutral';
+export function moodBadge(m: Mood): { icon: string; tone: MoodTone; text: string } {
   switch (m) {
-    case 'feliz': case 'ganhou': return { emoji: '😄', text: 'Dia positivo, oinc!' };
-    case 'triste': return { emoji: '😢', text: 'Dia no vermelho…' };
-    case 'dormindo': return { emoji: '💤', text: 'Buscando cotações…' };
-    case 'erro': return { emoji: '😵', text: 'Algo deu errado' };
-    default: return { emoji: '🙂', text: 'Dia estável' };
+    case 'feliz': case 'ganhou': return { icon: 'trending-up', tone: 'up', text: 'Dia positivo, oinc!' };
+    case 'triste': return { icon: 'trending-down', tone: 'down', text: 'Dia no vermelho…' };
+    case 'dormindo': return { icon: 'sync', tone: 'neutral', text: 'Buscando cotações…' };
+    case 'erro': return { icon: 'alert-circle-outline', tone: 'down', text: 'Algo deu errado' };
+    default: return { icon: 'trending-neutral', tone: 'neutral', text: 'Dia estável' };
   }
 }

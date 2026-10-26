@@ -8,7 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { usePilinha } from '../lib/store';
 import { T } from '../lib/theme';
 const num = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
-const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} {...p} style={{ color: T.text, backgroundColor: T.bg, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.line }} />;
+const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.line }} />;
 const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, padding: 10, borderRadius: 10, alignItems: 'center' }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
 const Row = ({ label, onDelete }: { label: string; onDelete: () => void }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Txt>{label}</Txt><Pressable onPress={onDelete}><Txt style={{ color: T.down }}>remover</Txt></Pressable></View>);

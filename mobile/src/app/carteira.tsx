@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Card, Screen, Txt, AssetRow, money } from '../components/ui';
+import { Card, Eyebrow, Screen, Txt, AssetRow, money } from '../components/ui';
 import { groupItems } from '../core';
 import { usePilinha } from '../lib/store';
 import { T } from '../lib/theme';
@@ -12,7 +12,7 @@ export default function Carteira() {
       {groupItems(snap.items).map(g => (
         <Card key={g.key} style={{ paddingVertical: 10, gap: 0 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingBottom: 4 }}>
-            <Txt style={{ color: T.pink, fontWeight: '700', fontSize: 16 }}>{g.title}</Txt>
+            <Eyebrow color={T.text}>{g.title}</Eyebrow>
             <Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}</Txt>
           </View>
           {g.items.map(i => <AssetRow key={i.category + i.name} item={i} hidden={hidden} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : undefined} />)}

@@ -25,7 +25,7 @@ describe('Insights', () => {
     expect(lastDays(h, 7, new Date('2026-10-26T12:00:00Z')).map(p => p.day)).toEqual(['2026-10-20', '2026-10-26']);
   });
   test('humor do porquinho', () => {
-    expect(moodBadge(moodFrom(1, false, false)).emoji).toBe('😄'); expect(moodBadge(moodFrom(-1, false, false)).emoji).toBe('😢');
-    expect(moodBadge(moodFrom(null, false, false)).emoji).toBe('🙂');
+    expect(moodBadge(moodFrom(1, false, false))).toMatchObject({ icon: 'trending-up', tone: 'up' }); expect(moodBadge(moodFrom(-1, false, false))).toMatchObject({ icon: 'trending-down', tone: 'down' });
+    expect(moodBadge(moodFrom(null, false, false))).toMatchObject({ icon: 'trending-neutral', tone: 'neutral' });
   });
 });
