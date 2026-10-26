@@ -20,7 +20,9 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = await S.loadToken(); setHT(!!token);
       const s = await snapshot(p, { brapiToken: token }); setSnap(s); snapRef.current = s; syncExtensions(s, hRef.current);
-      const h = record(await S.loadHistory(), total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h);
+      // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
+      const old = await S.loadHistory();
+      if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } finally { setL(false); }
   }, []);
   useEffect(() => { (async () => { const h = await S.loadHidden(); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); await run(p); })(); }, [run]);

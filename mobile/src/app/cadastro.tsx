@@ -6,12 +6,13 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { usePilinha } from '../lib/store';
-import { T } from '../lib/theme';
+import { T, S, R } from '../lib/theme';
+import { SectionTitle } from '../components/ui';
 const num = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
-const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.line }} />;
-const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, padding: 10, borderRadius: 10, alignItems: 'center' }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
+const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
+const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
 const Row = ({ label, onDelete }: { label: string; onDelete: () => void }) => (
-  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Txt>{label}</Txt><Pressable onPress={onDelete}><Txt style={{ color: T.down }}>remover</Txt></Pressable></View>);
+  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.xs }}><Txt style={{ flex: 1 }}>{label}</Txt><Pressable onPress={onDelete} hitSlop={8}><Txt style={{ color: T.down, fontWeight: '600' }}>remover</Txt></Pressable></View>);
 const kinds = Object.keys(kindLabel) as FixedIncomeKind[];
 export default function Cadastro() {
   const { portfolio: p, update, setToken, hasToken } = usePilinha();
@@ -50,23 +51,23 @@ export default function Cadastro() {
     save({ ...p, fixedIncome: list }); setFi({ ...fi, date: '', amount: '' });
   };
   const addSt = () => {
-    const q = num(st.qty), avg = st.avg ? num(st.avg) : undefined, t = st.ticker.trim().toUpperCase();
+    const t = st.ticker.trim().toUpperCase(), q = num(st.qty), avg = st.avg ? num(st.avg) : p.stocks.find(s => s.ticker === t)?.averagePrice; // sem PM digitado, mantém o anterior
     if (!/^[A-Z0-9]{4,7}$/.test(t) || !(q > 0)) return bad('Código (ex. PETR4, MXRF11) e quantidade.');
     save({ ...p, stocks: [...p.stocks.filter(s => s.ticker !== t), { ticker: t, quantity: q, averagePrice: avg }] }); setSt({ ticker: '', qty: '', avg: '' });
   };
   const addBtc = () => {
     const q = num(btc.qty); if (!(q > 0)) return bad('Quantidade de bitcoin (ex. 0,0015).');
-    save({ ...p, crypto: [...p.crypto.filter(c => c.coinId !== 'bitcoin'), { coinId: 'bitcoin', symbol: 'BTC', quantity: q, averagePriceBRL: btc.avg ? num(btc.avg) : undefined }] }); setBtc({ qty: '', avg: '' });
+    save({ ...p, crypto: [...p.crypto.filter(c => c.coinId !== 'bitcoin'), { coinId: 'bitcoin', symbol: 'BTC', quantity: q, averagePriceBRL: btc.avg ? num(btc.avg) : p.crypto.find(c => c.coinId === 'bitcoin')?.averagePriceBRL }] }); setBtc({ qty: '', avg: '' });
   };
   return (
     <Screen>
       <Txt dim>Só leitura: nada aqui conecta ao banco. Os dados ficam só neste iPhone.</Txt>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Renda fixa (caixinha, CDB, Tesouro, LCI/LCA)</Txt>
+        <SectionTitle first>Renda fixa (caixinha, CDB, Tesouro, LCI/LCA)</SectionTitle>
         {p.fixedIncome.map(a => <Row key={a.name} label={`${a.name} · ${kindLabel[a.kind]} · ${a.cdiPercent}% CDI · ${a.deposits.length} aporte(s)`} onDelete={() => save({ ...p, fixedIncome: p.fixedIncome.filter(x => x.name !== a.name) })} />)}
         <Input placeholder="Nome (ex. Caixinha Viagem)" value={fi.name} onChangeText={name => setFi({ ...fi, name })} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {kinds.map(k => <Pressable key={k} onPress={() => setFi({ ...fi, kind: k })} style={{ padding: 6, borderRadius: 8, backgroundColor: fi.kind === k ? T.pink : T.bg }}><Txt style={{ color: fi.kind === k ? T.bg : T.text }}>{kindLabel[k]}</Txt></Pressable>)}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+          {kinds.map(k => <Pressable key={k} onPress={() => setFi({ ...fi, kind: k })} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: fi.kind === k ? T.pink : T.line, backgroundColor: fi.kind === k ? T.pink : T.bg }}><Txt style={{ color: fi.kind === k ? T.bg : T.text }}>{kindLabel[k]}</Txt></Pressable>)}
         </View>
         <Input placeholder="% do CDI (ex. 100)" keyboardType="decimal-pad" value={fi.cdi} onChangeText={cdi => setFi({ ...fi, cdi })} />
         <Input placeholder="Data do aporte AAAA-MM-DD" value={fi.date} onChangeText={date => setFi({ ...fi, date })} />
@@ -74,7 +75,7 @@ export default function Cadastro() {
         <Btn title="Adicionar aporte" onPress={addFI} />
       </Card>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Ações e FIIs</Txt>
+        <SectionTitle first>Ações e FIIs</SectionTitle>
         {p.stocks.map(s => <Row key={s.ticker} label={s.ticker} onDelete={() => save({ ...p, stocks: p.stocks.filter(x => x.ticker !== s.ticker) })} />)}
         <Input placeholder="Código (ex. PETR4)" autoCapitalize="characters" value={st.ticker} onChangeText={ticker => setSt({ ...st, ticker })} />
         <Input placeholder="Quantidade" keyboardType="decimal-pad" value={st.qty} onChangeText={qty => setSt({ ...st, qty })} />
@@ -82,14 +83,14 @@ export default function Cadastro() {
         <Btn title="Salvar ação" onPress={addSt} />
       </Card>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Bitcoin</Txt>
+        <SectionTitle first>Bitcoin</SectionTitle>
         {p.crypto.map(c => <Row key={c.coinId} label={c.symbol} onDelete={() => save({ ...p, crypto: p.crypto.filter(x => x.coinId !== c.coinId) })} />)}
         <Input placeholder="Quantidade (ex. 0,0015)" keyboardType="decimal-pad" value={btc.qty} onChangeText={qty => setBtc({ ...btc, qty })} />
         <Input placeholder="Preço médio em R$ (opcional)" keyboardType="decimal-pad" value={btc.avg} onChangeText={avg => setBtc({ ...btc, avg })} />
         <Btn title="Salvar bitcoin" onPress={addBtc} />
       </Card>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Proventos lançados à mão</Txt>
+        <SectionTitle first>Proventos lançados à mão</SectionTitle>
         <Txt dim>O valor que caiu na conta. Para o código, o lançamento manual substitui o da brapi.</Txt>
         {(p.manualDividends ?? []).map((m, i) => <Row key={i} label={`${m.ticker} · ${m.date}`} onDelete={() => save({ ...p, manualDividends: (p.manualDividends ?? []).filter((_, j) => j !== i) })} />)}
         <Input placeholder="Código (ex. MXRF11)" autoCapitalize="characters" value={dv.ticker} onChangeText={ticker => setDv({ ...dv, ticker })} />
@@ -98,13 +99,13 @@ export default function Cadastro() {
         <Btn title="Adicionar provento" onPress={addDv} />
       </Card>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Levar a carteira entre Mac e iPhone</Txt>
+        <SectionTitle first>Levar a carteira entre Mac e iPhone</SectionTitle>
         <Txt dim>Mesmo formato do portfolio.json do Mac (~/.notchinvest). O arquivo tem os valores: mande só por AirDrop ou guarde no Arquivos.</Txt>
         <Btn title="Exportar arquivo" onPress={exportar} />
         <Btn title="Importar arquivo" onPress={importar} />
       </Card>
       <Card>
-        <Txt style={{ fontWeight: '700' }}>Token da brapi (opcional, só para proventos)</Txt>
+        <SectionTitle first>Token da brapi (opcional, só para proventos)</SectionTitle>
         <Txt dim>{hasToken ? 'Token salvo no Keychain.' : 'Sem token: cotações pelo Yahoo Finance.'}</Txt>
         <Input placeholder="Colar token" secureTextEntry value={tok} onChangeText={setTok} />
         <Btn title={tok ? 'Salvar token' : 'Apagar token'} onPress={() => { setToken(tok); setTok(''); }} />

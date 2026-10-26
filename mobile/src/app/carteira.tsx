@@ -1,8 +1,8 @@
 import { View } from 'react-native';
-import { Card, Eyebrow, Screen, Txt, AssetRow, money } from '../components/ui';
+import { Card, SectionTitle, Screen, Txt, AssetRow, money } from '../components/ui';
 import { groupItems } from '../core';
 import { usePilinha } from '../lib/store';
-import { T } from '../lib/theme';
+import { S } from '../lib/theme';
 const cat: Record<string, string> = { caixinha: 'Caixinha', cdb: 'CDB', tesouro: 'Tesouro', lci: 'LCI', lca: 'LCA', acao: 'Ação', fii: 'FII', cripto: 'Cripto' };
 export default function Carteira() {
   const { snap, hidden } = usePilinha();
@@ -10,12 +10,9 @@ export default function Carteira() {
   return (
     <Screen>
       {groupItems(snap.items).map(g => (
-        <Card key={g.key} style={{ paddingVertical: 10, gap: 0 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingBottom: 4 }}>
-            <Eyebrow color={T.text}>{g.title}</Eyebrow>
-            <Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}</Txt>
-          </View>
-          {g.items.map(i => <AssetRow key={i.category + i.name} item={i} hidden={hidden} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : undefined} />)}
+        <Card key={g.key} style={{ paddingBottom: S.xs, gap: 0 }}>
+          <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}</Txt>}>{g.title}</SectionTitle>
+          {g.items.map((i, n) => <AssetRow key={i.category + i.name} item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : undefined} />)}
         </Card>
       ))}
     </Screen>

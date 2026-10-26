@@ -3,12 +3,12 @@ import Svg, { Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Pig } from '../components/Pig';
-import { Card, Eyebrow, Txt, colorFor, money } from '../components/ui';
+import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../components/ui';
 import { Mood, lastDays, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, shouldCelebrate, total, totalNet } from '../core';
 import { usePilinha } from '../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../lib/widget';
 import { isTradingHours } from '../core';
-import { T } from '../lib/theme';
+import { T, S, R } from '../lib/theme';
 export default function Home() {
   const { snap, loading, refresh, hidden, setHidden, portfolio, history } = usePilinha();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
@@ -25,18 +25,19 @@ export default function Home() {
   };
   const empty = !portfolio.fixedIncome.length && !portfolio.stocks.length && !portfolio.crypto.length;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={{ padding: 20, gap: 14, alignItems: 'stretch' }}
+    <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={T.pink} />}>
       <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge /></View>
       <Pressable onPress={() => setHidden(!hidden)}>
-        <View style={{ backgroundColor: T.navy, borderRadius: 18, padding: 18, gap: 6 }}>
+        <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
           <Eyebrow>Seu patrimônio {hidden ? '· toque para mostrar' : ''}</Eyebrow>
           <Txt style={{ color: T.onDark, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 }}>{money(tot, hidden)}</Txt>
           {snap && <Txt style={{ color: T.onDarkDim, fontSize: 13 }}>Líquido se resgatar hoje: {money(totalNet(snap), hidden)}</Txt>}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+          <View style={{ flexDirection: 'row', gap: S.md, marginTop: S.md }}>
             <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
               <Eyebrow color={T.onDarkDim}>Hoje</Eyebrow>
-              <Txt style={{ color: d == null ? T.onDark : d >= 0 ? T.upOnDark : T.downOnDark, fontWeight: '700' }}>{pct(d)}{snap && !hidden ? ` · ${money(dayChange(snap), false)}` : ''}</Txt>
+              <Txt style={{ color: d == null ? T.onDark : d >= 0 ? T.upOnDark : T.downOnDark, fontWeight: '700' }}>{pct(d)}</Txt>
+              {snap && !hidden && <Txt style={{ color: T.onDarkDim, fontSize: 12, lineHeight: 16 }}>{money(dayChange(snap), false)}</Txt>}
             </View>
             {snap?.cdiAnnual != null && <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
               <Eyebrow color={T.onDarkDim}>CDI</Eyebrow>
@@ -52,40 +53,40 @@ export default function Home() {
         </Pressable>
       )}
       {empty && <Card><Txt>Cadastre a carteira na aba Cadastro. Tudo fica só neste iPhone.</Txt></Card>}
+      {snap?.errors.map(e => <View key={e} style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center', paddingHorizontal: S.xs }}><MaterialCommunityIcons name="alert-outline" size={16} color={T.down} /><Txt style={{ color: T.down, fontSize: 13, flex: 1 }}>{e}</Txt></View>)}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
-      {snap?.errors.map(e => <View key={e} style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}><MaterialCommunityIcons name="alert-outline" size={16} color={T.down} /><Txt style={{ color: T.down, fontSize: 13, flex: 1 }}>{e}</Txt></View>)}
       {snap && <Txt dim style={{ textAlign: 'center', fontSize: 12 }}>Atualizado {snap.updatedAt.toLocaleTimeString('pt-BR')} · puxe para atualizar</Txt>}
     </ScrollView>
   );
 }
 
 function Week({ points, hidden }: { points: { total: number; invested: number }[]; hidden: boolean }) {
-  const W = 330, H = 70;
+  const H = 72;
   const ys = points.map(p => (hidden ? (p.invested > 0 ? p.total / p.invested : 0) : p.total));
   const min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1;
-  const d = ys.map((y, i) => `${i ? 'L' : 'M'}${(i / Math.max(1, ys.length - 1)) * W},${H - ((y - min) / span) * (H - 8) - 4}`).join(' ');
+  const path = (W: number) => ys.map((y, i) => `${i ? 'L' : 'M'}${2 + (i / Math.max(1, ys.length - 1)) * (W - 4)},${H - ((y - min) / span) * (H - 8) - 4}`).join(' ');
   const ch = ys.length >= 2 && ys[0] > 0 ? (ys[ys.length - 1] / ys[0] - 1) * 100 : null;
   return (
     <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Eyebrow color={T.text}>Últimos 7 dias</Eyebrow><Txt style={{ color: colorFor(ch) }}>{pct(ch)}</Txt></View>
+      <SectionTitle first right={<Txt style={{ color: colorFor(ch), fontWeight: '600' }}>{pct(ch)}</Txt>}>Últimos 7 dias</SectionTitle>
       {ys.length < 2 ? <Txt dim>O gráfico aparece a partir do segundo dia de uso.</Txt>
-        : <Svg width={W} height={H}><Path d={d} stroke={colorFor(ch)} strokeWidth={3} fill="none" strokeLinejoin="round" /></Svg>}
+        : <Measure height={H}>{W => <Svg width={W} height={H}><Path d={path(W)} stroke={colorFor(ch)} strokeWidth={3} fill="none" strokeLinejoin="round" strokeLinecap="round" /></Svg>}</Measure>}
     </Card>
   );
 }
 function Movers({ m }: { m: { up: Mover[]; down: Mover[] } }) {
   if (!m.up.length && !m.down.length) return null;
   const col = (title: string, xs: Mover[], up: boolean) => (
-    <View style={{ flex: 1, gap: 4 }}>
+    <View style={{ flex: 1, gap: S.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MaterialCommunityIcons name={up ? 'arrow-up-bold' : 'arrow-down-bold'} size={14} color={up ? T.up : T.down} /><Txt dim style={{ fontSize: 13 }}>{title}</Txt></View>
-      {xs.length ? xs.map(x => <View key={x.name} style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Txt style={{ fontWeight: '600' }}>{x.name}</Txt><Txt style={{ color: colorFor(x.pct) }}>{pct(x.pct)}</Txt></View>) : <Txt dim>—</Txt>}
+      {xs.length ? xs.map(x => <View key={x.name} style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Txt style={{ fontWeight: '600' }}>{x.name}</Txt><Txt style={{ color: colorFor(x.pct), textAlign: 'right' }}>{pct(x.pct)}</Txt></View>) : <Txt dim>—</Txt>}
     </View>
   );
   return (
     <Card>
-      <Eyebrow color={T.text}>Maiores altas e quedas do dia</Eyebrow>
-      <View style={{ flexDirection: 'row', gap: 16 }}>{col('Altas', m.up, true)}{col('Quedas', m.down, false)}</View>
+      <SectionTitle first>Maiores altas e quedas do dia</SectionTitle>
+      <View style={{ flexDirection: 'row', gap: S.xl }}>{col('Altas', m.up, true)}{col('Quedas', m.down, false)}</View>
     </Card>
   );
 }
