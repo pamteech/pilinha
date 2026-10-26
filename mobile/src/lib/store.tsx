@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
+import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
 import * as S from './storage';
 import { syncExtensions } from './widget';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
@@ -15,15 +15,20 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const setHidden = (b: boolean) => { hRef.current = b; setHiddenState(b); S.saveHidden(b); if (snapRef.current) syncExtensions(snapRef.current, b); };
   const snapRef = useRef<Snapshot | null>(null);
   const pRef = useRef(portfolio); pRef.current = portfolio;
+  // Só o refresh mais recente vale: um mais lento (ex. do timer) não sobrescreve a carteira recém-editada.
+  const gate = useRef(latestGate()).current;
   const run = useCallback(async (p: Portfolio) => {
+    const my = gate.next();
     setL(true);
     try {
       const token = await S.loadToken(); setHT(!!token);
-      const s = await snapshot(p, { brapiToken: token }); setSnap(s); snapRef.current = s; syncExtensions(s, hRef.current);
+      const s = await snapshot(p, { brapiToken: token });
+      if (!gate.isLatest(my)) return;
+      setSnap(s); snapRef.current = s; syncExtensions(s, hRef.current);
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
       const old = await S.loadHistory();
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
-    } finally { setL(false); }
+    } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
   useEffect(() => { (async () => { const h = await S.loadHidden(); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); await run(p); })(); }, [run]);
   useEffect(() => { const t = setInterval(() => run(pRef.current), 5 * 60_000); return () => clearInterval(t); }, [run]);

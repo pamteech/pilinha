@@ -2,12 +2,13 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text as RNText, TextProps, TextStyle, View, ViewStyle } from 'react-native';
 import { T, S, R, fontFor, lineHeightFor } from '../lib/theme';
 // Text com Manrope (a família muda conforme o peso).
-export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
+export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText maxFontSizeMultiplier={1.3} {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
 export const Eyebrow = ({ children, color = T.champ }: { children: React.ReactNode; color?: string }) => (
   <Text style={{ fontSize: 11, letterSpacing: 2.2, textTransform: 'uppercase', color, fontWeight: '600' }}>{children}</Text>);
 export const screenPad = { paddingHorizontal: S.lg, paddingTop: S.lg, paddingBottom: S.xxl, gap: S.lg } as const;
 export const Screen = ({ children }: { children: React.ReactNode }) => (
-  <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}>{children}</ScrollView>);
+  <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
+    keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>{children}</ScrollView>);
 // Título de seção dentro de card: mais espaço acima do que abaixo.
 export const SectionTitle = ({ children, right, first }: { children: React.ReactNode; right?: React.ReactNode; first?: boolean }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: first ? 0 : S.sm, marginBottom: S.xs }}>

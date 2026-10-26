@@ -26,7 +26,8 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
   const dates = p.fixedIncome.flatMap(a => a.deposits).map(d => parseISO(d.date)).filter((d): d is Date => !!d);
   if (dates.length) {
     try {
-      const rates = await cdiRates(new Date(Math.min(...dates.map(d => d.getTime()))), now, f);
+      // Aporte com data futura não pode virar início da consulta (o BCB recusa e some toda a renda fixa).
+      const rates = await cdiRates(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f);
       const last = rates[rates.length - 1];
       cdiAnnual = last ? annualized(last.percent) : null;
       for (const a of p.fixedIncome) {

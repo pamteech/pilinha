@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 import { Card, Screen, Txt } from '../components/ui';
-import { FixedIncomeKind, Portfolio, kindLabel, parseISO, parsePortfolio, serializePortfolio } from '../core';
+import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../core';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { usePilinha } from '../lib/store';
 import { T, S, R } from '../lib/theme';
 import { SectionTitle } from '../components/ui';
-const num = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
-const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
+const num = parseNumberBR;
+const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance="light" {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
 const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
 const Row = ({ label, onDelete }: { label: string; onDelete: () => void }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.xs }}><Txt style={{ flex: 1 }}>{label}</Txt><Pressable onPress={onDelete} hitSlop={8}><Txt style={{ color: T.down, fontWeight: '600' }}>remover</Txt></Pressable></View>);
@@ -23,8 +23,8 @@ export default function Cadastro() {
   const [tok, setTok] = useState('');
   const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
   const addDv = () => {
-    const t = dv.ticker.trim().toUpperCase(), a = num(dv.amount);
-    if (!/^[A-Z0-9]{4,7}$/.test(t) || !parseISO(dv.date) || !(a > 0)) return bad('Código, data (AAAA-MM-DD) e valor que caiu na conta.');
+    const t = normTicker(dv.ticker), a = num(dv.amount);
+    if (!validTicker(t) || !validPastDate(dv.date) || !isPositive(a)) return bad('Código (ex. MXRF11), data até hoje (AAAA-MM-DD) e valor que caiu na conta.');
     save({ ...p, manualDividends: [...(p.manualDividends ?? []), { ticker: t, date: dv.date, amount: a }] }); setDv({ ticker: '', date: '', amount: '' });
   };
   const exportar = async () => {
@@ -44,19 +44,21 @@ export default function Cadastro() {
   const bad = (m: string) => Alert.alert('Confere aí', m);
   const addFI = () => {
     const amount = num(fi.amount), cdi = num(fi.cdi);
-    if (!fi.name.trim() || !parseISO(fi.date) || !(amount > 0) || !(cdi > 0)) return bad('Nome, data (AAAA-MM-DD), valor e % do CDI.');
-    const list = [...p.fixedIncome]; const i = list.findIndex(a => a.name === fi.name.trim());
+    if (!fi.name.trim() || !validPastDate(fi.date) || !isPositive(amount) || !isPositive(cdi)) return bad('Nome, data até hoje (AAAA-MM-DD), valor e % do CDI.');
+    const list = [...p.fixedIncome]; const i = list.findIndex(a => a.name.trim().toLowerCase() === fi.name.trim().toLowerCase());
     if (i >= 0) list[i] = { ...list[i], deposits: [...list[i].deposits, { date: fi.date, amount }] };
     else list.push({ name: fi.name.trim(), kind: fi.kind, cdiPercent: cdi, deposits: [{ date: fi.date, amount }] });
     save({ ...p, fixedIncome: list }); setFi({ ...fi, date: '', amount: '' });
   };
   const addSt = () => {
-    const t = st.ticker.trim().toUpperCase(), q = num(st.qty), avg = st.avg ? num(st.avg) : p.stocks.find(s => s.ticker === t)?.averagePrice; // sem PM digitado, mantém o anterior
-    if (!/^[A-Z0-9]{4,7}$/.test(t) || !(q > 0)) return bad('Código (ex. PETR4, MXRF11) e quantidade.');
-    save({ ...p, stocks: [...p.stocks.filter(s => s.ticker !== t), { ticker: t, quantity: q, averagePrice: avg }] }); setSt({ ticker: '', qty: '', avg: '' });
+    const t = normTicker(st.ticker), q = num(st.qty), avg = st.avg ? num(st.avg) : p.stocks.find(s => s.ticker.toUpperCase() === t)?.averagePrice; // sem PM digitado, mantém o anterior
+    if (avg != null && !isPositive(avg)) return bad('Preço médio inválido (ex. 32,10).');
+    if (!validTicker(t) || !isPositive(q)) return bad('Código (ex. PETR4, MXRF11) e quantidade.');
+    save({ ...p, stocks: [...p.stocks.filter(s => s.ticker.toUpperCase() !== t), { ticker: t, quantity: q, averagePrice: avg }] }); setSt({ ticker: '', qty: '', avg: '' });
   };
   const addBtc = () => {
-    const q = num(btc.qty); if (!(q > 0)) return bad('Quantidade de bitcoin (ex. 0,0015).');
+    const q = num(btc.qty); if (!isPositive(q)) return bad('Quantidade de bitcoin (ex. 0,0015).');
+    if (btc.avg && !isPositive(num(btc.avg))) return bad('Preço médio inválido.');
     save({ ...p, crypto: [...p.crypto.filter(c => c.coinId !== 'bitcoin'), { coinId: 'bitcoin', symbol: 'BTC', quantity: q, averagePriceBRL: btc.avg ? num(btc.avg) : p.crypto.find(c => c.coinId === 'bitcoin')?.averagePriceBRL }] }); setBtc({ qty: '', avg: '' });
   };
   return (

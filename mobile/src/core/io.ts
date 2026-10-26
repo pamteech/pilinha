@@ -8,13 +8,25 @@ export function parsePortfolio(text: string): Portfolio {
   try { j = JSON.parse(text); } catch { throw new Error('O arquivo não é um JSON válido.'); }
   if (!j || typeof j !== 'object') throw new Error('Arquivo sem carteira.');
   const fixedIncome = (j.fixedIncome ?? []).map((a: any, i: number) => {
-    if (typeof a?.name !== 'string' || !kinds.includes(a.kind) || !isNum(a.cdiPercent) || !Array.isArray(a.deposits)) throw new Error(`Renda fixa nº ${i + 1} inválida.`);
-    for (const d of a.deposits) if (!parseISO(String(d?.date)) || !isNum(d?.amount)) throw new Error(`Aporte inválido em "${a.name}".`);
+    if (typeof a?.name !== 'string' || !kinds.includes(a.kind) || !isNum(a.cdiPercent) || a.cdiPercent <= 0 || !Array.isArray(a.deposits)) throw new Error(`Renda fixa nº ${i + 1} inválida.`);
+    for (const d of a.deposits) if (!parseISO(String(d?.date)) || !isNum(d?.amount) || d.amount <= 0) throw new Error(`Aporte inválido em "${a.name}".`);
     return a;
   });
-  const stocks = (j.stocks ?? []).map((s: any) => { if (typeof s?.ticker !== 'string' || !isNum(s.quantity)) throw new Error('Ação inválida.'); return s; });
-  const crypto = (j.crypto ?? []).map((c: any) => { if (typeof c?.coinId !== 'string' || typeof c?.symbol !== 'string' || !isNum(c.quantity)) throw new Error('Cripto inválida.'); return c; });
-  const manualDividends = (j.manualDividends ?? []).map((m: any) => { if (typeof m?.ticker !== 'string' || !parseISO(String(m.date)) || !isNum(m.amount)) throw new Error('Provento inválido.'); return m; });
+  // Ticker em maiúsculas, quantidade > 0 e sem repetidos (o repetido somava duas vezes e quebrava a lista).
+  const seen = new Map<string, any>();
+  for (const s of j.stocks ?? []) {
+    if (typeof s?.ticker !== 'string' || !isNum(s.quantity) || s.quantity <= 0) throw new Error(`Ação inválida${typeof s?.ticker === 'string' ? ` (${s.ticker})` : ''}.`);
+    if (s.averagePrice != null && (!isNum(s.averagePrice) || s.averagePrice < 0)) throw new Error(`Preço médio inválido em ${s.ticker}.`);
+    const t = s.ticker.trim().toUpperCase(), prev = seen.get(t);
+    if (prev) {
+      const q = prev.quantity + s.quantity;
+      const avg = prev.averagePrice != null && s.averagePrice != null ? (prev.averagePrice * prev.quantity + s.averagePrice * s.quantity) / q : prev.averagePrice ?? s.averagePrice;
+      seen.set(t, { ...prev, quantity: q, averagePrice: avg });
+    } else seen.set(t, { ...s, ticker: t });
+  }
+  const stocks = [...seen.values()];
+  const crypto = (j.crypto ?? []).map((c: any) => { if (typeof c?.coinId !== 'string' || typeof c?.symbol !== 'string' || !isNum(c.quantity) || c.quantity <= 0) throw new Error('Cripto inválida.'); return c; });
+  const manualDividends = (j.manualDividends ?? []).map((m: any) => { if (typeof m?.ticker !== 'string' || !parseISO(String(m.date)) || !isNum(m.amount)) throw new Error('Provento inválido.'); return { ...m, ticker: m.ticker.trim().toUpperCase() }; });
   return { ...j, fixedIncome, stocks, crypto, manualDividends };
 }
 export const serializePortfolio = (p: Portfolio) => JSON.stringify(p, null, 2);

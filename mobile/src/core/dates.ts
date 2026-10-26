@@ -3,7 +3,9 @@ const OFFSET = 3 * 3600_000;
 export function parseISO(s: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.slice(0, 10));
   if (!m) return null;
-  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]) + OFFSET);
+  const y = +m[1], mo = +m[2], d = +m[3], t = Date.UTC(y, mo - 1, d);
+  const x = new Date(t); if (x.getUTCFullYear() !== y || x.getUTCMonth() !== mo - 1 || x.getUTCDate() !== d) return null; // ex.: 2026-02-31
+  return new Date(t + OFFSET);
 }
 export function parseBR(s: string): Date | null {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);

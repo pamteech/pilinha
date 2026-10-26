@@ -9,7 +9,8 @@ export async function loadPortfolio(): Promise<Portfolio> {
 export const savePortfolio = (p: Portfolio) => AsyncStorage.setItem(K.portfolio, JSON.stringify(p));
 export async function loadHistory(): Promise<HistoryPoint[]> { try { return JSON.parse((await AsyncStorage.getItem(K.history)) ?? '[]'); } catch { return []; } }
 export const saveHistory = (h: HistoryPoint[]) => AsyncStorage.setItem(K.history, JSON.stringify(h));
-export const loadToken = () => SecureStore.getItemAsync(K.token);
+// Keychain pode falhar (aparelho bloqueado, web): sem token, segue pelo Yahoo em vez de travar o refresh.
+export const loadToken = async () => { try { return await SecureStore.getItemAsync(K.token); } catch { return null; } };
 export const saveToken = (t: string) => (t ? SecureStore.setItemAsync(K.token, t) : SecureStore.deleteItemAsync(K.token));
 export const loadHidden = async () => (await AsyncStorage.getItem(K.hidden)) === '1';
 export const saveHidden = (b: boolean) => AsyncStorage.setItem(K.hidden, b ? '1' : '0');
