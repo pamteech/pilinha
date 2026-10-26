@@ -103,7 +103,7 @@ struct EditorView: View {
     // MARK: ações
     var stockSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("Ticker da B3 (PETR4, MXRF11…). Preço médio é opcional: aparece como "PM" ao lado da cotação do momento (verde se acima, vermelho se abaixo). Cotação de qualquer ação/FII/ETF funciona sem token (Yahoo Finance).")
+            hint("Ticker da B3 (PETR4, MXRF11…). Preço médio é opcional: aparece como PM ao lado da cotação do momento (verde se acima, vermelho se abaixo). Cotação de qualquer ação/FII/ETF funciona sem token (Yahoo Finance).")
             ForEach($state.draft.stocks) { $s in
                 HStack {
                     TextField("Ticker", text: $s.ticker).frame(width: 90)
