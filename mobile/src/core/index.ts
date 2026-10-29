@@ -1,5 +1,5 @@
 export * from './types'; export * from './dates'; export * from './tax'; export * from './cdi'; export * from './mood';
 export * from './dividends'; export * from './quotes'; export * from './engine'; export * from './history'; export * from './format';
-export * from './io';
+export * from './io'; export * from './sync';
 export * from './insights'; export * from './numbers';
 export * from './alerts'; export * from './goal'; export * from './benchmarks'; export * from './calendar';

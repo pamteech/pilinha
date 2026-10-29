@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleLock() { privacy.lockEnabled.toggle() }
     @objc func lockNow() { privacy.relock() }
     @objc func showEditor() { editorWindow.show { [weak self] in Task { await self?.model.refresh() } } }
+    @objc func showSync() { SyncPairing.show() }
     @objc func showPrivacyInfo() { privacyWindow.show(privacy: privacy) { [weak self] in Task { await self?.model.refresh() } } }
 }
 
@@ -66,6 +67,7 @@ extension AppDelegate: NSMenuDelegate {
         }
         menu.addItem(.separator())
         let e = NSMenuItem(title: "Cadastrar carteira…", action: #selector(showEditor), keyEquivalent: ","); e.target = self; menu.addItem(e)
+        let sy = NSMenuItem(title: PilinhaSync.savedCode() == nil ? "Conectar ao iPhone…" : "Conectar ao iPhone (ligado)…", action: #selector(showSync), keyEquivalent: ""); sy.target = self; menu.addItem(sy)
         let p = NSMenuItem(title: "O que este app faz…", action: #selector(showPrivacyInfo), keyEquivalent: ""); p.target = self; menu.addItem(p)
         menu.addItem(NSMenuItem(title: "Sair do Pilinha", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
@@ -141,6 +143,8 @@ final class PortfolioModel: ObservableObject {
             if let perm = LocalData.permissions(), perm & 0o077 != 0 { try? LocalData.restrict() }
             // Mantém a cópia do iCloud Drive em dia para o app do iPhone importar.
             LocalData.mirrorCurrentToICloud()
+            // Envia a carteira cifrada para o iPhone (só se a sincronização estiver ligada).
+            Task.detached { await PilinhaSync.pushCurrent() }
             portfolio = p
             let previous = snapshot?.total
             let new = await PortfolioEngine(brapiToken: BrapiTokenStore.read()).snapshot(p)

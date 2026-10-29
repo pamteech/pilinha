@@ -15,12 +15,13 @@ const Row = ({ label, onDelete }: { label: string; onDelete: () => void }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.xs }}><Txt style={{ flex: 1 }}>{label}</Txt><Pressable onPress={onDelete} hitSlop={8}><Txt style={{ color: T.down, fontWeight: '600' }}>remover</Txt></Pressable></View>);
 const kinds = Object.keys(kindLabel) as FixedIncomeKind[];
 export default function Cadastro() {
-  const { portfolio: p, update, setToken, hasToken } = usePilinha();
+  const { portfolio: p, update, setToken, hasToken, sync, connectMac, disconnectMac, syncNow } = usePilinha();
   const save = (np: Portfolio) => update(np);
   const [fi, setFi] = useState({ name: '', kind: 'caixinha' as FixedIncomeKind, cdi: '100', date: '', amount: '' });
   const [st, setSt] = useState({ ticker: '', qty: '', avg: '' });
   const [btc, setBtc] = useState({ qty: '', avg: '' });
   const [tok, setTok] = useState('');
+  const [code, setCode] = useState('');
   const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
   const addDv = () => {
     const t = normTicker(dv.ticker), a = num(dv.amount);
@@ -80,6 +81,19 @@ export default function Cadastro() {
   };
   return (
     <Screen>
+      <Card>
+        <SectionTitle first>Conectar ao Mac</SectionTitle>
+        {sync.connected ? <>
+          <Txt dim>{sync.status === 'syncing' ? 'Buscando a carteira do Mac…' : sync.status === 'ok' ? `Conectado. A carteira do Mac chega sozinha (${sync.message}${sync.macUpdatedAt ? `, enviada ${new Date(sync.macUpdatedAt).toLocaleString('pt-BR')}` : ''}). O que só existe no iPhone fica.` : sync.message ?? 'Conectado.'}</Txt>
+          <Btn title="Buscar agora" onPress={async () => { const r = await syncNow(); if (r.status === 'error') bad(r.message ?? 'Não deu.'); }} />
+          <Btn title="Desconectar do Mac" onPress={() => Alert.alert('Desconectar do Mac', 'A carteira deste iPhone fica como está, mas para de receber as mudanças do Mac.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desconectar', style: 'destructive', onPress: () => disconnectMac() }])} />
+        </> : <>
+          <Txt dim>No Mac: menu do cofrinho ▸ Conectar ao iPhone… Digite o código que aparecer (ou aponte a Câmera do iPhone para o QR). A carteira vai cifrada: só este iPhone e o Mac conseguem ler.</Txt>
+          {sync.status === 'error' && sync.message ? <Txt dim>{sync.message}</Txt> : null}
+          <Input placeholder="Código do Mac (ex. ABCD-EFGH-2345-6789)" autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={setCode} />
+          <Btn title="Conectar" onPress={async () => { const r = await connectMac(code); if (r.status !== 'error') setCode(''); else bad(r.message ?? 'Não deu.'); if (r.status === 'ok') Alert.alert('Pronto', `Conectado ao Mac: ${r.message}.`); }} />
+        </>}
+      </Card>
       <Txt dim>Só leitura: nada aqui conecta ao banco. Os dados ficam só neste iPhone.</Txt>
       <Card>
         <SectionTitle first>Renda fixa (caixinha, CDB, Tesouro, LCI/LCA)</SectionTitle>

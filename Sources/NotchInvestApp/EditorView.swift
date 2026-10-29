@@ -182,7 +182,7 @@ struct EditorView: View {
             }
             HStack {
                 Image(systemName: "lock.fill").foregroundStyle(.secondary)
-                Text("Salvo em ~/.notchinvest/portfolio.json (só você lê) e copiado para iCloud Drive/Pilinha/carteira.json para o iPhone importar.").font(.caption).foregroundStyle(.secondary)
+                Text("Salvo em ~/.notchinvest/portfolio.json (só você lê) e copiado para iCloud Drive/Pilinha/carteira.json. Para o iPhone receber sozinho: menu ▸ Conectar ao iPhone…").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 if state.saved && !state.dirty { Label("Salvo", systemImage: "checkmark").foregroundStyle(.green).font(.caption) }
                 Button("Salvar") { if state.save() { onSaved() } }

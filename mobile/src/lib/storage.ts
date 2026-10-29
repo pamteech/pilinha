@@ -27,3 +27,7 @@ export const loadAlerts = () => loadArr<import('../core').PriceAlert>(K2.alerts)
 export const saveAlerts = (a: import('../core').PriceAlert[]) => AsyncStorage.setItem(K2.alerts, JSON.stringify(a));
 export const loadFired = () => loadJSON<import('../core').FiredLog>(K2.fired, {});
 export const saveFired = (f: import('../core').FiredLog) => AsyncStorage.setItem(K2.fired, JSON.stringify(f));
+// Código de pareamento com o Mac (sincronização cifrada) fica no Keychain.
+const KS = 'pilinha.syncCode';
+export const loadSyncCode = async () => { try { return await SecureStore.getItemAsync(KS); } catch { return null; } };
+export const saveSyncCode = (c: string | null) => (c ? SecureStore.setItemAsync(KS, c) : SecureStore.deleteItemAsync(KS));
