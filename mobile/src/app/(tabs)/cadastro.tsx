@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 import { Card, Screen, Txt } from '../../components/ui';
-import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../../core';
+import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, mergePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../../core';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -39,6 +39,23 @@ export default function Cadastro() {
       if (r.canceled || !r.assets?.[0]) return;
       const np = parsePortfolio(await new File(r.assets[0].uri).text());
       Alert.alert('Importar carteira', 'Isso substitui a carteira deste iPhone. Continuar?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Importar', onPress: () => save(np) }]);
+    } catch (e) { bad((e as Error).message); }
+  };
+  const importarDoMac = async () => {
+    try {
+      Alert.alert('Importar do Mac', 'Na próxima tela, abra iCloud Drive > Pilinha > carteira.json (o Pilinha do Mac atualiza esse arquivo sozinho).', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Escolher arquivo', onPress: async () => {
+          try {
+            const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'public.json', '*/*'], copyToCacheDirectory: true });
+            if (r.canceled || !r.assets?.[0]) return;
+            const mac = parsePortfolio(await new File(r.assets[0].uri).text());
+            const n = mac.stocks.length + mac.crypto.length + mac.fixedIncome.length;
+            save(mergePortfolio(p, mac));
+            Alert.alert('Pronto', `${n} item(ns) do Mac atualizados aqui. O que só existe no iPhone foi mantido.`);
+          } catch (e) { bad((e as Error).message); }
+        } },
+      ]);
     } catch (e) { bad((e as Error).message); }
   };
   const bad = (m: string) => Alert.alert('Confere aí', m);
@@ -104,7 +121,8 @@ export default function Cadastro() {
         <SectionTitle first>Levar a carteira entre Mac e iPhone</SectionTitle>
         <Txt dim>Mesmo formato do portfolio.json do Mac (~/.notchinvest). O arquivo tem os valores: mande só por AirDrop ou guarde no Arquivos.</Txt>
         <Btn title="Exportar arquivo" onPress={exportar} />
-        <Btn title="Importar arquivo" onPress={importar} />
+        <Btn title="Importar do Mac (iCloud Drive)" onPress={importarDoMac} />
+        <Btn title="Importar arquivo (substitui tudo)" onPress={importar} />
       </Card>
       <Card>
         <SectionTitle first>Token da brapi (opcional, só para proventos)</SectionTitle>

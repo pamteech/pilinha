@@ -29,6 +29,27 @@ export function parsePortfolio(text: string): Portfolio {
   const manualDividends = (j.manualDividends ?? []).map((m: any) => { if (typeof m?.ticker !== 'string' || !parseISO(String(m.date)) || !isNum(m.amount)) throw new Error('Provento inválido.'); return { ...m, ticker: m.ticker.trim().toUpperCase() }; });
   return { ...j, fixedIncome, stocks, crypto, manualDividends };
 }
+/**
+ * Junta a carteira do Mac na do iPhone sem duplicar: o Mac manda nos itens que tem
+ * (mesmo ticker, mesma cripto, mesma renda fixa pelo nome); o que só existe no iPhone fica.
+ * Proventos iguais (ticker+data+valor) não repetem.
+ */
+export function mergePortfolio(phone: Portfolio, mac: Portfolio): Portfolio {
+  const key = (s: string) => s.trim().toLowerCase();
+  const byKey = <T,>(base: T[], incoming: T[], k: (x: T) => string) => {
+    const inc = new Set(incoming.map(k));
+    return [...base.filter(x => !inc.has(k(x))), ...incoming];
+  };
+  const dv = (d: { ticker: string; date: string; amount: number }) => `${d.ticker.toUpperCase()}|${d.date}|${Math.round(d.amount * 100)}`;
+  const seen = new Set<string>(); const manualDividends = [...(phone.manualDividends ?? []), ...(mac.manualDividends ?? [])].filter(d => { const k = dv(d); if (seen.has(k)) return false; seen.add(k); return true; });
+  return {
+    ...phone, ...mac,
+    fixedIncome: byKey(phone.fixedIncome, mac.fixedIncome, a => key(a.name)),
+    stocks: byKey(phone.stocks, mac.stocks, s => key(s.ticker)),
+    crypto: byKey(phone.crypto, mac.crypto, c => key(c.coinId)),
+    manualDividends,
+  };
+}
 export const serializePortfolio = (p: Portfolio) => JSON.stringify(p, null, 2);
 
 export const tradingViewSymbol = (ticker: string, tv?: any) =>

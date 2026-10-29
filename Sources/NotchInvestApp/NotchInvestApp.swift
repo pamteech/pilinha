@@ -139,6 +139,8 @@ final class PortfolioModel: ObservableObject {
             let p = try Portfolio.load(from: Portfolio.defaultURL)
             // Se o arquivo estiver legível por outros usuários do Mac, deixa só para a dona (600).
             if let perm = LocalData.permissions(), perm & 0o077 != 0 { try? LocalData.restrict() }
+            // Mantém a cópia do iCloud Drive em dia para o app do iPhone importar.
+            LocalData.mirrorCurrentToICloud()
             portfolio = p
             let previous = snapshot?.total
             let new = await PortfolioEngine(brapiToken: BrapiTokenStore.read()).snapshot(p)

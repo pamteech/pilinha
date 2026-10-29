@@ -74,8 +74,40 @@ public enum LocalData {
         try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
                                attributes: [.posixPermissions: 0o700])
         let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try enc.encode(p).write(to: url, options: .atomic)
+        let data = try enc.encode(p)
+        try data.write(to: url, options: .atomic)
         try restrict(url)
+        if url == Portfolio.defaultURL { mirrorToICloud(data) }
+    }
+
+    /// Pasta do iCloud Drive (~/Library/Mobile Documents/com~apple~CloudDocs/Pilinha). Nil se o iCloud Drive estiver desligado.
+    public static var iCloudFolder: URL? {
+        let drive = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: drive.path, isDirectory: &isDir), isDir.boolValue else { return nil }
+        return drive.appendingPathComponent("Pilinha", isDirectory: true)
+    }
+    public static var iCloudCopyURL: URL? { iCloudFolder?.appendingPathComponent("carteira.json") }
+
+    /// Copia a carteira para o iCloud Drive (o app do iPhone importa de lá). Só grava se mudou; falha em silêncio.
+    @discardableResult
+    public static func mirrorToICloud(_ data: Data) -> Bool {
+        guard let dest = iCloudCopyURL else { return false }
+        let fm = FileManager.default
+        if let old = try? Data(contentsOf: dest), old == data { return true }
+        do {
+            try fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data.write(to: dest, options: .atomic)
+            try? fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: dest.path)
+            return true
+        } catch { return false }
+    }
+    /// Espelha o arquivo atual (cobre edições feitas à mão no portfolio.json).
+    @discardableResult
+    public static func mirrorCurrentToICloud(from url: URL = Portfolio.defaultURL) -> Bool {
+        guard let data = try? Data(contentsOf: url) else { return false }
+        return mirrorToICloud(data)
     }
     /// Ajusta um arquivo já existente para 600.
     public static func restrict(_ url: URL = Portfolio.defaultURL) throws {

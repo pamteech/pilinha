@@ -117,7 +117,7 @@ struct PrivacyInfoView: View {
                     item("checkmark.shield", "Só mostra números", "Ele lê um arquivo que você mesma preenche e mostra o total e as variações. Nada além disso.")
                     item("building.columns", "Não acessa banco nem Nubank", "Não pede senha de banco, não se conecta à sua conta e não usa Open Finance.")
                     item("arrow.left.arrow.right", "Não move dinheiro", "Não faz Pix, transferência, compra nem venda. Não tem como.")
-                    item("internaldrive", "Seus dados ficam só neste Mac", "No arquivo \(Portfolio.defaultURL.path). Não vai para nuvem nem para nós.")
+                    item("internaldrive", "Seus dados ficam com você", "No arquivo \(Portfolio.defaultURL.path) e, se o iCloud Drive estiver ligado, numa cópia em iCloud Drive/Pilinha/carteira.json (no SEU iCloud) para o app do iPhone importar. Não vai para nós.")
                     item("eye.slash", "Sem rastreamento", "Sem conta, sem anúncios, sem estatísticas de uso, sem enviar nada sobre você.")
                 }
                 Text("Sites que ele consulta (só para buscar preços públicos)").font(.headline)
