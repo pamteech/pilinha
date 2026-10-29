@@ -124,6 +124,10 @@ struct ExpandedView: View {
                                 Image(systemName: "pencil").font(.system(size: 11, weight: .semibold))
                                     .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))
                             }.buttonStyle(.plain).help("Cadastrar carteira").accessibilityLabel("Cadastrar carteira")
+                            Button { model.onShowSync?() } label: {
+                                Image(systemName: "iphone").font(.system(size: 11, weight: .semibold))
+                                    .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))
+                            }.buttonStyle(.plain).help("Conectar ao iPhone…").accessibilityLabel("Conectar ao iPhone")
                             Button { model.onShowPrivacyInfo?() } label: {
                                 Image(systemName: "info.circle").font(.system(size: 11, weight: .semibold))
                                     .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))

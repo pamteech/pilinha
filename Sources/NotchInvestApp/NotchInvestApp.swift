@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notch?.showWindow(nil)
         model.onShowPrivacyInfo = { [weak self] in self?.showPrivacyInfo() }
         model.onShowEditor = { [weak self] in self?.showEditor() }
+        model.onShowSync = { [weak self] in self?.showSync() }
         setupMenu()
         model.start()
     }
@@ -94,6 +95,7 @@ final class PortfolioModel: ObservableObject {
     private var timer: Timer?
     var onShowPrivacyInfo: (() -> Void)?
     var onShowEditor: (() -> Void)?
+    var onShowSync: (() -> Void)?
     /// Ligado pelo NotchWindowController: abre/fecha a ilha (redimensiona a janela + anima).
     var onRequestExpand: ((Bool) -> Void)?
     func requestExpand(_ open: Bool) {
