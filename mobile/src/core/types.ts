@@ -8,6 +8,9 @@ export interface ManualDividend { ticker: string; date: string; amount: number }
 export interface Portfolio {
   owner?: string; fixedIncome: FixedIncomeAsset[]; stocks: StockPosition[]; crypto: CryptoPosition[];
   manualDividends?: ManualDividend[]; tradingview?: unknown;
+  /** Dólares guardados (opcional; carteiras antigas não têm). */
+  usd?: USDPosition | null;
 }
+export interface USDPosition { amount: number; averageRateBRL?: number | null }
 export const emptyPortfolio = (): Portfolio => ({ fixedIncome: [], stocks: [], crypto: [], manualDividends: [] });
 export const isTaxExempt = (a: FixedIncomeAsset) => a.taxExempt ?? (a.kind === 'lci' || a.kind === 'lca');

@@ -10,6 +10,8 @@ public struct Portfolio: Codable, Sendable {
     public var tradingview: TradingViewConfig?
     /// Proventos lançados à mão (fallback quando a brapi não informa).
     public var manualDividends: [ManualDividend]?
+    /// Opcional: dólares guardados (conta global, espécie). Carteiras antigas não têm.
+    public var usd: USDPosition?
 
     public init(owner: String? = nil, fixedIncome: [FixedIncomeAsset] = [], stocks: [StockPosition] = [], crypto: [CryptoPosition] = [],
                 tradingview: TradingViewConfig? = nil, manualDividends: [ManualDividend]? = nil) {
@@ -74,6 +76,13 @@ public struct CryptoPosition: Codable, Sendable, Identifiable {
     public init(coinId: String, symbol: String, quantity: Double, averagePriceBRL: Double? = nil) {
         self.coinId = coinId; self.symbol = symbol; self.quantity = quantity; self.averagePriceBRL = averagePriceBRL
     }
+}
+
+/// Dólares em mãos: quantidade em US$ e, se quiser, a cotação média paga (R$ por US$).
+public struct USDPosition: Codable, Sendable, Equatable {
+    public var amount: Double
+    public var averageRateBRL: Double?
+    public init(amount: Double, averageRateBRL: Double? = nil) { self.amount = amount; self.averageRateBRL = averageRateBRL }
 }
 
 /// Provento recebido, digitado pela dona (valor total em R$, já líquido como cai na conta).

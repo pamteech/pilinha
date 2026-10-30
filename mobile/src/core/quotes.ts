@@ -84,3 +84,19 @@ export const trURL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.226/dados/ul
 export async function trMonthly(f: Fetcher = defaultFetcher): Promise<number | null> {
   try { const j = await f(trURL); const v = parseFloat(j?.[0]?.valor); return isFinite(v) ? v : null; } catch { return null; }
 }
+
+/** Dólar: AwesomeAPI ao vivo; se falhar, PTAX de venda do BCB (últimos 10 dias). */
+export const awesomeUSDURL = 'https://economia.awesomeapi.com.br/json/last/USD-BRL';
+const mdY = (d: Date) => { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d); const g = (t: string) => p.find(x => x.type === t)!.value; return `${g('month')}-${g('day')}-${g('year')}`; };
+export const ptaxURL = (now: Date) => `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='${mdY(new Date(now.getTime() - 10 * 86400000))}'&@dataFinalCotacao='${mdY(now)}'&$format=json&$orderby=dataHoraCotacao%20desc&$top=1`;
+export interface USDQuote { bid: number; changePct: number | null; source: string }
+export function parseAwesomeUSD(j: any): USDQuote | null {
+  const b = Number(j?.USDBRL?.bid); if (!(b > 0)) return null;
+  const c = Number(j.USDBRL.pctChange); return { bid: b, changePct: Number.isFinite(c) ? c : null, source: 'AwesomeAPI' };
+}
+export function parsePTAX(j: any): USDQuote | null { const v = Number(j?.value?.[0]?.cotacaoVenda); return v > 0 ? { bid: v, changePct: null, source: 'PTAX/BCB' } : null; }
+export async function usdQuote(f: Fetcher = defaultFetcher, now = new Date()): Promise<USDQuote> {
+  try { const q = parseAwesomeUSD(await f(awesomeUSDURL)); if (q) return q; } catch {}
+  const q = parsePTAX(await f(ptaxURL(now))); if (q) return q;
+  throw new Error('dólar: sem cotação');
+}

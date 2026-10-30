@@ -139,6 +139,8 @@ public enum NetworkAudit {
         if !p.crypto.isEmpty {
             out.append(.init(site: "CoinGecko", purpose: "preço do bitcoin/cripto em reais", url: CoinGeckoService.url(p.crypto.map(\.coinId))))
         }
+        out.append(.init(site: "AwesomeAPI (economia.awesomeapi.com.br)", purpose: "cotação do dólar", url: USDQuoteService.awesomeURL))
+        out.append(.init(site: "Banco Central (olinda.bcb.gov.br)", purpose: "PTAX do dólar (reserva)", url: USDQuoteService.ptaxURL(now: now)))
         return out
     }
 

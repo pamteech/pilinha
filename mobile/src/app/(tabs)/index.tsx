@@ -46,6 +46,11 @@ export default function Home() {
               <Eyebrow color={T.onDarkDim}>CDI</Eyebrow>
               <Txt style={{ color: T.onDark, fontWeight: '700' }}>{snap.cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Txt>
             </View>}
+            {snap?.usdBRL != null && <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
+              <Eyebrow color={T.onDarkDim}>Dólar</Eyebrow>
+              <Txt style={{ color: T.onDark, fontWeight: '700' }}>R$ {snap.usdBRL.toFixed(2).replace('.', ',')}</Txt>
+              {snap.usdChangePct != null && <Txt style={{ color: snap.usdChangePct >= 0 ? T.upOnDark : T.downOnDark, fontSize: 12, lineHeight: 16 }}>{(snap.usdChangePct >= 0 ? '+' : '') + snap.usdChangePct.toFixed(2).replace('.', ',')}%</Txt>}
+            </View>}
           </View>
         </View>
       </Pressable>

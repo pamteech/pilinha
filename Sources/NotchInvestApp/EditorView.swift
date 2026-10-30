@@ -45,7 +45,7 @@ struct EditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $section) {
-                Text("Renda fixa").tag(0); Text("Ações e FIIs").tag(1); Text("Cripto").tag(2)
+                Text("Renda fixa").tag(0); Text("Ações e FIIs").tag(1); Text("Cripto").tag(2); Text("Dólar").tag(5)
                 Text("Proventos").tag(3); Text("Token brapi").tag(4)
             }.pickerStyle(.segmented).labelsHidden().padding(12)
             Divider()
@@ -55,6 +55,7 @@ struct EditorView: View {
                     case 0: fixedSection
                     case 1: stockSection
                     case 2: cryptoSection
+                    case 5: usdSection
                     case 3: dividendSection
                     default: tokenSection
                     }
@@ -134,6 +135,21 @@ struct EditorView: View {
                 }
             }
             addButton("Adicionar cripto") { state.draft.crypto.append(.init()) }
+        }
+    }
+
+    // MARK: dólar
+    var usdSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            hint("Quantos dólares você tem (conta global, espécie…). A conversão usa a cotação do momento (AwesomeAPI; se falhar, PTAX do Banco Central) e entra no total. Cotação média de compra é opcional: serve para mostrar ganho ou perda. Deixe a quantidade vazia para tirar o dólar.")
+            HStack {
+                Image(systemName: "dollarsign.circle").foregroundStyle(.purple)
+                Text("US$").foregroundStyle(.secondary)
+                TextField("quantidade (ex. 1500,00)", text: $state.draft.usdAmount).frame(width: 150)
+                Text("Cotação média R$").foregroundStyle(.secondary)
+                TextField("opcional (ex. 5,10)", text: $state.draft.usdAverage).frame(width: 120)
+                Spacer()
+            }
         }
     }
 

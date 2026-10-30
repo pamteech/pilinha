@@ -1,11 +1,11 @@
 import { Portfolio } from './types';
 import { parseISO } from './dates';
 import { annualized, netValue, value } from './cdi';
-import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote } from './quotes';
+import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
 import { CashDividend, DividendSummary, summary } from './dividends';
 
 export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null }
-export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary; cash?: CashDividend[] }
+export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary; cash?: CashDividend[]; usdBRL?: number | null; usdChangePct?: number | null }
 const chg = (v: number, pct: number | null) => (pct == null ? null : v - v / (1 + pct / 100));
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -54,5 +54,14 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       }
     } catch (e) { errors.push(`cripto: ${msg(e)}`); }
   }
-  return { items, cdiAnnual, updatedAt: now, errors, dividends: summary(p.stocks, cash, p.manualDividends ?? [], now), cash };
+  let fx: USDQuote | null = null;
+  try { fx = await usdQuote(f, now); } catch (e) { if (p.usd) errors.push(msg(e)); }
+  if (p.usd && p.usd.amount > 0 && fx) items.push(usdItem(p.usd, fx));
+  return { items, cdiAnnual, updatedAt: now, errors, dividends: summary(p.stocks, cash, p.manualDividends ?? [], now), cash, usdBRL: fx?.bid ?? null, usdChangePct: fx?.changePct ?? null };
+}
+
+export const USD_ITEM = 'Dólar';
+export function usdItem(u: { amount: number; averageRateBRL?: number | null }, q: USDQuote): LineItem {
+  const v = q.bid * u.amount;
+  return { name: USD_ITEM, category: 'dolar', invested: u.averageRateBRL != null ? u.averageRateBRL * u.amount : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.bid, avgPrice: u.averageRateBRL ?? null };
 }

@@ -20,6 +20,7 @@ export default function Cadastro() {
   const [fi, setFi] = useState({ name: '', kind: 'caixinha' as FixedIncomeKind, cdi: '100', date: '', amount: '' });
   const [st, setSt] = useState({ ticker: '', qty: '', avg: '' });
   const [btc, setBtc] = useState({ qty: '', avg: '' });
+  const [usd, setUsd] = useState({ qty: '', avg: '' });
   const [tok, setTok] = useState('');
   const [code, setCode] = useState('');
   const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
@@ -79,6 +80,12 @@ export default function Cadastro() {
     if (btc.avg && !isPositive(num(btc.avg))) return bad('Preço médio inválido.');
     save({ ...p, crypto: [...p.crypto.filter(c => c.coinId !== 'bitcoin'), { coinId: 'bitcoin', symbol: 'BTC', quantity: q, averagePriceBRL: btc.avg ? num(btc.avg) : p.crypto.find(c => c.coinId === 'bitcoin')?.averagePriceBRL }] }); setBtc({ qty: '', avg: '' });
   };
+  const addUsd = () => {
+    const q = num(usd.qty); if (!isPositive(q)) return bad('Quantos dólares você tem (ex. 1500,00).');
+    if (usd.avg && !isPositive(num(usd.avg))) return bad('Cotação média inválida (ex. 5,10).');
+    const avg = usd.avg ? num(usd.avg) : p.usd?.averageRateBRL ?? undefined;
+    save({ ...p, usd: { amount: q, ...(avg != null ? { averageRateBRL: avg } : {}) } }); setUsd({ qty: '', avg: '' });
+  };
   return (
     <Screen>
       <Card>
@@ -121,6 +128,14 @@ export default function Cadastro() {
         <Input placeholder="Quantidade (ex. 0,0015)" keyboardType="decimal-pad" value={btc.qty} onChangeText={qty => setBtc({ ...btc, qty })} />
         <Input placeholder="Preço médio em R$ (opcional)" keyboardType="decimal-pad" value={btc.avg} onChangeText={avg => setBtc({ ...btc, avg })} />
         <Btn title="Salvar bitcoin" onPress={addBtc} />
+      </Card>
+      <Card>
+        <SectionTitle first>Dólar (USD)</SectionTitle>
+        <Txt dim>Quantos dólares você tem. A conversão usa a cotação do momento e entra no total. Cotação média é opcional (para ganho ou perda).</Txt>
+        {p.usd ? <Row label={`US$ ${p.usd.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${p.usd.averageRateBRL ? ` · média R$ ${p.usd.averageRateBRL.toFixed(2).replace('.', ',')}` : ''}`} onDelete={() => { const { usd: _u, ...rest } = p; save(rest as Portfolio); }} /> : null}
+        <Input placeholder="Quantidade em US$ (ex. 1500,00)" keyboardType="decimal-pad" value={usd.qty} onChangeText={qty => setUsd({ ...usd, qty })} />
+        <Input placeholder="Cotação média em R$ (opcional, ex. 5,10)" keyboardType="decimal-pad" value={usd.avg} onChangeText={avg => setUsd({ ...usd, avg })} />
+        <Btn title="Salvar dólar" onPress={addUsd} />
       </Card>
       <Card>
         <SectionTitle first>Proventos lançados à mão</SectionTitle>

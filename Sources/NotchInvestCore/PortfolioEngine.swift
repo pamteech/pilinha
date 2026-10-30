@@ -25,6 +25,9 @@ public struct Snapshot: Sendable {
     public let updatedAt: Date
     public let errors: [String]
     public var dividends = Dividends.Summary()
+    /// Cotação do dólar (R$ por US$) e variação do dia em %, para mostrar no painel.
+    public var usdBRL: Double? = nil
+    public var usdChangePct: Double? = nil
     public var totalNet: Double { items.reduce(0) { $0 + $1.netOrCurrent } }
     public var totalTaxes: Double { total - totalNet }
     public var total: Double { items.reduce(0) { $0 + $1.current } }
@@ -41,7 +44,7 @@ public struct Snapshot: Sendable {
 }
 
 public struct PortfolioEngine: Sendable {
-    let bcb = BCBService(), stocks: StockQuoteProvider, gecko = CoinGeckoService()
+    let bcb = BCBService(), stocks: StockQuoteProvider, gecko = CoinGeckoService(), fx = USDQuoteService()
     /// Token da brapi vem do Keychain (app) ou da variável BRAPI_TOKEN (CLI).
     public init(brapiToken: String? = ProcessInfo.processInfo.environment["BRAPI_TOKEN"]) { stocks = StockQuoteProvider(brapiToken: brapiToken) }
 
@@ -87,9 +90,24 @@ public struct PortfolioEngine: Sendable {
                 }
             } catch { errors.append("cripto: \(error)") }
         }
+        var fxq: USDQuote?
+        do { fxq = try await fx.quote(now: now) } catch { if p.usd != nil { errors.append("dólar: \(error)") } }
+        if let u = p.usd, u.amount > 0, let q = fxq {
+            items.append(Self.usdItem(u, q))
+        }
         var snap = Snapshot(items: items, cdiAnnual: cdiAnnual, updatedAt: now, errors: errors)
+        snap.usdBRL = fxq?.bid; snap.usdChangePct = fxq?.changePct
         snap.dividends = Dividends.summary(stocks: p.stocks, brapi: cash, manual: p.manualDividends ?? [], now: now)
         return snap
+    }
+}
+
+extension PortfolioEngine {
+    public static let usdItemName = "Dólar"
+    public static func usdItem(_ u: USDPosition, _ q: USDQuote) -> LineItem {
+        let v = q.bid * u.amount
+        return LineItem(name: usdItemName, category: "dolar", invested: u.averageRateBRL.map { $0 * u.amount }, current: v,
+                        dayChange: q.changePct.map { v - v / (1 + $0 / 100) }, unitPrice: q.bid, averagePrice: u.averageRateBRL)
     }
 }
 

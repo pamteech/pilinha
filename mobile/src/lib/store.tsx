@@ -72,14 +72,13 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     let alive = true;
     (async () => {
       codeRef.current = await S.loadSyncCode();
-      const fromLink = codeFromURL(await Linking.getInitialURL());
       if (!alive) return;
-      if (fromLink) await connectMac(fromLink); else await doSync();
+      // Link do QR é tratado pela rota app/sync.tsx.
+      if (!codeFromURL(await Linking.getInitialURL())) await doSync();
     })();
     const sub = AppState.addEventListener('change', st => { if (st === 'active') doSync(); });
-    const link = Linking.addEventListener('url', ({ url }) => { const c = codeFromURL(url); if (c) connectMac(c); });
     const t = setInterval(() => { if (AppState.currentState === 'active') doSync(); }, 5 * 60_000);
-    return () => { alive = false; sub.remove(); link.remove(); clearInterval(t); };
+    return () => { alive = false; sub.remove(); clearInterval(t); };
   }, [loaded, doSync]);
   const update = async (p: Portfolio) => { setP(p); await S.savePortfolio(p); await run(p); };
   const setToken = async (t: string) => { await S.saveToken(t.trim()); await run(pRef.current); };

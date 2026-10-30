@@ -27,7 +27,12 @@ export function parsePortfolio(text: string): Portfolio {
   const stocks = [...seen.values()];
   const crypto = (j.crypto ?? []).map((c: any) => { if (typeof c?.coinId !== 'string' || typeof c?.symbol !== 'string' || !isNum(c.quantity) || c.quantity <= 0) throw new Error('Cripto inválida.'); return c; });
   const manualDividends = (j.manualDividends ?? []).map((m: any) => { if (typeof m?.ticker !== 'string' || !parseISO(String(m.date)) || !isNum(m.amount)) throw new Error('Provento inválido.'); return { ...m, ticker: m.ticker.trim().toUpperCase() }; });
-  return { ...j, fixedIncome, stocks, crypto, manualDividends };
+  let usd = j.usd ?? null;
+  if (usd != null) {
+    if (!isNum(usd.amount) || usd.amount < 0 || (usd.averageRateBRL != null && (!isNum(usd.averageRateBRL) || usd.averageRateBRL <= 0))) throw new Error('Dólar inválido.');
+    usd = { amount: usd.amount, ...(usd.averageRateBRL != null ? { averageRateBRL: usd.averageRateBRL } : {}) };
+  }
+  return { ...j, fixedIncome, stocks, crypto, manualDividends, ...(usd ? { usd } : {}) };
 }
 /**
  * Junta a carteira do Mac na do iPhone sem duplicar: o Mac manda nos itens que tem

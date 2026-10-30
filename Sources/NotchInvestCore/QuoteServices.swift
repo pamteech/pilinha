@@ -182,3 +182,30 @@ public struct CoinGeckoService: Sendable {
         return out
     }
 }
+
+/// Cotação USD/BRL: AwesomeAPI (ao vivo, grátis) e, se falhar, PTAX de venda do Banco Central.
+public struct USDQuote: Sendable, Equatable { public let bid: Double; public let changePct: Double?; public let source: String }
+public struct USDQuoteService: Sendable {
+    public init() {}
+    public static let awesomeURL = URL(string: "https://economia.awesomeapi.com.br/json/last/USD-BRL")!
+    public static func ptaxURL(now: Date) -> URL {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "America/Sao_Paulo"); f.dateFormat = "MM-dd-yyyy"
+        let start = now.addingTimeInterval(-10 * 86400)
+        return URL(string: "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='\(f.string(from: start))'&@dataFinalCotacao='\(f.string(from: now))'&$format=json&$orderby=dataHoraCotacao%20desc&$top=1")!
+    }
+    public static func parseAwesome(_ d: Data) -> USDQuote? {
+        guard let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let u = o["USDBRL"] as? [String: Any],
+              let bid = Double("\(u["bid"] ?? "")"), bid > 0 else { return nil }
+        return USDQuote(bid: bid, changePct: Double("\(u["pctChange"] ?? "")"), source: "AwesomeAPI")
+    }
+    public static func parsePTAX(_ d: Data) -> USDQuote? {
+        guard let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let v = o["value"] as? [[String: Any]],
+              let x = (v.first?["cotacaoVenda"] as? NSNumber)?.doubleValue, x > 0 else { return nil }
+        return USDQuote(bid: x, changePct: nil, source: "PTAX/BCB")
+    }
+    public func quote(now: Date = Date()) async throws -> USDQuote {
+        if let d = try? await fetchData(Self.awesomeURL), let q = Self.parseAwesome(d) { return q }
+        if let d = try? await fetchData(Self.ptaxURL(now: now)), let q = Self.parsePTAX(d) { return q }
+        throw URLError(.cannotParseResponse)
+    }
+}

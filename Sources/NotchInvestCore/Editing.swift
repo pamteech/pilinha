@@ -58,6 +58,8 @@ public struct PortfolioDraft: Sendable, Equatable {
     public var stocks: [Stock] = []
     public var crypto: [Crypto] = []
     public var dividends: [Dividend] = []
+    /// Dólar: quantidade em US$ e cotação média (opcional). Vazio = sem dólar.
+    public var usdAmount = "", usdAverage = ""
     /// Campos que o cadastro não edita (dono, TradingView) passam intactos.
     public var base: Portfolio
 
@@ -69,10 +71,11 @@ public struct PortfolioDraft: Sendable, Equatable {
         }
         stocks = p.stocks.map { Stock(ticker: $0.ticker, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePrice, maxDecimals: 2)) }
         crypto = p.crypto.map { Crypto(coinId: $0.coinId, symbol: $0.symbol, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePriceBRL, maxDecimals: 2)) }
+        usdAmount = DecimalInput.format(p.usd?.amount); usdAverage = DecimalInput.format(p.usd?.averageRateBRL, maxDecimals: 4)
         dividends = (p.manualDividends ?? []).map { Dividend(ticker: $0.ticker, date: DateParsing.iso.date(from: $0.date) ?? Date(), amount: DecimalInput.format($0.amount, maxDecimals: 2)) }
     }
 
-    public static func == (a: Self, b: Self) -> Bool { a.fixed == b.fixed && a.stocks == b.stocks && a.crypto == b.crypto && a.dividends == b.dividends }
+    public static func == (a: Self, b: Self) -> Bool { a.fixed == b.fixed && a.stocks == b.stocks && a.crypto == b.crypto && a.dividends == b.dividends && a.usdAmount == b.usdAmount && a.usdAverage == b.usdAverage }
 
     static func ticker(_ s: String) -> String { s.uppercased().filter { $0.isLetter || $0.isNumber } }
 
@@ -126,6 +129,13 @@ public struct PortfolioDraft: Sendable, Equatable {
             return ManualDividend(ticker: t, date: DateParsing.iso.string(from: d.date), amount: num(d.amount, "Provento \(t.isEmpty ? String(i + 1) : t)") ?? 0)
         }
         p.manualDividends = md.isEmpty ? nil : md
+        if usdAmount.trimmingCharacters(in: .whitespaces).isEmpty {
+            if !usdAverage.trimmingCharacters(in: .whitespaces).isEmpty { errs.append("Dólar: informe quantos dólares você tem") }
+            p.usd = nil
+        } else {
+            p.usd = USDPosition(amount: num(usdAmount, "Dólar — quantidade em US$") ?? 0,
+                                averageRateBRL: num(usdAverage, "Dólar — cotação média", optional: true))
+        }
         return errs.isEmpty ? .success(p) : .failure(ValidationErrors(messages: errs))
     }
 }

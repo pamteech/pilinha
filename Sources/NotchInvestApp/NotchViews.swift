@@ -135,6 +135,13 @@ struct ExpandedView: View {
                             RefreshButton()
                         }
                         if let c = s.cdiAnnual { Text(String(format: "CDI %.2f%% a.a.", c)).foregroundStyle(.secondary) }
+                        if let d = s.usdBRL {
+                            HStack(spacing: 3) {
+                                Image(systemName: "dollarsign.circle").foregroundStyle(Color(red: 0.62, green: 0.45, blue: 0.98))
+                                Text("US$ 1 = " + String(format: "R$ %.4f", d).replacingOccurrences(of: ".", with: ","))
+                                if let c = s.usdChangePct { Text(String(format: "%+.2f%%", c).replacingOccurrences(of: ".", with: ",")).foregroundStyle(c >= 0 ? .green : .red) }
+                            }.foregroundStyle(.secondary).help("Cotação do dólar agora (AwesomeAPI; reserva: PTAX do Banco Central)")
+                        }
                     }
                 }
                 NetSummaryRow(snapshot: s)
