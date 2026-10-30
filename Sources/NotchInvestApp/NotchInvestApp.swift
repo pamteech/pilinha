@@ -135,10 +135,17 @@ final class PortfolioModel: ObservableObject {
         }
     }
 
+    /// Pedido de atualização que chegou durante outra (ex. salvar no cadastro enquanto o timer atualizava).
+    private var pendingRefresh = false
     func refresh() async {
-        guard !loading else { return }
+        // Antes um refresh em andamento descartava o pedido de quem acabou de salvar (ex. o dólar)
+        // e o painel só recalculava no timer de 5 min. Agora o pedido fica na fila e roda logo em seguida.
+        guard !loading else { pendingRefresh = true; return }
         loading = true
-        defer { loading = false }
+        defer {
+            loading = false
+            if pendingRefresh { pendingRefresh = false; Task { await self.refresh() } }
+        }
         do {
             let p = try Portfolio.load(from: Portfolio.defaultURL)
             // Se o arquivo estiver legível por outros usuários do Mac, deixa só para a dona (600).
