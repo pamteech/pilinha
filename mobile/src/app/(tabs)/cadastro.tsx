@@ -131,10 +131,10 @@ export default function Cadastro() {
       </Card>
       <Card>
         <SectionTitle first>Dólar (USD)</SectionTitle>
-        <Txt dim>Quantos dólares você tem. A conversão usa a cotação do momento e entra no total. Cotação média é opcional (para ganho ou perda).</Txt>
+        <Txt dim>Só digite quantos dólares você tem. A cotação é automática (dólar ao vivo, atualiza sozinha) e a conversão entra no total.</Txt>
         {p.usd ? <Row label={`US$ ${p.usd.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${p.usd.averageRateBRL ? ` · média R$ ${p.usd.averageRateBRL.toFixed(2).replace('.', ',')}` : ''}`} onDelete={() => { const { usd: _u, ...rest } = p; save(rest as Portfolio); }} /> : null}
         <Input placeholder="Quantidade em US$ (ex. 1500,00)" keyboardType="decimal-pad" value={usd.qty} onChangeText={qty => setUsd({ ...usd, qty })} />
-        <Input placeholder="Cotação média em R$ (opcional, ex. 5,10)" keyboardType="decimal-pad" value={usd.avg} onChangeText={avg => setUsd({ ...usd, avg })} />
+        <Input placeholder="Opcional: quanto pagou por dólar (só p/ ganho/perda)" keyboardType="decimal-pad" value={usd.avg} onChangeText={avg => setUsd({ ...usd, avg })} />
         <Btn title="Salvar dólar" onPress={addUsd} />
       </Card>
       <Card>
