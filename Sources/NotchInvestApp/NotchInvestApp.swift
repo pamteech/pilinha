@@ -23,9 +23,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let privacyWindow = PrivacyWindow()
     let editorWindow = EditorWindow()
     var statusItem: NSStatusItem?
+    var menuBar: MenuBarController?
     func applicationDidFinishLaunching(_ n: Notification) {
-        notch = NotchWindowController(model: model, charts: charts, privacy: privacy)
-        notch?.showWindow(nil)
+        if DisplayMode.current == .notch {
+            notch = NotchWindowController(model: model, charts: charts, privacy: privacy)
+            notch?.showWindow(nil)
+        }
         model.onShowPrivacyInfo = { [weak self] in self?.showPrivacyInfo() }
         model.onShowEditor = { [weak self] in self?.showEditor() }
         model.onShowSync = { [weak self] in self?.showSync() }
@@ -35,6 +38,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Menu na barra (ícone de cofrinho): modo discreto, Touch ID, privacidade, sair.
     private func setupMenu() {
+        if DisplayMode.current == .menuBar {
+            // Um só item: clique abre o painel; clique direito (ou ctrl-clique) abre as opções.
+            let menu = NSMenu(); menu.delegate = self
+            menuBar = MenuBarController(model: model, charts: charts, privacy: privacy, menu: menu)
+            return
+        }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: "Pilinha")
         let menu = NSMenu(); menu.delegate = self
