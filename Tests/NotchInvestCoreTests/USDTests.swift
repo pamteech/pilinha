@@ -33,3 +33,15 @@ import Foundation
         #expect(try d.build().get().usd == nil)
     }
 }
+
+@Suite struct GroupTests {
+    @Test func dollarIsItsOwnGroup() {
+        let items = [LineItem(name: "FAKE3", category: "acao", invested: nil, current: 10),
+                     PortfolioEngine.usdItem(USDPosition(amount: 10), USDQuote(bid: 5, changePct: 1, source: "x")),
+                     LineItem(name: "Caixa teste", category: "caixinha", invested: 1, current: 1)]
+        let g = PortfolioGroups.group(items)
+        #expect(g.map(\.key) == ["renda", "acoes", "dolar"])
+        #expect(g.last?.items.first?.quantity == 10 && g.last?.total == 50)
+        #expect(g[1].items.allSatisfy { $0.category != "dolar" })
+    }
+}

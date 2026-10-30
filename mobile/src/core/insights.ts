@@ -27,7 +27,7 @@ export type GroupKey = 'renda' | 'acoes' | 'cripto' | 'dolar';
 export interface Group { key: GroupKey; title: string; total: number; items: LineItem[] }
 const groupOf = (c: string): GroupKey => (c === 'acao' || c === 'fii' ? 'acoes' : c === 'cripto' ? 'cripto' : c === 'dolar' ? 'dolar' : 'renda');
 const titles: Record<GroupKey, string> = { renda: 'Renda fixa', acoes: 'Ações e FIIs', cripto: 'Cripto', dolar: 'Dólar' };
-/** Agrupa a carteira em Renda fixa, Ações e FIIs, Cripto (grupos vazios somem). */
+/** Agrupa a carteira em Renda fixa, Ações e FIIs, Cripto e Dólar (grupo próprio; grupos vazios somem). */
 export function groupItems(items: LineItem[]): Group[] {
   return (['renda', 'acoes', 'cripto', 'dolar'] as GroupKey[]).map(key => {
     const it = items.filter(i => groupOf(i.category) === key);

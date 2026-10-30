@@ -26,3 +26,10 @@ test('carteira antiga, import e merge', () => {
   expect(mergePortfolio({ ...emptyPortfolio(), usd: { amount: 1 } }, parsePortfolio('{"fixedIncome":[],"stocks":[],"crypto":[]}')).usd?.amount).toBe(1);
   expect(() => parsePortfolio('{"fixedIncome":[],"stocks":[],"crypto":[],"usd":{"amount":"x"}}')).toThrow();
 });
+test('dólar em grupo próprio, separado das ações', () => {
+  const { groupItems } = require('..');
+  const d = usdItem({ amount: 10 }, { bid: 5, changePct: 1, source: 'x' });
+  const g = groupItems([{ name: 'FAKE3', category: 'acao', invested: null, current: 10, dayChange: null, net: null }, d]);
+  expect(g.map((x: any) => x.key)).toEqual(['acoes', 'dolar']);
+  expect(g[1].items[0].quantity).toBe(10);
+});

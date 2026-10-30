@@ -4,7 +4,7 @@ import { annualized, netValue, value } from './cdi';
 import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
 import { CashDividend, DividendSummary, summary } from './dividends';
 
-export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null }
+export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null; quantity?: number | null }
 export interface Snapshot { items: LineItem[]; cdiAnnual: number | null; updatedAt: Date; errors: string[]; dividends: DividendSummary; cash?: CashDividend[]; usdBRL?: number | null; usdChangePct?: number | null }
 const chg = (v: number, pct: number | null) => (pct == null ? null : v - v / (1 + pct / 100));
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -63,5 +63,5 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
 export const USD_ITEM = 'Dólar';
 export function usdItem(u: { amount: number; averageRateBRL?: number | null }, q: USDQuote): LineItem {
   const v = q.bid * u.amount;
-  return { name: USD_ITEM, category: 'dolar', invested: u.averageRateBRL != null ? u.averageRateBRL * u.amount : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.bid, avgPrice: u.averageRateBRL ?? null };
+  return { name: USD_ITEM, category: 'dolar', invested: u.averageRateBRL != null ? u.averageRateBRL * u.amount : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.bid, avgPrice: u.averageRateBRL ?? null, quantity: u.amount };
 }

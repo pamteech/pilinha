@@ -14,6 +14,10 @@ public struct LineItem: Sendable, Identifiable {
     public var unitPrice: Double? = nil
     /// Ações/FIIs/cripto: preço médio pago por unidade, se cadastrado.
     public var averagePrice: Double? = nil
+    /// Dólar: quantidade em US$.
+    public var quantity: Double? = nil
+    /// Variação do dia em % (a partir de dayChange).
+    public var dayPct: Double? { dayChange.flatMap { let prev = current - $0; return prev > 0 ? $0 / prev * 100 : nil } }
     public var netOrCurrent: Double { net ?? current }
     public var gain: Double? { invested.map { current - $0 } }
     public var gainPct: Double? { invested.flatMap { $0 > 0 ? (current / $0 - 1) * 100 : nil } }
@@ -107,7 +111,26 @@ extension PortfolioEngine {
     public static func usdItem(_ u: USDPosition, _ q: USDQuote) -> LineItem {
         let v = q.bid * u.amount
         return LineItem(name: usdItemName, category: "dolar", invested: u.averageRateBRL.map { $0 * u.amount }, current: v,
-                        dayChange: q.changePct.map { v - v / (1 + $0 / 100) }, unitPrice: q.bid, averagePrice: u.averageRateBRL)
+                        dayChange: q.changePct.map { v - v / (1 + $0 / 100) }, unitPrice: q.bid, averagePrice: u.averageRateBRL, quantity: u.amount)
+    }
+}
+
+/// Grupos do painel: renda fixa, ações e FIIs, cripto e dólar (cada um separado; vazios somem).
+public struct ItemGroup: Sendable, Identifiable {
+    public let key: String, title: String, items: [LineItem]
+    public var id: String { key }
+    public var total: Double { items.reduce(0) { $0 + $1.current } }
+}
+public enum PortfolioGroups {
+    public static func key(_ category: String) -> String {
+        switch category { case "acao", "fii": return "acoes"; case "cripto": return "cripto"; case "dolar": return "dolar"; default: return "renda" }
+    }
+    static let titles = ["renda": "Renda fixa", "acoes": "Ações e FIIs", "cripto": "Cripto", "dolar": "Dólar"]
+    public static func group(_ items: [LineItem]) -> [ItemGroup] {
+        ["renda", "acoes", "cripto", "dolar"].compactMap { k in
+            let it = items.filter { key($0.category) == k }
+            return it.isEmpty ? nil : ItemGroup(key: k, title: titles[k]!, items: it)
+        }
     }
 }
 

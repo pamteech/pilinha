@@ -146,7 +146,27 @@ struct ExpandedView: View {
                 }
                 NetSummaryRow(snapshot: s)
                 ScrollView(showsIndicators: true) {
-                    ForEach(s.items) { i in
+                    ForEach(PortfolioGroups.group(s.items)) { g in
+                        HStack {
+                            if g.key == "dolar" { Image(systemName: "dollarsign.circle").foregroundStyle(Color(red: 0.62, green: 0.45, blue: 0.98)) }
+                            Text(g.title.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                            Spacer()
+                            if let v = privacy.mode.money(g.total, unlocked: privacy.unlocked) { Text(v).font(.caption2).monospacedDigit().foregroundStyle(.secondary) }
+                        }.padding(.top, 4)
+                    ForEach(g.items) { i in
+                        if i.category == "dolar" {
+                            HStack {
+                                Text("US$").font(.caption2).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
+                                if let q = i.quantity, privacy.mode.money(q, unlocked: privacy.unlocked).map({ !$0.contains("•") }) ?? false {
+                                    Text("US$ " + DecimalInput.format(q, maxDecimals: 2)).monospacedDigit()
+                                } else { Text("Dólar") }
+                                Spacer()
+                                if let v = privacy.mode.money(i.current, unlocked: privacy.unlocked) { Text(v).monospacedDigit() }
+                                if let d = i.dayPct {
+                                    Text(String(format: "%+.2f%%", d)).monospacedDigit().foregroundStyle(d >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)
+                                }
+                            }.font(.system(size: 12))
+                        } else {
                         HStack {
                             Text(i.category.uppercased()).font(.caption2).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
                             Text(i.name)
@@ -166,6 +186,8 @@ struct ExpandedView: View {
                                     .foregroundStyle(g >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)
                             }
                         }.font(.system(size: 12))
+                        }
+                    }
                     }
                 }
                 if !s.errors.isEmpty {

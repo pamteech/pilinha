@@ -12,7 +12,7 @@ export default function Carteira() {
       {groupItems(snap.items).map(g => (
         <Card key={g.key} style={{ paddingBottom: S.xs, gap: 0 }}>
           <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}</Txt>}>{g.title}</SectionTitle>
-          {g.items.map((i, n) => <AssetRow key={i.category + i.name} item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : undefined} />)}
+          {g.items.map((i, n) => <AssetRow key={i.category + i.name} item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} />)}
         </Card>
       ))}
     </Screen>
