@@ -8,7 +8,7 @@ export function parsePortfolio(text: string): Portfolio {
   try { j = JSON.parse(text); } catch { throw new Error('O arquivo não é um JSON válido.'); }
   if (!j || typeof j !== 'object') throw new Error('Arquivo sem carteira.');
   const fixedIncome = (j.fixedIncome ?? []).map((a: any, i: number) => {
-    if (typeof a?.name !== 'string' || !kinds.includes(a.kind) || !isNum(a.cdiPercent) || a.cdiPercent <= 0 || !Array.isArray(a.deposits)) throw new Error(`Renda fixa nº ${i + 1} inválida.`);
+    if (typeof a?.name !== 'string' || !kinds.includes(a.kind) || !isNum(a.cdiPercent) || (a.indexer === 'ipca' ? a.cdiPercent < 0 || (a.realRate != null && !isNum(a.realRate)) : a.cdiPercent <= 0) || !Array.isArray(a.deposits)) throw new Error(`Renda fixa nº ${i + 1} inválida.`);
     for (const d of a.deposits) if (!parseISO(String(d?.date)) || !isNum(d?.amount) || d.amount <= 0) throw new Error(`Aporte inválido em "${a.name}".`);
     return a;
   });

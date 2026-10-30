@@ -61,11 +61,17 @@ public struct PortfolioEngine: Sendable {
             do {
                 let rates = try await bcb.cdiRates(from: earliest, to: now)
                 cdiAnnual = rates.last.map { CDICalculator.annualized(dailyPercent: $0.percent) }
+                var ipca: [IPCAMonthlyRate] = []
+                if p.fixedIncome.contains(where: { $0.effectiveIndexer == .ipca }) {
+                    do { ipca = try await bcb.ipcaMonthly(from: earliest, to: now) } catch { errors.append("IPCA: \(error)") }
+                }
                 for a in p.fixedIncome {
-                    let v = CDICalculator.value(of: a, rates: rates, until: now)
-                    let net = CDICalculator.netValue(of: a, rates: rates, until: now)
-                    // rendimento do último dia útil: taxa do dia × %CDI sobre o valor anterior
-                    let lastPct = (rates.last?.percent ?? 0) / 100 * a.cdiPercent / 100
+                    let v = CDICalculator.value(of: a, rates: rates, ipca: ipca, until: now)
+                    let net = CDICalculator.netValue(of: a, rates: rates, ipca: ipca, until: now)
+                    // rendimento do último dia útil: CDI → taxa do dia × %CDI; IPCA+ → só a parcela da taxa real
+                    let lastPct = a.effectiveIndexer == .ipca
+                        ? pow(1 + (a.realRate ?? 0) / 100, 1.0 / 252) - 1
+                        : (rates.last?.percent ?? 0) / 100 * a.cdiPercent / 100
                     items.append(LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,
                                           dayChange: v.gross - v.gross / (1 + lastPct), net: net))
                 }

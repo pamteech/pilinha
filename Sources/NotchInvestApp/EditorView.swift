@@ -79,9 +79,27 @@ struct EditorView: View {
                             Picker("", selection: $f.kind) {
                                 ForEach([FixedIncomeKind.caixinha, .cdb, .tesouro, .lci, .lca], id: \.self) { Text($0.label).tag($0) }
                             }.labelsHidden().frame(width: 110)
-                            TextField("% CDI", text: $f.cdiPercent).frame(width: 60)
-                            Text("% do CDI").foregroundStyle(.secondary)
+                            Picker("", selection: $f.indexer) {
+                                Text("CDI").tag(FixedIncomeIndexer.cdi); Text("IPCA+").tag(FixedIncomeIndexer.ipca)
+                            }.labelsHidden().frame(width: 80)
+                            if f.indexer == .cdi {
+                                TextField("% CDI", text: $f.cdiPercent).frame(width: 60)
+                                Text("% do CDI").foregroundStyle(.secondary)
+                            } else {
+                                Text("IPCA +").foregroundStyle(.secondary)
+                                TextField("taxa", text: $f.realRate).frame(width: 50)
+                                Text("% a.a.").foregroundStyle(.secondary)
+                            }
                             removeButton { state.draft.fixed.removeAll { $0.id == f.id } }
+                        }
+                        if f.indexer == .ipca {
+                            HStack {
+                                Toggle("Vencimento", isOn: Binding(get: { f.maturity != nil }, set: { f.maturity = $0 ? (f.maturity ?? Date()) : nil }))
+                                if let m = f.maturity {
+                                    DatePicker("", selection: Binding(get: { m }, set: { f.maturity = $0 }), displayedComponents: .date).labelsHidden().frame(width: 120)
+                                }
+                                Text("Na curva da taxa contratada; o resgate antecipado pode diferir.").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                         ForEach($f.deposits) { $d in
                             HStack {

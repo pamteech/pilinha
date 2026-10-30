@@ -1,7 +1,10 @@
 export type FixedIncomeKind = 'caixinha' | 'cdb' | 'tesouro' | 'lci' | 'lca';
 export const kindLabel: Record<FixedIncomeKind, string> = { caixinha: 'Caixinha', cdb: 'CDB', tesouro: 'Tesouro', lci: 'LCI', lca: 'LCA' };
 export interface Deposit { date: string; amount: number }
-export interface FixedIncomeAsset { name: string; kind: FixedIncomeKind; cdiPercent: number; deposits: Deposit[]; taxExempt?: boolean }
+/** Indexador: ausente = 'cdi' (JSON antigo). IPCA+ usa realRate (% a.a.) na curva da taxa contratada. */
+export type FixedIncomeIndexer = 'cdi' | 'ipca';
+export interface FixedIncomeAsset { name: string; kind: FixedIncomeKind; cdiPercent: number; deposits: Deposit[]; taxExempt?: boolean; indexer?: FixedIncomeIndexer; realRate?: number; maturity?: string }
+export const indexerOf = (a: FixedIncomeAsset): FixedIncomeIndexer => (a.indexer === 'ipca' ? 'ipca' : 'cdi');
 export interface StockPosition { ticker: string; quantity: number; averagePrice?: number }
 export interface CryptoPosition { coinId: string; symbol: string; quantity: number; averagePriceBRL?: number }
 export interface ManualDividend { ticker: string; date: string; amount: number }

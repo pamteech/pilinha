@@ -17,7 +17,7 @@ const kinds = Object.keys(kindLabel) as FixedIncomeKind[];
 export default function Cadastro() {
   const { portfolio: p, update, setToken, hasToken, sync, connectMac, disconnectMac, syncNow } = usePilinha();
   const save = (np: Portfolio) => update(np);
-  const [fi, setFi] = useState({ name: '', kind: 'caixinha' as FixedIncomeKind, cdi: '100', date: '', amount: '' });
+  const [fi, setFi] = useState({ name: '', kind: 'caixinha' as FixedIncomeKind, cdi: '100', date: '', amount: '', ipca: false, rate: '', maturity: '' });
   const [st, setSt] = useState({ ticker: '', qty: '', avg: '' });
   const [btc, setBtc] = useState({ qty: '', avg: '' });
   const [usd, setUsd] = useState({ qty: '', avg: '' });
@@ -62,11 +62,14 @@ export default function Cadastro() {
   };
   const bad = (m: string) => Alert.alert('Confere aí', m);
   const addFI = () => {
-    const amount = num(fi.amount), cdi = num(fi.cdi);
-    if (!fi.name.trim() || !validPastDate(fi.date) || !isPositive(amount) || !isPositive(cdi)) return bad('Nome, data até hoje (AAAA-MM-DD), valor e % do CDI.');
+    const amount = num(fi.amount), cdi = fi.ipca ? 0 : num(fi.cdi), rate = fi.ipca ? num(fi.rate) : undefined;
+    if (!fi.name.trim() || !validPastDate(fi.date) || !isPositive(amount)) return bad('Nome, data até hoje (AAAA-MM-DD) e valor.');
+    if (!fi.ipca && !isPositive(cdi)) return bad('Informe o % do CDI.');
+    if (fi.ipca && (rate == null || !isFinite(rate) || rate < 0 || rate > 30)) return bad('Informe a taxa do IPCA+ (ex. 7,5).');
+    if (fi.maturity && !/^\d{4}-\d{2}-\d{2}$/.test(fi.maturity)) return bad('Vencimento AAAA-MM-DD.');
     const list = [...p.fixedIncome]; const i = list.findIndex(a => a.name.trim().toLowerCase() === fi.name.trim().toLowerCase());
     if (i >= 0) list[i] = { ...list[i], deposits: [...list[i].deposits, { date: fi.date, amount }] };
-    else list.push({ name: fi.name.trim(), kind: fi.kind, cdiPercent: cdi, deposits: [{ date: fi.date, amount }] });
+    else list.push({ name: fi.name.trim(), kind: fi.kind, cdiPercent: cdi, deposits: [{ date: fi.date, amount }], ...(fi.ipca ? { indexer: 'ipca' as const, realRate: rate } : {}), ...(fi.maturity ? { maturity: fi.maturity } : {}) });
     save({ ...p, fixedIncome: list }); setFi({ ...fi, date: '', amount: '' });
   };
   const addSt = () => {
@@ -104,12 +107,18 @@ export default function Cadastro() {
       <Txt dim>Só leitura: nada aqui conecta ao banco. Os dados ficam só neste iPhone.</Txt>
       <Card>
         <SectionTitle first>Renda fixa (caixinha, CDB, Tesouro, LCI/LCA)</SectionTitle>
-        {p.fixedIncome.map(a => <Row key={a.name} label={`${a.name} · ${kindLabel[a.kind]} · ${a.cdiPercent}% CDI · ${a.deposits.length} aporte(s)`} onDelete={() => save({ ...p, fixedIncome: p.fixedIncome.filter(x => x.name !== a.name) })} />)}
+        {p.fixedIncome.map(a => <Row key={a.name} label={`${a.name} · ${kindLabel[a.kind]} · ${a.indexer === 'ipca' ? `IPCA+ ${a.realRate ?? 0}%` : `${a.cdiPercent}% CDI`} · ${a.deposits.length} aporte(s)`} onDelete={() => save({ ...p, fixedIncome: p.fixedIncome.filter(x => x.name !== a.name) })} />)}
         <Input placeholder="Nome (ex. Caixinha Viagem)" value={fi.name} onChangeText={name => setFi({ ...fi, name })} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
           {kinds.map(k => <Pressable key={k} onPress={() => setFi({ ...fi, kind: k })} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: fi.kind === k ? T.pink : T.line, backgroundColor: fi.kind === k ? T.pink : T.bg }}><Txt style={{ color: fi.kind === k ? T.bg : T.text }}>{kindLabel[k]}</Txt></Pressable>)}
         </View>
-        <Input placeholder="% do CDI (ex. 100)" keyboardType="decimal-pad" value={fi.cdi} onChangeText={cdi => setFi({ ...fi, cdi })} />
+        <View style={{ flexDirection: 'row', gap: S.sm }}>
+          {([false, true] as const).map(v => <Pressable key={String(v)} onPress={() => setFi({ ...fi, ipca: v })} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: fi.ipca === v ? T.pink : T.line, backgroundColor: fi.ipca === v ? T.pink : T.bg }}><Txt style={{ color: fi.ipca === v ? T.bg : T.text }}>{v ? 'IPCA+' : 'CDI'}</Txt></Pressable>)}
+        </View>
+        {fi.ipca
+          ? <><Input placeholder="Taxa IPCA+ % a.a. (ex. 7,5)" keyboardType="decimal-pad" value={fi.rate} onChangeText={rate => setFi({ ...fi, rate })} />
+              <Input placeholder="Vencimento AAAA-MM-DD (opcional)" value={fi.maturity} onChangeText={maturity => setFi({ ...fi, maturity })} /></>
+          : <Input placeholder="% do CDI (ex. 100)" keyboardType="decimal-pad" value={fi.cdi} onChangeText={cdi => setFi({ ...fi, cdi })} />}
         <Input placeholder="Data do aporte AAAA-MM-DD" value={fi.date} onChangeText={date => setFi({ ...fi, date })} />
         <Input placeholder="Valor aplicado" keyboardType="decimal-pad" value={fi.amount} onChangeText={amount => setFi({ ...fi, amount })} />
         <Btn title="Adicionar aporte" onPress={addFI} />

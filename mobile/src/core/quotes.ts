@@ -19,6 +19,13 @@ export function parseBCB(json: any): CDIDailyRate[] {
   if (!Array.isArray(json)) throw new Error('CDI: resposta inválida do BCB');
   return json.flatMap((r: any) => { const d = parseBR(r.data), v = parseFloat(r.valor); return d && !isNaN(v) ? [{ date: d, percent: v }] : []; });
 }
+export const ipcaURL = (start: Date, end: Date) =>
+  `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${toBR(new Date(start.getFullYear(), start.getMonth(), 1))}&dataFinal=${toBR(end)}`;
+export function parseIPCA(json: any): { month: Date; percent: number }[] {
+  if (!Array.isArray(json)) throw new Error('IPCA: resposta inválida do BCB');
+  return json.flatMap((r: any) => { const d = parseBR(r.data), v = parseFloat(r.valor); return d && !isNaN(v) ? [{ month: d, percent: v }] : []; });
+}
+export const ipcaMonthly = async (start: Date, end: Date, f: Fetcher = defaultFetcher) => parseIPCA(await f(ipcaURL(start, end)));
 export const cdiRates = async (start: Date, end: Date, f: Fetcher = defaultFetcher) => parseBCB(await f(bcbURL(start, end)));
 
 export interface Quote { price: number; changePct: number | null; dividends: CashDividend[]; source: 'brapi' | 'yahoo' }

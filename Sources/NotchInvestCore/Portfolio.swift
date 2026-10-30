@@ -36,7 +36,13 @@ public enum FixedIncomeKind: String, Codable, Sendable { case caixinha, cdb, tes
     }
 }
 
-/// Renda fixa pós-fixada: aplicações (data + valor) rendendo X% do CDI.
+/// Indexador da renda fixa. JSON antigo não tem o campo: vale CDI.
+public enum FixedIncomeIndexer: String, Codable, Sendable, CaseIterable { case cdi, ipca
+    public var label: String { self == .cdi ? "% do CDI" : "IPCA+" }
+}
+
+/// Renda fixa pós-fixada: aplicações (data + valor) rendendo X% do CDI,
+/// ou IPCA + taxa real (Tesouro IPCA+), calculada na curva da taxa contratada.
 public struct FixedIncomeAsset: Codable, Sendable, Identifiable {
     public var id: String { name }
     public var name: String
@@ -44,9 +50,15 @@ public struct FixedIncomeAsset: Codable, Sendable, Identifiable {
     public var cdiPercent: Double          // ex. 100 = 100% do CDI
     public var deposits: [Deposit]
     public var taxExempt: Bool?            // LCI/LCA = true (sem IR/IOF)
-    public init(name: String, kind: FixedIncomeKind, cdiPercent: Double, deposits: [Deposit], taxExempt: Bool? = nil) {
+    public var indexer: FixedIncomeIndexer? // nil = cdi
+    public var realRate: Double?           // IPCA+: taxa real % a.a. (ex. 7,5)
+    public var maturity: String?           // "yyyy-MM-dd", opcional
+    public init(name: String, kind: FixedIncomeKind, cdiPercent: Double, deposits: [Deposit], taxExempt: Bool? = nil,
+                indexer: FixedIncomeIndexer? = nil, realRate: Double? = nil, maturity: String? = nil) {
         self.name = name; self.kind = kind; self.cdiPercent = cdiPercent; self.deposits = deposits; self.taxExempt = taxExempt
+        self.indexer = indexer; self.realRate = realRate; self.maturity = maturity
     }
+    public var effectiveIndexer: FixedIncomeIndexer { indexer ?? .cdi }
     /// LCI/LCA são isentas por padrão; o campo explícito vence.
     public var isTaxExempt: Bool { taxExempt ?? (kind == .lci || kind == .lca) }
 }

@@ -37,8 +37,11 @@ public struct PortfolioDraft: Sendable, Equatable {
         public init(date: Date, amount: String) { self.date = date; self.amount = amount } }
     public struct Fixed: Sendable, Equatable, Identifiable {
         public var id = UUID(); public var name: String; public var kind: FixedIncomeKind; public var cdiPercent: String; public var deposits: [Dep]
-        public init(name: String = "", kind: FixedIncomeKind = .caixinha, cdiPercent: String = "100", deposits: [Dep] = [Dep(date: Date(), amount: "")]) {
-            self.name = name; self.kind = kind; self.cdiPercent = cdiPercent; self.deposits = deposits }
+        public var indexer: FixedIncomeIndexer = .cdi; public var realRate = ""; public var maturity: Date? = nil
+        public init(name: String = "", kind: FixedIncomeKind = .caixinha, cdiPercent: String = "100", deposits: [Dep] = [Dep(date: Date(), amount: "")],
+                    indexer: FixedIncomeIndexer = .cdi, realRate: String = "", maturity: Date? = nil) {
+            self.name = name; self.kind = kind; self.cdiPercent = cdiPercent; self.deposits = deposits
+            self.indexer = indexer; self.realRate = realRate; self.maturity = maturity }
     }
     public struct Stock: Sendable, Equatable, Identifiable {
         public var id = UUID(); public var ticker: String; public var quantity: String; public var averagePrice: String
@@ -67,7 +70,9 @@ public struct PortfolioDraft: Sendable, Equatable {
         base = p
         fixed = p.fixedIncome.map { a in
             Fixed(name: a.name, kind: a.kind, cdiPercent: DecimalInput.format(a.cdiPercent),
-                  deposits: a.deposits.map { Dep(date: DateParsing.iso.date(from: $0.date) ?? Date(), amount: DecimalInput.format($0.amount, maxDecimals: 2)) })
+                  deposits: a.deposits.map { Dep(date: DateParsing.iso.date(from: $0.date) ?? Date(), amount: DecimalInput.format($0.amount, maxDecimals: 2)) },
+                  indexer: a.effectiveIndexer, realRate: DecimalInput.format(a.realRate, maxDecimals: 2),
+                  maturity: a.maturity.flatMap { DateParsing.iso.date(from: $0) })
         }
         stocks = p.stocks.map { Stock(ticker: $0.ticker, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePrice, maxDecimals: 2)) }
         crypto = p.crypto.map { Crypto(coinId: $0.coinId, symbol: $0.symbol, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePriceBRL, maxDecimals: 2)) }
@@ -95,15 +100,23 @@ public struct PortfolioDraft: Sendable, Equatable {
             let label = name.isEmpty ? "Renda fixa \(i + 1)" : name
             if name.isEmpty { errs.append("\(label): dê um nome") }
             if !names.insert(name.lowercased()).inserted && !name.isEmpty { errs.append("\(label): nome repetido") }
-            let pct = num(f.cdiPercent, "\(label) — % do CDI") ?? 100
-            if pct > 300 { errs.append("\(label) — % do CDI: \(DecimalInput.format(pct))% parece alto demais") }
+            var pct = 0.0, real: Double? = nil
+            if f.indexer == .cdi {
+                pct = num(f.cdiPercent, "\(label) — % do CDI") ?? 100
+                if pct > 300 { errs.append("\(label) — % do CDI: \(DecimalInput.format(pct))% parece alto demais") }
+            } else {
+                real = num(f.realRate, "\(label) — taxa IPCA+", positive: false) ?? 0
+                if let r = real, r < 0 || r > 30 { errs.append("\(label) — taxa IPCA+: \(DecimalInput.format(r))% fora do esperado") }
+            }
             if f.deposits.isEmpty { errs.append("\(label): adicione pelo menos um aporte") }
             let deps = f.deposits.enumerated().map { j, d -> Deposit in
                 if d.date > now { errs.append("\(label) — aporte \(j + 1): data no futuro") }
                 return Deposit(date: DateParsing.iso.string(from: d.date), amount: num(d.amount, "\(label) — aporte \(j + 1)") ?? 0)
             }.sorted { $0.date < $1.date }
             return FixedIncomeAsset(name: name, kind: f.kind, cdiPercent: pct, deposits: deps,
-                                    taxExempt: f.kind == .lci || f.kind == .lca ? true : nil)
+                                    taxExempt: f.kind == .lci || f.kind == .lca ? true : nil,
+                                    indexer: f.indexer == .ipca ? .ipca : nil, realRate: real,
+                                    maturity: f.maturity.map { DateParsing.iso.string(from: $0) })
         }
         var tickers = Set<String>()
         p.stocks = stocks.enumerated().map { i, s in

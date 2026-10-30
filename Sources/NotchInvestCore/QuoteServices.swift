@@ -41,6 +41,23 @@ public struct BCBService: Sendable {
         return URL(string: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=\(f.string(from: start))&dataFinal=\(f.string(from: end))")!
     }
 
+    /// IPCA mensal (série 433). Só datas na requisição.
+    public func ipcaMonthly(from start: Date, to end: Date = Date()) async throws -> [IPCAMonthlyRate] {
+        try Self.parseIPCA(try await fetchData(Self.ipcaURL(from: start, to: end)))
+    }
+    public static func ipcaURL(from start: Date, to end: Date) -> URL {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+        let first = cal.date(from: cal.dateComponents([.year, .month], from: start)) ?? start
+        let f = DateParsing.br
+        return URL(string: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=\(f.string(from: first))&dataFinal=\(f.string(from: end))")!
+    }
+    public static func parseIPCA(_ data: Data) throws -> [IPCAMonthlyRate] {
+        try JSONDecoder().decode([Row].self, from: data).compactMap { r in
+            guard let d = DateParsing.br.date(from: r.data), let v = Double(r.valor) else { return nil }
+            return IPCAMonthlyRate(month: d, percent: v)
+        }
+    }
+
     public static func parse(_ data: Data) throws -> [CDIDailyRate] {
         try JSONDecoder().decode([Row].self, from: data).compactMap { r in
             guard let d = DateParsing.br.date(from: r.data), let v = Double(r.valor) else { return nil }

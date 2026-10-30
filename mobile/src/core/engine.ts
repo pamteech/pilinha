@@ -1,7 +1,7 @@
-import { Portfolio } from './types';
+import { Portfolio, indexerOf } from './types';
 import { parseISO } from './dates';
-import { annualized, netValue, value } from './cdi';
-import { cdiRates, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
+import { annualized, netValue, value, IPCAMonthlyRate } from './cdi';
+import { cdiRates, ipcaMonthly, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
 import { CashDividend, DividendSummary, summary } from './dividends';
 
 export interface LineItem { name: string; category: string; invested: number | null; current: number; dayChange: number | null; net: number | null; unitPrice?: number | null; avgPrice?: number | null; quantity?: number | null }
@@ -30,9 +30,14 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       const rates = await cdiRates(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f);
       const last = rates[rates.length - 1];
       cdiAnnual = last ? annualized(last.percent) : null;
+      let ipca: IPCAMonthlyRate[] = [];
+      if (p.fixedIncome.some(a => indexerOf(a) === 'ipca')) {
+        try { ipca = await ipcaMonthly(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch (e) { errors.push(`IPCA: ${msg(e)}`); }
+      }
       for (const a of p.fixedIncome) {
-        const v = value(a, rates, now), lastPct = ((last?.percent ?? 0) / 100) * (a.cdiPercent / 100);
-        items.push({ name: a.name, category: a.kind, invested: v.invested, current: v.gross, dayChange: v.gross - v.gross / (1 + lastPct), net: netValue(a, rates, now) });
+        const v = value(a, rates, now, ipca);
+        const lastPct = indexerOf(a) === 'ipca' ? Math.pow(1 + (a.realRate ?? 0) / 100, 1 / 252) - 1 : ((last?.percent ?? 0) / 100) * (a.cdiPercent / 100);
+        items.push({ name: a.name, category: a.kind, invested: v.invested, current: v.gross, dayChange: v.gross - v.gross / (1 + lastPct), net: netValue(a, rates, now, ipca) });
       }
     } catch (e) { errors.push(`CDI: ${msg(e)}`); }
   }
