@@ -152,6 +152,7 @@ struct ExpandedView: View {
                             Text(g.title.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                             Spacer()
                             if let v = privacy.mode.money(g.total, unlocked: privacy.unlocked) { Text(v).font(.caption2).monospacedDigit().foregroundStyle(.secondary) }
+                            if let d = g.dayPct { Text(pctBR(d)).font(.caption2.weight(.semibold)).monospacedDigit().foregroundStyle(d >= 0 ? .green : .red) }
                         }.padding(.top, 4)
                     ForEach(g.items) { i in
                         if i.category == "dolar" {
@@ -163,7 +164,7 @@ struct ExpandedView: View {
                                 Spacer()
                                 if let v = privacy.mode.money(i.current, unlocked: privacy.unlocked) { Text(v).monospacedDigit() }
                                 if let d = i.dayPct {
-                                    Text(String(format: "%+.2f%%", d)).monospacedDigit().foregroundStyle(d >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)
+                                    Text(pctBR(d)).monospacedDigit().foregroundStyle(d >= 0 ? .green : .red).frame(width: 58, alignment: .trailing)
                                 }
                             }.font(.system(size: 12))
                         } else {
@@ -181,6 +182,9 @@ struct ExpandedView: View {
                                         Text("PM " + t).font(.system(size: 9)).monospacedDigit().foregroundStyle(.secondary)
                                     }
                                 }.frame(minWidth: 78, alignment: .trailing)
+                                // Variação do dia (vs. fechamento anterior da B3); visível também no modo discreto.
+                                Text(i.dayPct.map(pctBR) ?? "–").monospacedDigit()
+                                    .foregroundStyle(i.dayPct.map { $0 >= 0 ? Color.green : Color.red } ?? .secondary).frame(width: 58, alignment: .trailing)
                             } else if let g = i.gainPct {
                                 Text(String(format: "%+.2f%%", g)).monospacedDigit()
                                     .foregroundStyle(g >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)

@@ -33,3 +33,11 @@ test('dólar em grupo próprio, separado das ações', () => {
   expect(g.map((x: any) => x.key)).toEqual(['acoes', 'dolar']);
   expect(g[1].items[0].quantity).toBe(10);
 });
+test('variação do dia do grupo Ações e FIIs', () => {
+  const { groupItems, itemDayPct } = require('..');
+  // FAKE3: ontem 100, hoje 101 (+1%); TEST11: ontem 200, hoje 198 (-1%) => grupo (1-2)/300 = -0,333%
+  const a = { name: 'FAKE3', category: 'acao', invested: null, current: 101, dayChange: 1, net: null };
+  const b = { name: 'TEST11', category: 'fii', invested: null, current: 198, dayChange: -2, net: null };
+  expect(itemDayPct(a)).toBeCloseTo(1); expect(itemDayPct(b)).toBeCloseTo(-1);
+  expect(groupItems([a, b])[0].dayPct).toBeCloseTo(-100 / 300);
+});

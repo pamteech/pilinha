@@ -40,6 +40,7 @@ export function AssetRow({ item, hidden, label, last }: { item: import('../core'
         {market && item.unitPrice != null
           ? <Text style={{ color: qColor, fontSize: 15, fontWeight: '600' }}>{C.brl(item.unitPrice)}</Text>
           : <View style={{ backgroundColor: dp == null ? T.neutralLight : dp >= 0 ? T.upLight : T.downLight, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><Text style={{ color: colorFor(dp), fontSize: 12, fontWeight: '600' }}>{C.pct(dp)}</Text></View>}
+        {market && dp != null && <Text style={{ color: colorFor(dp), fontSize: 12, fontWeight: '600' }}>{C.pct(dp)}</Text>}
         {market && item.avgPrice != null && <Text style={{ color: T.dim, fontSize: 11 }}>PM {money(item.avgPrice, hidden)}</Text>}
       </View>
     </View>

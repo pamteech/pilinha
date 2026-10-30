@@ -24,14 +24,15 @@ export function topMovers(items: LineItem[], n = 3): { up: Mover[]; down: Mover[
   };
 }
 export type GroupKey = 'renda' | 'acoes' | 'cripto' | 'dolar';
-export interface Group { key: GroupKey; title: string; total: number; items: LineItem[] }
+export interface Group { key: GroupKey; title: string; total: number; items: LineItem[]; dayPct: number | null }
 const groupOf = (c: string): GroupKey => (c === 'acao' || c === 'fii' ? 'acoes' : c === 'cripto' ? 'cripto' : c === 'dolar' ? 'dolar' : 'renda');
 const titles: Record<GroupKey, string> = { renda: 'Renda fixa', acoes: 'Ações e FIIs', cripto: 'Cripto', dolar: 'Dólar' };
 /** Agrupa a carteira em Renda fixa, Ações e FIIs, Cripto e Dólar (grupo próprio; grupos vazios somem). */
 export function groupItems(items: LineItem[]): Group[] {
   return (['renda', 'acoes', 'cripto', 'dolar'] as GroupKey[]).map(key => {
     const it = items.filter(i => groupOf(i.category) === key);
-    return { key, title: titles[key], items: it, total: it.reduce((a, i) => a + i.current, 0) };
+    const w = it.filter(i => i.dayChange != null), d = w.reduce((a, i) => a + (i.dayChange as number), 0), prev = w.reduce((a, i) => a + i.current, 0) - d;
+    return { key, title: titles[key], items: it, total: it.reduce((a, i) => a + i.current, 0), dayPct: w.length && prev > 0 ? (d / prev) * 100 : null };
   }).filter(g => g.items.length);
 }
 /** Últimos n dias do histórico (por data, não por quantidade de pontos). */

@@ -20,8 +20,10 @@ do {
     for i in s.items {
         let g = i.gainPct.map { String(format: " (%+.2f%%)", $0) } ?? ""
         let n = i.net.map { " líquido \(BRL.format($0))" } ?? ""
-        print("[\(i.category)] \(i.name): \(BRL.format(i.current))\(g)\(n)")
+        let dp = i.dayPct.map { " hoje \(pctBR($0))" } ?? ""
+        print("[\(i.category)] \(i.name): \(BRL.format(i.current))\(g)\(n)\(dp)")
     }
+    for gr in PortfolioGroups.group(s.items) { print("grupo \(gr.title): hoje \(gr.dayPct.map(pctBR) ?? "–")") }
     if let d = s.dayChangePct { print(String(format: "Hoje: %+.3f%%", d)) }
     print("Humor do cofrinho: \(CofrinhoMood.from(dayChangePct: s.dayChangePct, loading: false, hasError: s.items.isEmpty && !s.errors.isEmpty).rawValue)")
     print("TOTAL: \(BRL.format(s.total))  investido: \(BRL.format(s.totalInvested))")

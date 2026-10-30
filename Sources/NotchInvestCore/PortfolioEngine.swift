@@ -120,7 +120,15 @@ public struct ItemGroup: Sendable, Identifiable {
     public let key: String, title: String, items: [LineItem]
     public var id: String { key }
     public var total: Double { items.reduce(0) { $0 + $1.current } }
+    /// Variação do dia do grupo em % (soma das variações em R$ / valor de ontem). Nil se nenhum item informa.
+    public var dayPct: Double? {
+        let ch = items.compactMap(\.dayChange); guard !ch.isEmpty else { return nil }
+        let d = ch.reduce(0, +), prev = items.filter { $0.dayChange != nil }.reduce(0) { $0 + $1.current } - d
+        return prev > 0 ? d / prev * 100 : nil
+    }
 }
+/// "+1,23%" no formato brasileiro.
+public func pctBR(_ v: Double) -> String { String(format: "%+.2f%%", v).replacingOccurrences(of: ".", with: ",") }
 public enum PortfolioGroups {
     public static func key(_ category: String) -> String {
         switch category { case "acao", "fii": return "acoes"; case "cripto": return "cripto"; case "dolar": return "dolar"; default: return "renda" }

@@ -45,3 +45,13 @@ import Foundation
         #expect(g[1].items.allSatisfy { $0.category != "dolar" })
     }
 }
+
+@Suite struct DayPctTests {
+    @Test func stockAndGroupDayPct() {
+        var a = LineItem(name: "FAKE3", category: "acao", invested: nil, current: 101); a.dayChange = 1
+        var b = LineItem(name: "TEST11", category: "fii", invested: nil, current: 198); b.dayChange = -2
+        #expect(abs((a.dayPct ?? 0) - 1) < 1e-9)
+        #expect(abs((PortfolioGroups.group([a, b])[0].dayPct ?? 0) + 100.0 / 300) < 1e-9)
+        #expect(pctBR(1.234) == "+1,23%")
+    }
+}
