@@ -26,7 +26,7 @@ describe('Bugs corrigidos', () => {
     const f: Fetcher = async u => { urls.push(u); return [{ data: '23/10/2026', valor: '0.05' }]; };
     const now = new Date('2026-10-26T15:00:00Z');
     const s = await snapshot({ fixedIncome: [{ name: 'CDB', kind: 'cdb', cdiPercent: 100, deposits: [{ date: '2026-12-01', amount: 100 }] }], stocks: [], crypto: [] }, { now, fetcher: f });
-    expect(s.errors).toEqual([]); expect(urls[0]).toContain('dataInicial=26/10/2026');
+    expect(s.errors).toEqual([]); expect(urls.some(u => u.includes('sgs.12'))).toBe(false); expect(s.items[0]?.current).toBe(100);
   });
   test('sem internet: erros aparecem, sem NaN', async () => {
     const f: Fetcher = async () => { throw new Error('Network request failed'); };

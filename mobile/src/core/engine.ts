@@ -1,6 +1,6 @@
 import { Portfolio, indexerOf } from './types';
 import { parseISO } from './dates';
-import { annualized, netValue, value, IPCAMonthlyRate } from './cdi';
+import { annualized, netValue, value, IPCAMonthlyRate, CDIDailyRate } from './cdi';
 import { cdiRates, ipcaMonthly, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
 import { CashDividend, DividendSummary, summary } from './dividends';
 
@@ -27,12 +27,13 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
   if (dates.length) {
     try {
       // Aporte com data futura não pode virar início da consulta (o BCB recusa e some toda a renda fixa).
-      const rates = await cdiRates(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f);
+      let rates: CDIDailyRate[] = [];
+      try { rates = await cdiRates(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch { errors.push('CDI indisponível agora; renda fixa mostrada pelo valor aplicado'); }
       const last = rates[rates.length - 1];
       cdiAnnual = last ? annualized(last.percent) : null;
       let ipca: IPCAMonthlyRate[] = [];
       if (p.fixedIncome.some(a => indexerOf(a) === 'ipca')) {
-        try { ipca = await ipcaMonthly(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch (e) { errors.push(`IPCA: ${msg(e)}`); }
+        try { ipca = await ipcaMonthly(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch { ipca = []; }
       }
       for (const a of p.fixedIncome) {
         const v = value(a, rates, now, ipca);

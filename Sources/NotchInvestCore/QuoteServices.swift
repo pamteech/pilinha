@@ -30,7 +30,8 @@ public struct BCBService: Sendable {
 
     public func cdiRates(from start: Date, to end: Date = Date()) async throws -> [CDIDailyRate] {
         // A API limita consultas a janelas de 10 anos.
-        let f = DateParsing.br
+        // Aplicação de hoje (ou futura): o BCB recusa dataInicial >= dataFinal; ainda não há taxa.
+        guard start < end, !Calendar.current.isDate(start, inSameDayAs: end) else { return [] }
         let data = try await fetchData(Self.url(from: start, to: end))
         return try Self.parse(data)
     }
@@ -43,6 +44,7 @@ public struct BCBService: Sendable {
 
     /// IPCA mensal (série 433). Só datas na requisição.
     public func ipcaMonthly(from start: Date, to end: Date = Date()) async throws -> [IPCAMonthlyRate] {
+        guard start <= end else { return [] }
         try Self.parseIPCA(try await fetchData(Self.ipcaURL(from: start, to: end)))
     }
     public static func ipcaURL(from start: Date, to end: Date) -> URL {
@@ -51,15 +53,23 @@ public struct BCBService: Sendable {
         let f = DateParsing.br
         return URL(string: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=\(f.string(from: first))&dataFinal=\(f.string(from: end))")!
     }
+    /// O BCB devolve objeto {"erro": ...} (400/404) quando não há dados no intervalo: vira "sem dados ainda".
+    static func rows(_ data: Data) -> [Row] {
+        if let r = try? JSONDecoder().decode([Row].self, from: data) { return r }
+        if let a = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            return a.compactMap { d in (d["data"] as? String).flatMap { dt in (d["valor"] as? String).map { Row(data: dt, valor: $0) } } }
+        }
+        return []
+    }
     public static func parseIPCA(_ data: Data) throws -> [IPCAMonthlyRate] {
-        try JSONDecoder().decode([Row].self, from: data).compactMap { r in
+        rows(data).compactMap { r in
             guard let d = DateParsing.br.date(from: r.data), let v = Double(r.valor) else { return nil }
             return IPCAMonthlyRate(month: d, percent: v)
         }
     }
 
     public static func parse(_ data: Data) throws -> [CDIDailyRate] {
-        try JSONDecoder().decode([Row].self, from: data).compactMap { r in
+        rows(data).compactMap { r in
             guard let d = DateParsing.br.date(from: r.data), let v = Double(r.valor) else { return nil }
             return CDIDailyRate(date: d, percent: v)
         }

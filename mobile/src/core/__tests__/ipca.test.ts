@@ -26,3 +26,15 @@ test('snapshot busca IPCA', async () => {
   expect(ipcaURL(d('2026-01-05'), d('2026-01-20'))).toContain('dataInicial=01/01/2026');
   expect(s.items[0].current).toBeGreaterThan(100);
 });
+
+test('BCB devolve objeto de erro / aplicação de hoje: título aparece pelo aplicado, sem erro', async () => {
+  const { snapshot: snap, parseBCB, parseIPCA } = require('..');
+  expect(parseBCB({ erro: 'DataFinal deve ser maior que dataInicial.' })).toEqual([]);
+  expect(parseIPCA({ erro: { statusCode: 404 } })).toEqual([]);
+  const now = new Date(2026, 9, 30, 20);
+  const p = { stocks: [], crypto: [], fixedIncome: [{ name: 'Tesouro IPCA+ 2032', kind: 'tesouro', cdiPercent: 0, indexer: 'ipca', realRate: 7.89, deposits: [{ date: '2026-10-30', amount: 100 }] }] };
+  const f = async () => ({ erro: { statusCode: 404 } });
+  const s = await snap(p, { now, fetcher: f });
+  expect(s.items.find((i: any) => i.name === 'Tesouro IPCA+ 2032')?.current).toBeCloseTo(100);
+  expect(s.errors.filter((e: string) => /CDI|IPCA/.test(e))).toEqual([]);
+});

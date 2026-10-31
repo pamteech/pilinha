@@ -59,11 +59,13 @@ public struct PortfolioEngine: Sendable {
         let earliest = p.fixedIncome.flatMap(\.deposits).compactMap { DateParsing.iso.date(from: $0.date) }.min()
         if let earliest {
             do {
-                let rates = try await bcb.cdiRates(from: earliest, to: now)
+                // Falha de rede no BCB não pode esconder o título: sem taxas, vale o aplicado (rendimento 0).
+                var rates: [CDIDailyRate] = []
+                do { rates = try await bcb.cdiRates(from: min(earliest, now), to: now) } catch { errors.append("CDI indisponível agora; renda fixa mostrada pelo valor aplicado") }
                 cdiAnnual = rates.last.map { CDICalculator.annualized(dailyPercent: $0.percent) }
                 var ipca: [IPCAMonthlyRate] = []
                 if p.fixedIncome.contains(where: { $0.effectiveIndexer == .ipca }) {
-                    do { ipca = try await bcb.ipcaMonthly(from: earliest, to: now) } catch { errors.append("IPCA: \(error)") }
+                    ipca = (try? await bcb.ipcaMonthly(from: min(earliest, now), to: now)) ?? []
                 }
                 for a in p.fixedIncome {
                     let v = CDICalculator.value(of: a, rates: rates, ipca: ipca, until: now)
@@ -75,7 +77,7 @@ public struct PortfolioEngine: Sendable {
                     items.append(LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,
                                           dayChange: v.gross - v.gross / (1 + lastPct), net: net))
                 }
-            } catch { errors.append("CDI: \(error)") }
+            }
         }
         var cash: [CashDividend] = []
         for s in p.stocks {
