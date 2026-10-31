@@ -45,7 +45,7 @@ public struct BCBService: Sendable {
     /// IPCA mensal (série 433). Só datas na requisição.
     public func ipcaMonthly(from start: Date, to end: Date = Date()) async throws -> [IPCAMonthlyRate] {
         guard start <= end else { return [] }
-        try Self.parseIPCA(try await fetchData(Self.ipcaURL(from: start, to: end)))
+        return try Self.parseIPCA(try await fetchData(Self.ipcaURL(from: start, to: end)))
     }
     public static func ipcaURL(from start: Date, to end: Date) -> URL {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
