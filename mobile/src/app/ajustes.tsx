@@ -32,6 +32,11 @@ export default function Ajustes() {
         <ToggleRow label="Exigir ao abrir o app" hint="Também ao voltar do segundo plano" value={settings.faceOnOpen} onChange={v => toggle('faceOnOpen', v)} />
         <ToggleRow label="Exigir para mostrar valores" hint="Ao tocar no patrimônio com os valores escondidos" value={settings.faceOnReveal} onChange={v => toggle('faceOnReveal', v)} />
       </Card>
+      <Card>
+        <SectionTitle first>Sobre</SectionTitle>
+        <Txt dim style={{ fontSize: 13 }}>O Pilinha é uma ferramenta de acompanhamento. Os valores são estimativas com base em cotações públicas (B3 via Yahoo/brapi, Banco Central, Tesouro Direto e CoinGecko) e podem diferir do extrato da corretora. Não é recomendação de investimento.</Txt>
+        <Txt dim style={{ fontSize: 13 }}>Seus dados ficam só neste iPhone. Política de privacidade e suporte: pamteech.github.io/pilinha</Txt>
+      </Card>
     </Screen>
   );
 }

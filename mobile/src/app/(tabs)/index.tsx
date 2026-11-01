@@ -61,11 +61,18 @@ export default function Home() {
           {!live && !isTradingHours() && <Txt style={{ color: T.bg, fontSize: 12 }}>A bolsa está fechada agora</Txt>}
         </Pressable>
       )}
-      {empty && <Card><Txt>Cadastre a carteira na aba Cadastro. Tudo fica só neste iPhone.</Txt></Card>}
+      {empty && <Card>
+        <SectionTitle first>Boas-vindas ao Pilinha</SectionTitle>
+        {[['pencil-outline', 'Cadastre seus investimentos na aba Cadastro: renda fixa, ações, FIIs e cripto.'],
+          ['refresh', 'Puxe a tela para atualizar as cotações de fontes públicas.'],
+          ['cellphone-lock', 'Tudo fica só neste iPhone. Não há conta nem login.']].map(([i, t]) => (
+          <View key={i} style={{ flexDirection: 'row', gap: S.md, alignItems: 'center' }}><MaterialCommunityIcons name={i as any} size={20} color={T.pink} /><Txt style={{ flex: 1 }}>{t}</Txt></View>))}
+      </Card>}
       <Stale errors={snap?.errors} />
       {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
+      <Txt dim style={{ textAlign: 'center', fontSize: 11 }}>Valores estimados para acompanhamento. Não é recomendação de investimento.</Txt>
       {snap && <Txt dim style={{ textAlign: 'center', fontSize: 12 }}>Atualizado {snap.updatedAt.toLocaleTimeString('pt-BR')} · puxe para atualizar</Txt>}
     </ScrollView>
   );
