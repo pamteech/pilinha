@@ -11,6 +11,10 @@ export function parsePortfolio(text: string): Portfolio {
   const fixedIncome = (j.fixedIncome ?? []).map((a: any, i: number) => {
     if (typeof a?.name !== 'string' || !kinds.includes(a.kind) || !isNum(a.cdiPercent) || (a.indexer === 'ipca' ? a.cdiPercent < 0 || (a.realRate != null && !isNum(a.realRate)) : a.cdiPercent <= 0) || !Array.isArray(a.deposits)) throw new Error(`Renda fixa nº ${i + 1} inválida.`);
     for (const d of a.deposits) if (!parseISO(String(d?.date)) || !isNum(d?.amount) || d.amount <= 0) throw new Error(`Aporte inválido em "${a.name}".`);
+    // Campos novos do Tesouro nunca impedem a carteira de abrir: tipo desconhecido é ignorado
+    // (o título segue como % do CDI, como sempre foi) e prefixado sem taxa válida vira Selic/CDI.
+    if (a.treasuryType != null && !['selic', 'prefixado', 'ipca'].includes(a.treasuryType)) { const { treasuryType: _t, ...r } = a; a = r; }
+    if (a.fixedRate != null && (!isNum(a.fixedRate) || a.fixedRate < 0 || a.fixedRate > 50)) { const { fixedRate: _f, ...r } = a; a = r; }
     return a;
   });
   // Ticker em maiúsculas, quantidade > 0 e sem repetidos (o repetido somava duas vezes e quebrava a lista).

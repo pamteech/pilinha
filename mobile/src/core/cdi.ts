@@ -1,4 +1,4 @@
-import { FixedIncomeAsset, isTaxExempt, indexerOf } from './types';
+import { FixedIncomeAsset, isTaxExempt, rateModelOf } from './types';
 import { parseISO, daysBetween } from './dates';
 import { breakdown } from './tax';
 export interface CDIDailyRate { date: Date; percent: number }
@@ -24,9 +24,13 @@ export function inflationFactor(start: Date, until: Date, ipca: IPCAMonthlyRate[
 /** IPCA+ na curva: aplicado × inflação × (1 + taxa)^(dias úteis/252). Sem marcação a mercado. */
 export const ipcaGross = (principal: number, start: Date, realRate: number, ipca: IPCAMonthlyRate[], businessDays: number, until: Date) =>
   principal * inflationFactor(start, until, ipca) * Math.pow(1 + realRate / 100, businessDays / 252);
+/** Prefixado na curva: aplicado × (1 + taxa)^(dias úteis/252). */
+export const prefixedGross = (principal: number, rate: number, businessDays: number) => principal * Math.pow(1 + rate / 100, businessDays / 252);
 function depositGross(a: FixedIncomeAsset, principal: number, start: Date, rates: CDIDailyRate[], ipca: IPCAMonthlyRate[], until: Date) {
-  if (indexerOf(a) === 'cdi') return grossValue(principal, start, a.cdiPercent, rates, until);
+  const m = rateModelOf(a);
+  if (m === 'cdi') return grossValue(principal, start, a.cdiPercent, rates, until);
   const du = rates.filter(r => r.date >= start && r.date < until).length;
+  if (m === 'prefixado') return prefixedGross(principal, a.fixedRate!, du);
   return ipcaGross(principal, start, a.realRate ?? 0, ipca, du, until);
 }
 export function value(a: FixedIncomeAsset, rates: CDIDailyRate[], until: Date = new Date(), ipca: IPCAMonthlyRate[] = []) {

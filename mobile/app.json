@@ -57,7 +57,8 @@
         {
           "faceIDPermission": "O Pilinvest usa o Face ID para abrir o app e mostrar os valores escondidos."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

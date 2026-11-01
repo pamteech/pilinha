@@ -40,7 +40,7 @@ import Foundation
     @Test func Benchmark() {
         let pts = [HistoryPoint(day: "2026-10-01", total: 100, invested: 100), HistoryPoint(day: "2026-10-03", total: 102, invested: 100)]
         let r = [CDIDailyRate(date: DateParsing.iso.date(from: "2026-10-01")!, percent: 0.05), CDIDailyRate(date: DateParsing.iso.date(from: "2026-10-02")!, percent: 0.05)]
-        let b = Benchmark.series(pts, rates: r)
+        let b = NotchInvestCore.Benchmark.series(pts, rates: r)
         #expect(abs((b.last!.carteira) - (2)) < 1e-9); #expect(abs((b.last!.cdi) - ((1.0005 * 1.0005 - 1) * 100)) < 1e-9)
     }
 }

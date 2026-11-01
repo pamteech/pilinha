@@ -1,4 +1,4 @@
-import { Portfolio, indexerOf } from './types';
+import { Portfolio, indexerOf, rateModelOf } from './types';
 import { parseISO } from './dates';
 import { annualized, netValue, value, IPCAMonthlyRate, CDIDailyRate } from './cdi';
 import { cdiRates, ipcaMonthly, cryptoBRL, defaultFetcher, Fetcher, stockQuote, usdQuote, USDQuote } from './quotes';
@@ -44,7 +44,8 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       const mtm = (a: typeof p.fixedIncome[number]) => { const m = opts.treasury ? markToMarket(a, opts.treasury) : null; return m ? { marketValue: m.value, marketDay: m.day, marketRate: m.sellRate } : {}; };
       for (const a of p.fixedIncome) {
         const v = value(a, rates, now, ipca);
-        const lastPct = indexerOf(a) === 'ipca' ? Math.pow(1 + (a.realRate ?? 0) / 100, 1 / 252) - 1 : ((last?.percent ?? 0) / 100) * (a.cdiPercent / 100);
+        const rm = rateModelOf(a);
+        const lastPct = rm === 'ipca' ? Math.pow(1 + (a.realRate ?? 0) / 100, 1 / 252) - 1 : rm === 'prefixado' ? Math.pow(1 + a.fixedRate! / 100, 1 / 252) - 1 : ((last?.percent ?? 0) / 100) * (a.cdiPercent / 100);
         items.push({ name: a.name, category: a.kind, invested: v.invested, current: v.gross, dayChange: v.gross - v.gross / (1 + lastPct), net: netValue(a, rates, now, ipca), ...mtm(a) });
       }
     } catch (e) { errors.push(`CDI: ${msg(e)}`); }

@@ -1,4 +1,4 @@
-import { FixedIncomeAsset, indexerOf } from './types';
+import { FixedIncomeAsset, treasuryTypeOf, TreasuryType } from './types';
 import { parseBR, toISO } from './dates';
 /**
  * Marcação a mercado do Tesouro Direto pelo CSV oficial do Tesouro Transparente
@@ -13,7 +13,8 @@ export function treasuryTitle(a: FixedIncomeAsset): { title: string; maturity: s
   if (a.kind !== 'tesouro' || !a.maturity) return null;
   const n = a.name.toLowerCase();
   const juros = n.includes('juros') || n.includes('semestra');
-  const title = indexerOf(a) === 'ipca' ? (n.includes('renda') ? 'Tesouro Renda+ Aposentadoria Extra' : n.includes('educa') ? 'Tesouro Educa+' : juros ? 'Tesouro IPCA+ com Juros Semestrais' : 'Tesouro IPCA+') : 'Tesouro Selic';
+  const tt = treasuryTypeOf(a);
+  const title = tt === 'prefixado' ? (juros ? 'Tesouro Prefixado com Juros Semestrais' : 'Tesouro Prefixado') : tt === 'ipca' ? (n.includes('renda') ? 'Tesouro Renda+ Aposentadoria Extra' : n.includes('educa') ? 'Tesouro Educa+' : juros ? 'Tesouro IPCA+ com Juros Semestrais' : 'Tesouro IPCA+') : 'Tesouro Selic';
   return { title, maturity: a.maturity.slice(0, 10) };
 }
 const num = (s: string | undefined) => { if (!s) return null; const v = parseFloat(s.trim().replace(/\./g, '').replace(',', '.')); return isFinite(v) && v > 0 ? v : null; };
@@ -44,3 +45,26 @@ export function markToMarket(a: FixedIncomeAsset, rows: TreasuryRow[]): MarketVa
   }
   return { value: q * last.puSell!, day: last.day, sellRate: last.sellRate, quantity: q };
 }
+
+/** Título à venda hoje (último dia da planilha), para o cadastro preencher a taxa sozinho. */
+export interface TreasuryOffer { title: string; maturity: string; type: TreasuryType; buyRate: number | null; day: string }
+export const treasuryTypeOfTitle = (title: string): TreasuryType | null => {
+  const t = title.toLowerCase();
+  return t.includes('selic') ? 'selic' : t.includes('prefixado') ? 'prefixado' : t.includes('ipca') || t.includes('renda+') || t.includes('educa+') ? 'ipca' : null;
+};
+/** Ofertas do dia mais recente do CSV, sem títulos já vencidos, ordenadas por tipo e vencimento. */
+export function latestTreasuryOffers(text: string, today = '0000-00-00'): TreasuryOffer[] {
+  let last = ''; const byDay = new Map<string, TreasuryOffer[]>();
+  for (const line of text.split(/\r?\n/)) {
+    const c = line.split(';'); if (c.length < 7) continue;
+    const mat = parseBR(c[1]?.trim()), day = parseBR(c[2]?.trim()); if (!mat || !day) continue;
+    const type = treasuryTypeOfTitle(c[0]); if (!type) continue;
+    const d = toISO(day), m = toISO(mat); if (m < today) continue;
+    if (d < last) continue;
+    if (d > last) { last = d; byDay.clear(); }
+    const list = byDay.get(d) ?? []; list.push({ title: c[0].trim(), maturity: m, type, buyRate: num(c[3]), day: d }); byDay.set(d, list);
+  }
+  return (byDay.get(last) ?? []).sort((a, b) => (a.type + a.maturity < b.type + b.maturity ? -1 : 1));
+}
+/** Nome curto: "Tesouro IPCA+ 2035". */
+export const offerName = (o: { title: string; maturity: string }) => `${o.title} ${o.maturity.slice(0, 4)}`;

@@ -22,7 +22,10 @@ public enum Treasury {
         guard a.kind == .tesouro, let m = a.maturity else { return nil }
         let n = a.name.lowercased()
         let t: String
-        if a.effectiveIndexer == .ipca {
+        let juros = n.contains("juros") || n.contains("semestra")
+        if a.isPrefixed {
+            t = juros ? "Tesouro Prefixado com Juros Semestrais" : "Tesouro Prefixado"
+        } else if a.effectiveIndexer == .ipca {
             t = n.contains("renda") ? "Tesouro Renda+ Aposentadoria Extra" : n.contains("educa") ? "Tesouro Educa+"
               : (n.contains("juros") || n.contains("semestra")) ? "Tesouro IPCA+ com Juros Semestrais" : "Tesouro IPCA+"
         } else { t = "Tesouro Selic" }

@@ -40,6 +40,7 @@ export default function Layout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas de preço" back /> }} />
+        <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
         <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
       </Stack>
     </Lock></PilinhaProvider>

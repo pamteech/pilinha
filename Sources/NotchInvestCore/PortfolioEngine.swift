@@ -81,7 +81,8 @@ public struct PortfolioEngine: Sendable {
                     let v = CDICalculator.value(of: a, rates: rates, ipca: ipca, until: now)
                     let net = CDICalculator.netValue(of: a, rates: rates, ipca: ipca, until: now)
                     // rendimento do último dia útil: CDI → taxa do dia × %CDI; IPCA+ → só a parcela da taxa real
-                    let lastPct = a.effectiveIndexer == .ipca
+                    let lastPct = a.isPrefixed ? pow(1 + (a.fixedRate ?? 0) / 100, 1.0 / 252) - 1
+                        : a.effectiveIndexer == .ipca
                         ? pow(1 + (a.realRate ?? 0) / 100, 1.0 / 252) - 1
                         : (rates.last?.percent ?? 0) / 100 * a.cdiPercent / 100
                     var li = LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,

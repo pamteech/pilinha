@@ -38,6 +38,8 @@ public struct PortfolioDraft: Sendable, Equatable {
     public struct Fixed: Sendable, Equatable, Identifiable {
         public var id = UUID(); public var name: String; public var kind: FixedIncomeKind; public var cdiPercent: String; public var deposits: [Dep]
         public var indexer: FixedIncomeIndexer = .cdi; public var realRate = ""; public var maturity: Date? = nil
+        /// Campos do iPhone (Tesouro Selic/Prefixado) que o editor do Mac não mostra: passam intactos ao salvar.
+        public var treasuryType: String? = nil; public var fixedRate: Double? = nil
         public init(name: String = "", kind: FixedIncomeKind = .caixinha, cdiPercent: String = "100", deposits: [Dep] = [Dep(date: Date(), amount: "")],
                     indexer: FixedIncomeIndexer = .cdi, realRate: String = "", maturity: Date? = nil) {
             self.name = name; self.kind = kind; self.cdiPercent = cdiPercent; self.deposits = deposits
@@ -78,6 +80,7 @@ public struct PortfolioDraft: Sendable, Equatable {
                   deposits: a.deposits.map { Dep(date: DateParsing.iso.date(from: $0.date) ?? Date(), amount: DecimalInput.format($0.amount, maxDecimals: 2)) },
                   indexer: a.effectiveIndexer, realRate: DecimalInput.format(a.realRate, maxDecimals: 2),
                   maturity: a.maturity.flatMap { DateParsing.iso.date(from: $0) })
+            .with { $0.treasuryType = a.treasuryType; $0.fixedRate = a.fixedRate }
         }
         stocks = p.stocks.map { Stock(ticker: $0.ticker, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePrice, maxDecimals: 2)) }
         crypto = p.crypto.map { Crypto(coinId: $0.coinId, symbol: $0.symbol, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePriceBRL, maxDecimals: 2)) }
@@ -122,7 +125,9 @@ public struct PortfolioDraft: Sendable, Equatable {
             return FixedIncomeAsset(name: name, kind: f.kind, cdiPercent: pct, deposits: deps,
                                     taxExempt: f.kind == .lci || f.kind == .lca ? true : nil,
                                     indexer: f.indexer == .ipca ? .ipca : nil, realRate: real,
-                                    maturity: f.maturity.map { DateParsing.iso.string(from: $0) })
+                                    maturity: f.maturity.map { DateParsing.iso.string(from: $0) },
+                                    treasuryType: f.indexer == .ipca && f.treasuryType == "prefixado" ? "ipca" : f.treasuryType,
+                                    fixedRate: f.indexer == .ipca ? nil : f.fixedRate)
         }
         var tickers = Set<String>()
         p.stocks = stocks.enumerated().map { i, s in
@@ -169,3 +174,7 @@ public struct PortfolioDraft: Sendable, Equatable {
 }
 
 public struct ValidationErrors: Error, Sendable, Equatable { public let messages: [String] }
+
+extension PortfolioDraft.Fixed {
+    func with(_ f: (inout Self) -> Void) -> Self { var c = self; f(&c); return c }
+}

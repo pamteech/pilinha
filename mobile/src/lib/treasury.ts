@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Portfolio, TESOURO_CSV_URL, TreasuryRow, parseTreasuryCSV, toISO, treasuryTitle } from '../core';
+import { Portfolio, TESOURO_CSV_URL, TreasuryRow, TreasuryOffer, latestTreasuryOffers, parseTreasuryCSV, toISO, treasuryTitle } from '../core';
 // O CSV oficial tem ~15 MB: baixa no máximo 1 vez a cada 12 h e guarda só as linhas dos títulos da carteira.
 const K = 'pilinha.treasury.v1';
 interface Cache { at: number; keys: string; rows: TreasuryRow[] }
@@ -28,4 +28,22 @@ function download(p: Portfolio, wanted: { title: string; maturity: string }[], k
   } catch {}
   return null; // falha silenciosa: segue só com a curva
   })().finally(() => { inflight = null; });
+}
+
+// Ofertas do dia (para o cadastro preencher a taxa sozinho): mesma planilha, cache próprio de 12 h.
+const KO = 'pilinha.treasury.offers.v1';
+let offersInflight: Promise<TreasuryOffer[]> | null = null;
+export async function treasuryOffers(): Promise<TreasuryOffer[]> {
+  let c: { at: number; offers: TreasuryOffer[] } | null = null;
+  try { c = JSON.parse((await AsyncStorage.getItem(KO)) ?? 'null'); } catch {}
+  if (c && Date.now() - c.at < 12 * 3600_000 && c.offers.length) return c.offers;
+  return offersInflight ??= (async () => {
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+      const txt = await fetch(TESOURO_CSV_URL, { signal: ctl.signal }).then(r => r.text()).finally(() => clearTimeout(t));
+      const offers = latestTreasuryOffers(txt, toISO(new Date()));
+      if (offers.length) await AsyncStorage.setItem(KO, JSON.stringify({ at: Date.now(), offers }));
+      return offers.length ? offers : c?.offers ?? [];
+    } catch { return c?.offers ?? []; }
+  })().finally(() => { offersInflight = null; });
 }

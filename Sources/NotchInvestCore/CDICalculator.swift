@@ -24,6 +24,10 @@ public enum CDICalculator {
     /// Bruto de um aporte conforme o indexador (CDI ou IPCA+).
     public static func depositGross(_ asset: FixedIncomeAsset, principal: Double, start: Date, rates: [CDIDailyRate],
                                     ipca: [IPCAMonthlyRate], until end: Date) -> Double {
+        if asset.isPrefixed {
+            let du = rates.filter { $0.date >= start && $0.date < end }.count
+            return principal * pow(1 + (asset.fixedRate ?? 0) / 100, Double(du) / 252)
+        }
         switch asset.effectiveIndexer {
         case .cdi: return grossValue(principal: principal, start: start, cdiPercent: asset.cdiPercent, rates: rates, until: end)
         case .ipca:

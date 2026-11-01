@@ -55,10 +55,22 @@ public struct FixedIncomeAsset: Codable, Sendable, Identifiable {
     public var indexer: FixedIncomeIndexer? // nil = cdi
     public var realRate: Double?           // IPCA+: taxa real % a.a. (ex. 7,5)
     public var maturity: String?           // "yyyy-MM-dd", opcional
+    /// Tesouro: "selic" | "prefixado" | "ipca" (gravado pelo iPhone; JSON antigo não tem). Texto livre para
+    /// nunca quebrar a leitura: valor desconhecido é ignorado e o título segue como % do CDI.
+    public var treasuryType: String?
+    /// Prefixado: taxa % a.a. Selic e Prefixado ficam com indexer ausente e cdiPercent 100 (Mac antigo lê como CDI).
+    public var fixedRate: Double?
     public init(name: String, kind: FixedIncomeKind, cdiPercent: Double, deposits: [Deposit], taxExempt: Bool? = nil,
-                indexer: FixedIncomeIndexer? = nil, realRate: Double? = nil, maturity: String? = nil) {
+                indexer: FixedIncomeIndexer? = nil, realRate: Double? = nil, maturity: String? = nil,
+                treasuryType: String? = nil, fixedRate: Double? = nil) {
         self.name = name; self.kind = kind; self.cdiPercent = cdiPercent; self.deposits = deposits; self.taxExempt = taxExempt
         self.indexer = indexer; self.realRate = realRate; self.maturity = maturity
+        self.treasuryType = treasuryType; self.fixedRate = fixedRate
+    }
+    /// Prefixado de verdade só com tipo e taxa válida; senão vale o indexador de sempre.
+    public var isPrefixed: Bool {
+        guard effectiveIndexer == .cdi, treasuryType == "prefixado", let r = fixedRate else { return false }
+        return r.isFinite && r >= 0 && r <= 50
     }
     public var effectiveIndexer: FixedIncomeIndexer { indexer ?? .cdi }
     /// LCI/LCA são isentas por padrão; o campo explícito vence.

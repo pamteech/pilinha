@@ -9,7 +9,7 @@ import Foundation
         #expect(p.usd == nil)
     }
     @Test func roundTrip() throws {
-        let p = Portfolio(usd: USDPosition(amount: 100, averageRateBRL: 5))
+        var p = Portfolio(); p.usd = USDPosition(amount: 100, averageRateBRL: 5)
         let q = try JSONDecoder().decode(Portfolio.self, from: JSONEncoder().encode(p))
         #expect(q.usd == USDPosition(amount: 100, averageRateBRL: 5))
     }

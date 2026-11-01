@@ -1,189 +1,75 @@
 import { useState } from 'react';
-import { Alert, Pressable, TextInput, View } from 'react-native';
-import { Card, Screen, Txt } from '../../components/ui';
-import { FixedIncomeKind, Portfolio, kindLabel, parsePortfolio, mergePortfolio, serializePortfolio, parseNumberBR, isPositive, validPastDate, normTicker, validTicker } from '../../core';
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import * as DocumentPicker from 'expo-document-picker';
+import { Alert, Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Button, Card, Field, Screen, SectionTitle, Txt, money } from '../../components/ui';
+import { EyeToggle } from '../../components/EyeToggle';
+import { brl, isPositive, kindLabel, normTicker, parseNumberBR, rateModelOf, treasuryTypeOf, validTicker } from '../../core';
 import { usePilinha } from '../../lib/store';
-import { T, S, R } from '../../lib/theme';
-import { SectionTitle } from '../../components/ui';
-const num = parseNumberBR;
-const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance="light" {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
-const Btn = ({ title, onPress }: { title: string; onPress: () => void }) => <Pressable onPress={onPress} style={{ backgroundColor: T.pink, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}><Txt style={{ color: T.bg, fontWeight: '700' }}>{title}</Txt></Pressable>;
-const Row = ({ label, onDelete }: { label: string; onDelete: () => void }) => (
-  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.xs }}><Txt style={{ flex: 1 }}>{label}</Txt><Pressable onPress={onDelete} hitSlop={8}><Txt style={{ color: T.down, fontWeight: '600' }}>remover</Txt></Pressable></View>);
-const kinds = Object.keys(kindLabel) as FixedIncomeKind[];
+import { S, T } from '../../lib/theme';
+// Cadastro: o botão + abre o passo a passo; tocar num item abre a mesma tela para editar.
+const Row = ({ title, sub, onPress, onDelete, last }: { title: string; sub: string; onPress?: () => void; onDelete: () => void; last?: boolean }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md, borderBottomWidth: last ? 0 : 1, borderBottomColor: T.line }}>
+    <Pressable onPress={onPress} disabled={!onPress} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm }} accessibilityRole="button">
+      <View style={{ flex: 1 }}><Txt style={{ fontWeight: '600' }}>{title}</Txt><Txt dim style={{ fontSize: 12 }}>{sub}</Txt></View>
+      {onPress ? <MaterialCommunityIcons name="chevron-right" size={20} color={T.dim} /> : null}
+    </Pressable>
+    <Pressable onPress={onDelete} hitSlop={8} accessibilityLabel={`Remover ${title}`}><MaterialCommunityIcons name="trash-can-outline" size={20} color={T.down} /></Pressable>
+  </View>);
 export default function Cadastro() {
-  const { portfolio: p, update, setToken, hasToken, sync, connectMac, disconnectMac, syncNow } = usePilinha();
-  const save = (np: Portfolio) => update(np);
-  const [fi, setFi] = useState({ name: '', kind: 'caixinha' as FixedIncomeKind, cdi: '100', date: '', amount: '', ipca: false, rate: '', maturity: '' });
-  const [st, setSt] = useState({ ticker: '', qty: '', avg: '' });
-  const [btc, setBtc] = useState({ qty: '', avg: '' });
-  const [usd, setUsd] = useState({ qty: '', avg: '' });
-  const [tok, setTok] = useState('');
-  const [code, setCode] = useState('');
-  const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
+  const { portfolio: p, update, hidden } = usePilinha();
+  const router = useRouter();
+  const edit = (cat: string, name: string) => router.push({ pathname: '/adicionar', params: { cat, name } });
+  const ask = (what: string, go: () => void) => Alert.alert('Remover', `Remover ${what}?`, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Remover', style: 'destructive', onPress: go }]);
   const [wl, setWl] = useState({ ticker: '', target: '', amount: '' });
   const addWl = () => {
-    const t = normTicker(wl.ticker), tg = num(wl.target), am = wl.amount ? num(wl.amount) : undefined;
-    if (!validTicker(t) || !isPositive(tg)) return bad('Código (ex. TAEE11) e o preço que você quer pagar.');
-    if (am != null && !isPositive(am)) return bad('Valor a investir inválido (ex. 500,00).');
-    save({ ...p, watchlist: [...(p.watchlist ?? []).filter(w => w.ticker.toUpperCase() !== t), { ticker: t, targetPrice: tg, ...(am != null ? { amount: am } : {}) }] }); setWl({ ticker: '', target: '', amount: '' });
+    const t = normTicker(wl.ticker), tg = parseNumberBR(wl.target), am = wl.amount ? parseNumberBR(wl.amount) : undefined;
+    if (!validTicker(t) || !isPositive(tg)) return Alert.alert('Confere aí', 'Código (ex. TAEE11) e o preço que você quer pagar.');
+    if (am != null && !isPositive(am)) return Alert.alert('Confere aí', 'Valor a investir inválido (ex. 500,00).');
+    update({ ...p, watchlist: [...(p.watchlist ?? []).filter(w => w.ticker.toUpperCase() !== t), { ticker: t, targetPrice: tg, ...(am != null ? { amount: am } : {}) }] }); setWl({ ticker: '', target: '', amount: '' });
   };
-  const addDv = () => {
-    const t = normTicker(dv.ticker), a = num(dv.amount);
-    if (!validTicker(t) || !validPastDate(dv.date) || !isPositive(a)) return bad('Código (ex. MXRF11), data até hoje (AAAA-MM-DD) e valor que caiu na conta.');
-    save({ ...p, manualDividends: [...(p.manualDividends ?? []), { ticker: t, date: dv.date, amount: a }] }); setDv({ ticker: '', date: '', amount: '' });
+  const fiSub = (a: typeof p.fixedIncome[number]) => {
+    const tt = treasuryTypeOf(a), rm = rateModelOf(a);
+    const rate = rm === 'ipca' ? `IPCA + ${String(a.realRate ?? 0).replace('.', ',')}%` : rm === 'prefixado' ? `Prefixado ${String(a.fixedRate).replace('.', ',')}%` : tt === 'selic' ? 'Selic' : `${String(a.cdiPercent).replace('.', ',')}% do CDI`;
+    return `${kindLabel[a.kind]} · ${rate} · ${money(a.deposits.reduce((s, d) => s + d.amount, 0), hidden)}${a.deposits.length > 1 ? ` em ${a.deposits.length} aportes` : ''}`;
   };
-  const exportar = async () => {
-    try {
-      const f = new File(Paths.cache, 'portfolio.json'); if (f.exists) f.delete(); f.create(); f.write(serializePortfolio(p));
-      await Sharing.shareAsync(f.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Exportar carteira' });
-    } catch (e) { bad(`Não deu para exportar: ${(e as Error).message}`); }
-  };
-  const importar = async () => {
-    try {
-      const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'public.json', '*/*'], copyToCacheDirectory: true });
-      if (r.canceled || !r.assets?.[0]) return;
-      const np = parsePortfolio(await new File(r.assets[0].uri).text());
-      Alert.alert('Importar carteira', 'Isso substitui a carteira deste iPhone. Continuar?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Importar', onPress: () => save(np) }]);
-    } catch (e) { bad((e as Error).message); }
-  };
-  const importarDoMac = async () => {
-    try {
-      Alert.alert('Importar do Mac', 'Na próxima tela, abra iCloud Drive > Pilinha > carteira.json (o Pilinvest do Mac atualiza esse arquivo sozinho).', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Escolher arquivo', onPress: async () => {
-          try {
-            const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'public.json', '*/*'], copyToCacheDirectory: true });
-            if (r.canceled || !r.assets?.[0]) return;
-            const mac = parsePortfolio(await new File(r.assets[0].uri).text());
-            const n = mac.stocks.length + mac.crypto.length + mac.fixedIncome.length;
-            save(mergePortfolio(p, mac));
-            Alert.alert('Pronto', `${n} item(ns) do Mac atualizados aqui. O que só existe no iPhone foi mantido.`);
-          } catch (e) { bad((e as Error).message); }
-        } },
-      ]);
-    } catch (e) { bad((e as Error).message); }
-  };
-  const bad = (m: string) => Alert.alert('Confere aí', m);
-  const addFI = () => {
-    const amount = num(fi.amount), cdi = fi.ipca ? 0 : num(fi.cdi), rate = fi.ipca ? num(fi.rate) : undefined;
-    if (!fi.name.trim() || !validPastDate(fi.date) || !isPositive(amount)) return bad('Nome, data até hoje (AAAA-MM-DD) e valor.');
-    if (!fi.ipca && !isPositive(cdi)) return bad('Informe o % do CDI.');
-    if (fi.ipca && (rate == null || !isFinite(rate) || rate < 0 || rate > 30)) return bad('Informe a taxa do IPCA+ (ex. 7,5).');
-    if (fi.maturity && !/^\d{4}-\d{2}-\d{2}$/.test(fi.maturity)) return bad('Vencimento AAAA-MM-DD.');
-    const list = [...p.fixedIncome]; const i = list.findIndex(a => a.name.trim().toLowerCase() === fi.name.trim().toLowerCase());
-    if (i >= 0) list[i] = { ...list[i], deposits: [...list[i].deposits, { date: fi.date, amount }] };
-    else list.push({ name: fi.name.trim(), kind: fi.kind, cdiPercent: cdi, deposits: [{ date: fi.date, amount }], ...(fi.ipca ? { indexer: 'ipca' as const, realRate: rate } : {}), ...(fi.maturity ? { maturity: fi.maturity } : {}) });
-    save({ ...p, fixedIncome: list }); setFi({ ...fi, date: '', amount: '' });
-  };
-  const addSt = () => {
-    const t = normTicker(st.ticker), q = num(st.qty), avg = st.avg ? num(st.avg) : p.stocks.find(s => s.ticker.toUpperCase() === t)?.averagePrice; // sem PM digitado, mantém o anterior
-    if (avg != null && !isPositive(avg)) return bad('Preço médio inválido (ex. 32,10).');
-    if (!validTicker(t) || !isPositive(q)) return bad('Código (ex. PETR4, MXRF11) e quantidade.');
-    save({ ...p, stocks: [...p.stocks.filter(s => s.ticker.toUpperCase() !== t), { ticker: t, quantity: q, averagePrice: avg }] }); setSt({ ticker: '', qty: '', avg: '' });
-  };
-  const addBtc = () => {
-    const q = num(btc.qty); if (!isPositive(q)) return bad('Quantidade de bitcoin (ex. 0,0015).');
-    if (btc.avg && !isPositive(num(btc.avg))) return bad('Preço médio inválido.');
-    save({ ...p, crypto: [...p.crypto.filter(c => c.coinId !== 'bitcoin'), { coinId: 'bitcoin', symbol: 'BTC', quantity: q, averagePriceBRL: btc.avg ? num(btc.avg) : p.crypto.find(c => c.coinId === 'bitcoin')?.averagePriceBRL }] }); setBtc({ qty: '', avg: '' });
-  };
-  const addUsd = () => {
-    const q = num(usd.qty); if (!isPositive(q)) return bad('Quantos dólares você tem (ex. 1500,00).');
-    if (usd.avg && !isPositive(num(usd.avg))) return bad('Cotação média inválida (ex. 5,10).');
-    const avg = usd.avg ? num(usd.avg) : p.usd?.averageRateBRL ?? undefined;
-    save({ ...p, usd: { amount: q, ...(avg != null ? { averageRateBRL: avg } : {}) } }); setUsd({ qty: '', avg: '' });
-  };
+  const items = [
+    ...p.fixedIncome.map(a => ({ key: 'f' + a.name, title: a.name, sub: fiSub(a), cat: a.kind, name: a.name })),
+    ...p.stocks.map(s => ({ key: 's' + s.ticker, title: s.ticker, sub: `${s.ticker.endsWith('11') ? 'FII' : 'Ação'} · ${hidden ? '••••' : s.quantity.toLocaleString('pt-BR')} cota(s)${s.averagePrice != null ? ` · PM ${money(s.averagePrice, hidden)}` : ''}`, cat: s.ticker.endsWith('11') ? 'fii' : 'acao', name: s.ticker })),
+    ...p.crypto.map(c => ({ key: 'c' + c.coinId, title: c.symbol === 'BTC' ? 'Bitcoin' : c.symbol, sub: `${hidden ? '••••' : c.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })} ${c.symbol}`, cat: 'cripto', name: c.symbol })),
+    ...(p.usd ? [{ key: 'usd', title: 'Dólar', sub: hidden ? 'US$ ••••' : `US$ ${p.usd.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cat: 'dolar', name: 'Dólar' }] : []),
+  ];
   return (
     <Screen>
-      <Card>
-        <SectionTitle first>Conectar ao Mac</SectionTitle>
-        {sync.connected ? <>
-          <Txt dim>{sync.status === 'syncing' ? 'Buscando a carteira do Mac…' : sync.status === 'ok' ? `Conectado. A carteira do Mac chega sozinha (${sync.message}${sync.macUpdatedAt ? `, enviada ${new Date(sync.macUpdatedAt).toLocaleString('pt-BR')}` : ''}). O que só existe no iPhone fica.` : sync.message ?? 'Conectado.'}</Txt>
-          <Btn title="Buscar agora" onPress={async () => { const r = await syncNow(); if (r.status === 'error') bad(r.message ?? 'Não deu.'); }} />
-          <Btn title="Desconectar do Mac" onPress={() => Alert.alert('Desconectar do Mac', 'A carteira deste iPhone fica como está, mas para de receber as mudanças do Mac.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desconectar', style: 'destructive', onPress: () => disconnectMac() }])} />
-        </> : <>
-          <Txt dim>No Mac: menu do cofrinho ▸ Conectar ao iPhone… Digite o código que aparecer (ou aponte a Câmera do iPhone para o QR). A carteira vai cifrada: só este iPhone e o Mac conseguem ler.</Txt>
-          {sync.status === 'error' && sync.message ? <Txt dim>{sync.message}</Txt> : null}
-          <Input placeholder="Código do Mac (ex. ABCD-EFGH-2345-6789)" autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={setCode} />
-          <Btn title="Conectar" onPress={async () => { const r = await connectMac(code); if (r.status !== 'error') setCode(''); else bad(r.message ?? 'Não deu.'); if (r.status === 'ok') Alert.alert('Pronto', `Conectado ao Mac: ${r.message}.`); }} />
-        </>}
+      <Pressable onPress={() => router.push('/adicionar')} accessibilityRole="button" accessibilityLabel="Adicionar investimento"
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm, backgroundColor: T.pink, borderRadius: 999, paddingVertical: S.md + 2 }}>
+        <MaterialCommunityIcons name="plus" size={22} color={T.bg} /><Txt style={{ color: T.bg, fontWeight: '700' }}>Adicionar investimento</Txt>
+      </Pressable>
+      <EyeToggle />
+      <Card style={{ gap: 0 }}>
+        <SectionTitle first>Seus investimentos</SectionTitle>
+        {items.length ? items.map((i, n) => <Row key={i.key} title={i.title} sub={i.sub} last={n === items.length - 1} onPress={() => edit(i.cat, i.name)}
+          onDelete={() => ask(i.title, () => update(require('../../core').removeItem(p, { category: i.cat, name: i.name })))} />)
+          : <Txt dim>Nada cadastrado ainda. Toque em Adicionar investimento.</Txt>}
+        {items.length ? <Txt dim style={{ fontSize: 12, marginTop: S.sm }}>Toque num item para editar.</Txt> : null}
       </Card>
-      <Txt dim>Só leitura: nada aqui conecta ao banco. Os dados ficam só neste iPhone.</Txt>
-      <Card>
-        <SectionTitle first>Renda fixa (caixinha, CDB, Tesouro, LCI/LCA)</SectionTitle>
-        {p.fixedIncome.map(a => <Row key={a.name} label={`${a.name} · ${kindLabel[a.kind]} · ${a.indexer === 'ipca' ? `IPCA+ ${a.realRate ?? 0}%` : `${a.cdiPercent}% CDI`} · ${a.deposits.length} aporte(s)`} onDelete={() => save({ ...p, fixedIncome: p.fixedIncome.filter(x => x.name !== a.name) })} />)}
-        <Input placeholder="Nome (ex. Caixinha Viagem)" value={fi.name} onChangeText={name => setFi({ ...fi, name })} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-          {kinds.map(k => <Pressable key={k} onPress={() => setFi({ ...fi, kind: k })} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: fi.kind === k ? T.pink : T.line, backgroundColor: fi.kind === k ? T.pink : T.bg }}><Txt style={{ color: fi.kind === k ? T.bg : T.text }}>{kindLabel[k]}</Txt></Pressable>)}
-        </View>
-        <View style={{ flexDirection: 'row', gap: S.sm }}>
-          {([false, true] as const).map(v => <Pressable key={String(v)} onPress={() => setFi({ ...fi, ipca: v })} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: fi.ipca === v ? T.pink : T.line, backgroundColor: fi.ipca === v ? T.pink : T.bg }}><Txt style={{ color: fi.ipca === v ? T.bg : T.text }}>{v ? 'IPCA+' : 'CDI'}</Txt></Pressable>)}
-        </View>
-        {fi.ipca
-          ? <><Input placeholder="Taxa IPCA+ % a.a. (ex. 7,5)" keyboardType="decimal-pad" value={fi.rate} onChangeText={rate => setFi({ ...fi, rate })} />
-              <Input placeholder="Vencimento AAAA-MM-DD (opcional)" value={fi.maturity} onChangeText={maturity => setFi({ ...fi, maturity })} /></>
-          : <Input placeholder="% do CDI (ex. 100)" keyboardType="decimal-pad" value={fi.cdi} onChangeText={cdi => setFi({ ...fi, cdi })} />}
-        <Input placeholder="Data do aporte AAAA-MM-DD" value={fi.date} onChangeText={date => setFi({ ...fi, date })} />
-        <Input placeholder="Valor aplicado" keyboardType="decimal-pad" value={fi.amount} onChangeText={amount => setFi({ ...fi, amount })} />
-        <Btn title="Adicionar aporte" onPress={addFI} />
+      <Card style={{ gap: 0 }}>
+        <SectionTitle first right={<Pressable onPress={() => router.push({ pathname: '/adicionar', params: { type: 'provento' } })} hitSlop={8}><MaterialCommunityIcons name="plus-circle-outline" size={22} color={T.pink} /></Pressable>}>Proventos lançados à mão</SectionTitle>
+        <Txt dim style={{ fontSize: 13 }}>O valor que caiu na conta. Para o código, o lançamento manual substitui o da internet.</Txt>
+        {(p.manualDividends ?? []).map((m, i, a) => <Row key={i} title={m.ticker} sub={`${m.date.split('-').reverse().join('/')} · ${money(m.amount, hidden)}`} last={i === a.length - 1}
+          onDelete={() => ask(`o provento de ${m.ticker}`, () => update({ ...p, manualDividends: (p.manualDividends ?? []).filter((_, j) => j !== i) }))} />)}
       </Card>
       <Card>
-        <SectionTitle first>Ações e FIIs</SectionTitle>
-        {p.stocks.map(s => <Row key={s.ticker} label={s.ticker} onDelete={() => save({ ...p, stocks: p.stocks.filter(x => x.ticker !== s.ticker) })} />)}
-        <Input placeholder="Código (ex. PETR4)" autoCapitalize="characters" value={st.ticker} onChangeText={ticker => setSt({ ...st, ticker })} />
-        <Input placeholder="Quantidade" keyboardType="decimal-pad" value={st.qty} onChangeText={qty => setSt({ ...st, qty })} />
-        <Input placeholder="Preço médio (opcional)" keyboardType="decimal-pad" value={st.avg} onChangeText={avg => setSt({ ...st, avg })} />
-        <Btn title="Salvar ação" onPress={addSt} />
+        <SectionTitle first>Quero comprar</SectionTitle>
+        <Txt dim style={{ fontSize: 13 }}>Ação que você pretende comprar e o preço que quer pagar. O Pilinvest mostra quanto falta e avisa quando chegar no preço.</Txt>
+        {(p.watchlist ?? []).map((w, i, a) => <Row key={w.ticker} title={w.ticker} sub={`Alvo ${brl(w.targetPrice)}${w.amount != null ? ` · investir ${money(w.amount, hidden)}` : ''}`} last={i === a.length - 1}
+          onDelete={() => ask(w.ticker, () => update({ ...p, watchlist: (p.watchlist ?? []).filter(x => x.ticker !== w.ticker) }))} />)}
+        <Field placeholder="Código (ex. TAEE11)" autoCapitalize="characters" value={wl.ticker} onChangeText={ticker => setWl({ ...wl, ticker })} />
+        <Field placeholder="Preço que quero pagar (ex. 34,50)" keyboardType="decimal-pad" value={wl.target} onChangeText={target => setWl({ ...wl, target })} />
+        <Field placeholder="Quanto quero investir (opcional)" keyboardType="decimal-pad" value={wl.amount} onChangeText={amount => setWl({ ...wl, amount })} />
+        <Button title="Salvar favorito" onPress={addWl} />
       </Card>
-      <Card>
-        <SectionTitle first>Quero comprar (favoritos)</SectionTitle>
-        <Txt dim>Ação que você pretende comprar e o preço que quer pagar. O Pilinvest mostra a cotação, quanto falta e avisa quando chegar no preço.</Txt>
-        {(p.watchlist ?? []).map(w => <Row key={w.ticker} label={`${w.ticker} · alvo R$ ${w.targetPrice.toFixed(2).replace('.', ',')}`} onDelete={() => save({ ...p, watchlist: (p.watchlist ?? []).filter(x => x.ticker !== w.ticker) })} />)}
-        <Input placeholder="Código (ex. TAEE11)" autoCapitalize="characters" value={wl.ticker} onChangeText={ticker => setWl({ ...wl, ticker })} />
-        <Input placeholder="Preço que quero pagar (ex. 34,50)" keyboardType="decimal-pad" value={wl.target} onChangeText={target => setWl({ ...wl, target })} />
-        <Input placeholder="Quanto quero investir (opcional)" keyboardType="decimal-pad" value={wl.amount} onChangeText={amount => setWl({ ...wl, amount })} />
-        <Btn title="Salvar favorito" onPress={addWl} />
-      </Card>
-      <Card>
-        <SectionTitle first>Bitcoin</SectionTitle>
-        {p.crypto.map(c => <Row key={c.coinId} label={c.symbol} onDelete={() => save({ ...p, crypto: p.crypto.filter(x => x.coinId !== c.coinId) })} />)}
-        <Input placeholder="Quantidade (ex. 0,0015)" keyboardType="decimal-pad" value={btc.qty} onChangeText={qty => setBtc({ ...btc, qty })} />
-        <Input placeholder="Preço médio em R$ (opcional)" keyboardType="decimal-pad" value={btc.avg} onChangeText={avg => setBtc({ ...btc, avg })} />
-        <Btn title="Salvar bitcoin" onPress={addBtc} />
-      </Card>
-      <Card>
-        <SectionTitle first>Dólar (USD)</SectionTitle>
-        <Txt dim>Só digite quantos dólares você tem. A cotação é automática (dólar ao vivo, atualiza sozinha) e a conversão entra no total.</Txt>
-        {p.usd ? <Row label={`US$ ${p.usd.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${p.usd.averageRateBRL ? ` · média R$ ${p.usd.averageRateBRL.toFixed(2).replace('.', ',')}` : ''}`} onDelete={() => { const { usd: _u, ...rest } = p; save(rest as Portfolio); }} /> : null}
-        <Input placeholder="Quantidade em US$ (ex. 1500,00)" keyboardType="decimal-pad" value={usd.qty} onChangeText={qty => setUsd({ ...usd, qty })} />
-        <Input placeholder="Opcional: quanto pagou por dólar (só p/ ganho/perda)" keyboardType="decimal-pad" value={usd.avg} onChangeText={avg => setUsd({ ...usd, avg })} />
-        <Btn title="Salvar dólar" onPress={addUsd} />
-      </Card>
-      <Card>
-        <SectionTitle first>Proventos lançados à mão</SectionTitle>
-        <Txt dim>O valor que caiu na conta. Para o código, o lançamento manual substitui o da brapi.</Txt>
-        {(p.manualDividends ?? []).map((m, i) => <Row key={i} label={`${m.ticker} · ${m.date}`} onDelete={() => save({ ...p, manualDividends: (p.manualDividends ?? []).filter((_, j) => j !== i) })} />)}
-        <Input placeholder="Código (ex. MXRF11)" autoCapitalize="characters" value={dv.ticker} onChangeText={ticker => setDv({ ...dv, ticker })} />
-        <Input placeholder="Data AAAA-MM-DD" value={dv.date} onChangeText={date => setDv({ ...dv, date })} />
-        <Input placeholder="Valor recebido" keyboardType="decimal-pad" value={dv.amount} onChangeText={amount => setDv({ ...dv, amount })} />
-        <Btn title="Adicionar provento" onPress={addDv} />
-      </Card>
-      <Card>
-        <SectionTitle first>Levar a carteira entre Mac e iPhone</SectionTitle>
-        <Txt dim>Mesmo formato do portfolio.json do Mac (~/.notchinvest). O arquivo tem os valores: mande só por AirDrop ou guarde no Arquivos.</Txt>
-        <Btn title="Exportar arquivo" onPress={exportar} />
-        <Btn title="Importar do Mac (iCloud Drive)" onPress={importarDoMac} />
-        <Btn title="Importar arquivo (substitui tudo)" onPress={importar} />
-      </Card>
-      <Card>
-        <SectionTitle first>Token da brapi (opcional, só para proventos)</SectionTitle>
-        <Txt dim>{hasToken ? 'Token salvo no Keychain.' : 'Sem token: cotações pelo Yahoo Finance.'}</Txt>
-        <Input placeholder="Colar token" secureTextEntry value={tok} onChangeText={setTok} />
-        <Btn title={tok ? 'Salvar token' : 'Apagar token'} onPress={() => { setToken(tok); setTok(''); }} />
-      </Card>
+      <Txt dim style={{ fontSize: 12 }}>Conectar ao Mac, exportar ou importar a carteira e o token da brapi agora ficam nos Ajustes.</Txt>
     </Screen>
   );
 }

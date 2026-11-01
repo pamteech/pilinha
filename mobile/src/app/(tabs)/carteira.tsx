@@ -1,5 +1,6 @@
 import { EyeToggle } from '../../components/EyeToggle';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Card, SectionTitle, Screen, Txt, AssetRow, money } from '../../components/ui';
 import { groupItems, pct, brl, WatchRow } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,14 +9,17 @@ import { S, T } from '../../lib/theme';
 const cat: Record<string, string> = { caixinha: 'Caixinha', cdb: 'CDB', tesouro: 'Tesouro', lci: 'LCI', lca: 'LCA', acao: 'Ação', fii: 'FII', cripto: 'Cripto', dolar: 'Dólar' };
 export default function Carteira() {
   const { snap, hidden } = usePilinha();
-  if (!snap?.items.length && !snap?.watch?.length) return <Screen><Txt dim>{snap ? 'Nada cadastrado ainda.' : 'Carregando…'}</Txt></Screen>;
+  const router = useRouter();
+  const add = () => router.push('/adicionar');
+  if (!snap?.items.length && !snap?.watch?.length) return <Screen><Txt dim>{snap ? 'Nada cadastrado ainda.' : 'Carregando…'}</Txt>{snap ? <AddButton onPress={add} /> : null}</Screen>;
   return (
     <Screen>
       <EyeToggle />
+      <AddButton onPress={add} />
       {groupItems(snap!.items).map(g => (
         <Card key={g.key} style={{ paddingBottom: S.xs, gap: 0 }}>
           <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>
-          {g.items.map((i, n) => <AssetRow key={i.category + i.name} item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} />)}
+          {g.items.map((i, n) => <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })}><AssetRow item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} /></Pressable>)}
         </Card>
       ))}
       {snap?.watch?.length ? <Watch rows={snap.watch} hidden={hidden} /> : null}
@@ -40,4 +44,12 @@ function Watch({ rows, hidden }: { rows: WatchRow[]; hidden: boolean }) {
           </View>
         </View>))}
     </Card>);
+}
+
+function AddButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Adicionar investimento"
+      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm, borderWidth: 1, borderColor: T.pink, borderRadius: 999, paddingVertical: S.sm + 2 }}>
+      <MaterialCommunityIcons name="plus" size={20} color={T.pink} /><Txt style={{ color: T.pink, fontWeight: '700' }}>Adicionar</Txt>
+    </Pressable>);
 }
