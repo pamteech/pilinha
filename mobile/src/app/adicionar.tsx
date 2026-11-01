@@ -90,7 +90,7 @@ export default function Adicionar() {
     </View>);
 }
 
-function TypeStep({ onPick }: { onPick: (t: AssetType) => void }) {
+export function TypeStep({ onPick }: { onPick: (t: AssetType) => void }) {
   return (<>
     <Title step={1} title="O que você quer adicionar?" sub="Escolha o tipo. Dá para mudar depois." />
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>

@@ -5,9 +5,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, Field, Screen, SectionTitle, Txt, money } from '../../components/ui';
 import { EyeToggle } from '../../components/EyeToggle';
 import { brl, isPositive, kindLabel, normTicker, parseNumberBR, rateModelOf, treasuryTypeOf, validTicker } from '../../core';
+import { TypeStep } from '../adicionar';
 import { usePilinha } from '../../lib/store';
 import { S, T } from '../../lib/theme';
-// Cadastro: o botão + abre o passo a passo; tocar num item abre a mesma tela para editar.
+// Cadastro: a aba abre sempre nos cards do passo 1 (tocar num card abre o passo 2); tocar num item abre a mesma tela para editar.
 const Row = ({ title, sub, onPress, onDelete, last }: { title: string; sub: string; onPress?: () => void; onDelete: () => void; last?: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md, borderBottomWidth: last ? 0 : 1, borderBottomColor: T.line }}>
     <Pressable onPress={onPress} disabled={!onPress} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm }} accessibilityRole="button">
@@ -41,16 +42,15 @@ export default function Cadastro() {
   ];
   return (
     <Screen>
-      <Pressable onPress={() => router.push('/adicionar')} accessibilityRole="button" accessibilityLabel="Adicionar investimento"
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm, backgroundColor: T.pink, borderRadius: 999, paddingVertical: S.md + 2 }}>
-        <MaterialCommunityIcons name="plus" size={22} color={T.bg} /><Txt style={{ color: T.bg, fontWeight: '700' }}>Adicionar investimento</Txt>
-      </Pressable>
+      <Card>
+        <TypeStep onPick={t => router.push({ pathname: '/adicionar', params: { type: t } })} />
+      </Card>
       <EyeToggle />
       <Card style={{ gap: 0 }}>
         <SectionTitle first>Seus investimentos</SectionTitle>
         {items.length ? items.map((i, n) => <Row key={i.key} title={i.title} sub={i.sub} last={n === items.length - 1} onPress={() => edit(i.cat, i.name)}
           onDelete={() => ask(i.title, () => update(require('../../core').removeItem(p, { category: i.cat, name: i.name })))} />)
-          : <Txt dim>Nada cadastrado ainda. Toque em Adicionar investimento.</Txt>}
+          : <Txt dim>Nada cadastrado ainda. Escolha um tipo acima para começar.</Txt>}
         {items.length ? <Txt dim style={{ fontSize: 12, marginTop: S.sm }}>Toque num item para editar.</Txt> : null}
       </Card>
       <Card style={{ gap: 0 }}>
