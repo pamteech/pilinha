@@ -265,7 +265,9 @@ struct EditorView: View {
 /// Alertas de preço (salvos em ~/.notchinvest/alerts.json; não mexem na carteira).
 struct AlertsEditor: View {
     @State private var store = AlertStore.load()
-    @State private var ticker = "", value = "", kind: AlertKind = .below
+    @State private var ticker = ""
+    @State private var value = ""
+    @State private var kind: AlertKind = .below
     @State private var err: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
