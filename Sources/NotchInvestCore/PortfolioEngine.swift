@@ -16,10 +16,15 @@ public struct LineItem: Sendable, Identifiable {
     public var averagePrice: Double? = nil
     /// Dólar: quantidade em US$.
     public var quantity: Double? = nil
+    /// Tesouro: valor de venda hoje (CSV oficial), data do preço e taxa de venda.
+    public var marketValue: Double? = nil
+    public var marketDay: String? = nil
+    public var marketRate: Double? = nil
     /// Variação do dia em % (a partir de dayChange).
     public var dayPct: Double? { dayChange.flatMap { let prev = current - $0; return prev > 0 ? $0 / prev * 100 : nil } }
     public var netOrCurrent: Double { net ?? current }
     public var gain: Double? { invested.map { current - $0 } }
+    /// Resultado em R$ (atual − investido).
     public var gainPct: Double? { invested.flatMap { $0 > 0 ? (current / $0 - 1) * 100 : nil } }
 }
 
@@ -32,6 +37,11 @@ public struct Snapshot: Sendable {
     /// Cotação do dólar (R$ por US$) e variação do dia em %, para mostrar no painel.
     public var usdBRL: Double? = nil
     public var usdChangePct: Double? = nil
+    /// Favoritos com cotação (fora do total).
+    public var watch: [WatchRow] = []
+    /// Próximo provento anunciado (brapi), se houver.
+    public var nextDividend: CashDividend? = nil
+    public var stale: StaleInfo { StaleInfo(errors: errors) }
     public var totalNet: Double { items.reduce(0) { $0 + $1.netOrCurrent } }
     public var totalTaxes: Double { total - totalNet }
     public var total: Double { items.reduce(0) { $0 + $1.current } }
@@ -52,7 +62,7 @@ public struct PortfolioEngine: Sendable {
     /// Token da brapi vem do Keychain (app) ou da variável BRAPI_TOKEN (CLI).
     public init(brapiToken: String? = ProcessInfo.processInfo.environment["BRAPI_TOKEN"]) { stocks = StockQuoteProvider(brapiToken: brapiToken) }
 
-    public func snapshot(_ p: Portfolio, now: Date = Date()) async -> Snapshot {
+    public func snapshot(_ p: Portfolio, now: Date = Date(), treasury: [TreasuryRow]? = nil) async -> Snapshot {
         var items: [LineItem] = [], errors: [String] = []
         var cdiAnnual: Double?
 
@@ -74,8 +84,10 @@ public struct PortfolioEngine: Sendable {
                     let lastPct = a.effectiveIndexer == .ipca
                         ? pow(1 + (a.realRate ?? 0) / 100, 1.0 / 252) - 1
                         : (rates.last?.percent ?? 0) / 100 * a.cdiPercent / 100
-                    items.append(LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,
-                                          dayChange: v.gross - v.gross / (1 + lastPct), net: net))
+                    var li = LineItem(name: a.name, category: a.kind.rawValue, invested: v.invested, current: v.gross,
+                                      dayChange: v.gross - v.gross / (1 + lastPct), net: net)
+                    if let t = treasury, let m = Treasury.markToMarket(a, rows: t) { li.marketValue = m.value; li.marketDay = m.day; li.marketRate = m.sellRate }
+                    items.append(li)
                 }
             }
         }
@@ -109,6 +121,18 @@ public struct PortfolioEngine: Sendable {
         }
         var snap = Snapshot(items: items, cdiAnnual: cdiAnnual, updatedAt: now, errors: errors)
         snap.usdBRL = fxq?.bid; snap.usdChangePct = fxq?.changePct
+        if let wl = p.watchlist, !wl.isEmpty {
+            var have: [String: QuoteLite] = [:]
+            for i in items where i.unitPrice != nil { have[i.name.uppercased()] = QuoteLite(price: i.unitPrice, dayPct: i.dayPct) }
+            for w in wl {
+                let t = w.ticker.uppercased()
+                if let q = have[t] { snap.watch.append(WatchRow(w, price: q.price, dayPct: q.dayPct)); continue }
+                let q = try? await stocks.quote(t)     // favorito sem cotação não vira erro da carteira
+                snap.watch.append(WatchRow(w, price: q?.price, dayPct: q?.changePct))
+            }
+        }
+        let held = Set(p.stocks.map { $0.ticker.uppercased() })
+        snap.nextDividend = cash.filter { $0.paymentDate >= now && held.contains($0.ticker) }.min { $0.paymentDate < $1.paymentDate }
         snap.dividends = Dividends.summary(stocks: p.stocks, brapi: cash, manual: p.manualDividends ?? [], now: now)
         return snap
     }

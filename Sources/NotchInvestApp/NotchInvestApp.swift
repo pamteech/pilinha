@@ -2,6 +2,7 @@
 import AppKit
 import SwiftUI
 import NotchInvestCore
+import UserNotifications
 
 @main
 struct NotchInvestMain {
@@ -165,7 +166,9 @@ final class PortfolioModel: ObservableObject {
             Task.detached { await PilinhaSync.pushCurrent() }
             portfolio = p
             let previous = snapshot?.total
-            let new = await PortfolioEngine(brapiToken: BrapiTokenStore.read()).snapshot(p)
+            let treasury = await TreasuryService().rows(for: p)
+            let new = await PortfolioEngine(brapiToken: BrapiTokenStore.read()).snapshot(p, treasury: treasury)
+            AlertNotifier.check(new, watchlist: p.watchlist)
             snapshot = new
             loadError = nil
             // Só grava o dia se o total veio completo (sem erro de cotação), para o gráfico não "despencar".
@@ -178,6 +181,29 @@ final class PortfolioModel: ObservableObject {
             }
         } catch {
             loadError = "Cadastre a carteira (botão ✎ ou menu ▸ Cadastrar carteira…)"
+        }
+    }
+}
+
+/// Alertas de preço e favoritos: notificação local do macOS (nada sai do Mac).
+@MainActor
+enum AlertNotifier {
+    static var center: UNUserNotificationCenter? { Bundle.main.bundleIdentifier == nil ? nil : UNUserNotificationCenter.current() }
+    static func requestPermission() { center?.requestAuthorization(options: [.alert, .sound]) { _, _ in } }
+    static func check(_ s: Snapshot, watchlist: [WatchItem]?) {
+        var store = AlertStore.load()
+        let all = store.alerts + Alerts.fromWatchlist(watchlist)
+        guard all.contains(where: \.enabled) else { return }
+        var q: [String: QuoteLite] = [:]
+        for w in s.watch { q[w.ticker] = QuoteLite(price: w.price, dayPct: w.dayPct) }
+        for i in s.items where i.unitPrice != nil { q[i.name.uppercased()] = QuoteLite(price: i.unitPrice, dayPct: i.dayPct) }
+        let r = Alerts.evaluate(all, quotes: q, fired: store.fired)
+        guard r.fired != store.fired else { return }
+        store.fired = r.fired; try? store.save()
+        guard let c = center else { return }
+        for f in r.toFire {
+            let n = UNMutableNotificationContent(); n.title = f.title; n.body = f.body; n.sound = .default
+            c.add(UNNotificationRequest(identifier: f.id + "-" + DateParsing.iso.string(from: Date()), content: n, trigger: nil))
         }
     }
 }

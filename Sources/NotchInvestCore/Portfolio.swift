@@ -12,6 +12,8 @@ public struct Portfolio: Codable, Sendable {
     public var manualDividends: [ManualDividend]?
     /// Opcional: dólares guardados (conta global, espécie). Carteiras antigas não têm.
     public var usd: USDPosition?
+    /// Opcional: favoritos que ela pretende comprar (preço alvo e valor a investir).
+    public var watchlist: [WatchItem]?
 
     public init(owner: String? = nil, fixedIncome: [FixedIncomeAsset] = [], stocks: [StockPosition] = [], crypto: [CryptoPosition] = [],
                 tradingview: TradingViewConfig? = nil, manualDividends: [ManualDividend]? = nil) {

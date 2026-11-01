@@ -57,6 +57,11 @@ public struct PortfolioDraft: Sendable, Equatable {
         public init(ticker: String = "", date: Date = Date(), amount: String = "") { self.ticker = ticker; self.date = date; self.amount = amount }
     }
 
+    public struct Watch: Sendable, Equatable, Identifiable {
+        public var id = UUID(); public var ticker: String; public var target: String; public var amount: String
+        public init(ticker: String = "", target: String = "", amount: String = "") { self.ticker = ticker; self.target = target; self.amount = amount }
+    }
+    public var watch: [Watch] = []
     public var fixed: [Fixed] = []
     public var stocks: [Stock] = []
     public var crypto: [Crypto] = []
@@ -77,10 +82,11 @@ public struct PortfolioDraft: Sendable, Equatable {
         stocks = p.stocks.map { Stock(ticker: $0.ticker, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePrice, maxDecimals: 2)) }
         crypto = p.crypto.map { Crypto(coinId: $0.coinId, symbol: $0.symbol, quantity: DecimalInput.format($0.quantity), averagePrice: DecimalInput.format($0.averagePriceBRL, maxDecimals: 2)) }
         usdAmount = DecimalInput.format(p.usd?.amount); usdAverage = DecimalInput.format(p.usd?.averageRateBRL, maxDecimals: 4)
+        watch = (p.watchlist ?? []).map { Watch(ticker: $0.ticker, target: DecimalInput.format($0.targetPrice, maxDecimals: 2), amount: DecimalInput.format($0.amount, maxDecimals: 2)) }
         dividends = (p.manualDividends ?? []).map { Dividend(ticker: $0.ticker, date: DateParsing.iso.date(from: $0.date) ?? Date(), amount: DecimalInput.format($0.amount, maxDecimals: 2)) }
     }
 
-    public static func == (a: Self, b: Self) -> Bool { a.fixed == b.fixed && a.stocks == b.stocks && a.crypto == b.crypto && a.dividends == b.dividends && a.usdAmount == b.usdAmount && a.usdAverage == b.usdAverage }
+    public static func == (a: Self, b: Self) -> Bool { a.fixed == b.fixed && a.stocks == b.stocks && a.crypto == b.crypto && a.dividends == b.dividends && a.watch == b.watch && a.usdAmount == b.usdAmount && a.usdAverage == b.usdAverage }
 
     static func ticker(_ s: String) -> String { s.uppercased().filter { $0.isLetter || $0.isNumber } }
 
@@ -142,6 +148,15 @@ public struct PortfolioDraft: Sendable, Equatable {
             return ManualDividend(ticker: t, date: DateParsing.iso.string(from: d.date), amount: num(d.amount, "Provento \(t.isEmpty ? String(i + 1) : t)") ?? 0)
         }
         p.manualDividends = md.isEmpty ? nil : md
+        var wt = Set<String>()
+        let wl = watch.enumerated().map { i, w -> WatchItem in
+            let t = Self.ticker(w.ticker), label = t.isEmpty ? "Favorito \(i + 1)" : t
+            if t.count < 5 || t.count > 7 || !(t.last?.isNumber ?? false) { errs.append("\(label): ticker inválido (ex. TAEE11)") }
+            if !wt.insert(t).inserted { errs.append("\(label): favorito repetido") }
+            return WatchItem(ticker: t, targetPrice: num(w.target, "\(label) — preço desejado") ?? 0,
+                             amount: num(w.amount, "\(label) — valor a investir", optional: true))
+        }
+        p.watchlist = wl.isEmpty ? nil : wl
         if usdAmount.trimmingCharacters(in: .whitespaces).isEmpty {
             if !usdAverage.trimmingCharacters(in: .whitespaces).isEmpty { errs.append("Dólar: informe quantos dólares você tem") }
             p.usd = nil

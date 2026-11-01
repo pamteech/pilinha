@@ -190,17 +190,17 @@ struct ExpandedView: View {
                                     .foregroundStyle(g >= 0 ? .green : .red).frame(width: 64, alignment: .trailing)
                             }
                         }.font(.system(size: 12))
+                        GainDetailRow(item: i)
                         }
                     }
                     }
+                    if !s.watch.isEmpty { WatchSection(rows: s.watch) }
                 }
-                if !s.errors.isEmpty {
-                    Text("⚠️ " + s.errors.joined(separator: " · "))
-                        .font(.caption2).foregroundStyle(.orange).lineLimit(3)
-                        .textSelection(.enabled)
+                HStack(spacing: 8) {
+                    Text("Atualizado \(s.updatedAt.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    if s.stale.stale { StaleBadge(info: s.stale) }
                 }
-                Text("Atualizado \(s.updatedAt.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .foregroundStyle(.white)
@@ -209,6 +209,7 @@ struct ExpandedView: View {
 /// Bruto × líquido (IR/IOF da renda fixa) e proventos dos últimos 12 meses.
 struct NetSummaryRow: View {
     @EnvironmentObject var privacy: PrivacyController
+    @EnvironmentObject var model: PortfolioModel
     let snapshot: Snapshot
     var body: some View {
         let s = snapshot, u = privacy.unlocked
@@ -221,6 +222,14 @@ struct NetSummaryRow: View {
                     Label(String(format: "Líquido %+.2f%%", pct), systemImage: "banknote")
                 }
                 if let tx = privacy.mode.money(s.totalTaxes, unlocked: u) { Text("IR/IOF \(tx)").foregroundStyle(.secondary) }
+            }
+            if let nx = s.nextDividend {
+                Label("Próximo \(nx.ticker) \(nx.paymentDate.formatted(.dateTime.day().month(.abbreviated)))", systemImage: "calendar.badge.clock")
+                    .help("Próximo provento anunciado (brapi)")
+            }
+            if let r = Optional(Dividends.receivedTotal(model.portfolio?.manualDividends)), r.count > 0 {
+                Label(privacy.mode.money(r.total, unlocked: u).map { "Recebido \($0)" } ?? "Recebido", systemImage: "tray.and.arrow.down")
+                    .help("Soma dos proventos lançados no Cadastro")
             }
             if s.dividends.last12m > 0 {
                 Label(privacy.mode.money(s.dividends.last12m, unlocked: u).map { "Proventos 12m \($0)" } ?? "Proventos 12m ✓",
@@ -270,6 +279,74 @@ struct RefreshButton: View {
         .disabled(model.loading)
         .help("Atualizar agora")
         .accessibilityLabel("Atualizar")
+    }
+}
+
+/// Linha fina embaixo do ativo: resultado em R$ (e %) e, no Tesouro, o valor de venda hoje.
+struct GainDetailRow: View {
+    @EnvironmentObject var privacy: PrivacyController
+    let item: LineItem
+    var body: some View {
+        let u = privacy.unlocked
+        if item.gain != nil || item.marketValue != nil {
+            HStack(spacing: 8) {
+                Spacer().frame(width: 60)
+                if let g = item.gain {
+                    let money = privacy.mode.money(abs(g), unlocked: u).map { (g >= 0 ? "+" : "−") + $0 }
+                    Text([money, item.gainPct.map(pctBR)].compactMap { $0 }.joined(separator: " · "))
+                        .foregroundStyle(g >= 0 ? .green : .red).help("Resultado: valor atual menos o investido")
+                }
+                if let m = item.marketValue {
+                    HStack(spacing: 3) {
+                        Image(systemName: "building.columns")
+                        Text("Venda hoje " + (privacy.mode.money(m, unlocked: u) ?? pctBR(((m / max(item.invested ?? m, 0.01)) - 1) * 100)))
+                        if let r = item.marketRate { Text(String(format: "taxa %.2f%%", r).replacingOccurrences(of: ".", with: ",")) }
+                    }.foregroundStyle(.secondary).help("Preço de resgate do Tesouro Direto (planilha oficial de \(item.marketDay ?? "hoje")). Na curva = valor acima.")
+                }
+                Spacer()
+            }.font(.system(size: 9)).monospacedDigit()
+        }
+    }
+}
+
+/// Favoritos: cotação, alvo e quanto falta.
+struct WatchSection: View {
+    @EnvironmentObject var privacy: PrivacyController
+    let rows: [WatchRow]
+    var body: some View {
+        HStack {
+            Image(systemName: "star").foregroundStyle(Color(red: 0.62, green: 0.45, blue: 0.98))
+            Text("QUERO COMPRAR").font(.caption2.weight(.semibold)).foregroundStyle(.secondary); Spacer()
+        }.padding(.top, 4)
+        ForEach(rows) { w in
+            HStack {
+                Image(systemName: w.reached ? "star.fill" : "star").foregroundStyle(w.reached ? .green : .secondary).frame(width: 60, alignment: .leading)
+                Text(w.ticker)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("alvo " + BRL.format(w.targetPrice)).foregroundStyle(.secondary)
+                    if let a = w.amount, let t = privacy.mode.money(a, unlocked: privacy.unlocked) {
+                        Text("investir \(t)" + (w.shares.map { " (~\($0) cotas)" } ?? "")).font(.system(size: 9)).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Text(w.price.map(BRL.format) ?? "–").monospacedDigit()
+                Text(w.reached ? "no preço" : w.distancePct.map { String(format: "-%.1f%%", $0).replacingOccurrences(of: ".", with: ",") } ?? "–")
+                    .monospacedDigit().foregroundStyle(w.reached ? .green : .secondary).frame(width: 58, alignment: .trailing)
+                    .help(w.reached ? "Cotação no preço que você quer" : "Quanto ainda precisa cair até o alvo")
+            }.font(.system(size: 12))
+        }
+    }
+}
+
+/// Aviso discreto: ícone de relógio; o detalhe técnico aparece ao passar o mouse ou clicar.
+struct StaleBadge: View {
+    let info: StaleInfo
+    @State private var show = false
+    var body: some View {
+        Button { show.toggle() } label: {
+            Label(info.title, systemImage: "clock.badge.exclamationmark").font(.caption2).foregroundStyle(.secondary)
+        }.buttonStyle(.plain).help(info.detail)
+        .popover(isPresented: $show) { Text(info.detail).font(.caption).padding(10).frame(width: 300).textSelection(.enabled) }
     }
 }
 #endif

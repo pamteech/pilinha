@@ -46,7 +46,7 @@ struct EditorView: View {
         VStack(spacing: 0) {
             Picker("", selection: $section) {
                 Text("Renda fixa").tag(0); Text("Ações e FIIs").tag(1); Text("Cripto").tag(2); Text("Dólar").tag(5)
-                Text("Proventos").tag(3); Text("Token brapi").tag(4)
+                Text("Proventos").tag(3); Text("Favoritos").tag(6); Text("Alertas").tag(7); Text("Token brapi").tag(4)
             }.pickerStyle(.segmented).labelsHidden().padding(12)
             Divider()
             ScrollView {
@@ -57,6 +57,8 @@ struct EditorView: View {
                     case 2: cryptoSection
                     case 5: usdSection
                     case 3: dividendSection
+                    case 6: watchSection
+                    case 7: AlertsEditor()
                     default: tokenSection
                     }
                 }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -194,6 +196,26 @@ struct EditorView: View {
         }
     }
 
+    // MARK: favoritos
+    var watchSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            hint("Ações que você pretende comprar. Coloque o preço que quer pagar e, se quiser, quanto pretende investir. O painel mostra a cotação, quanto falta e o Pilinha avisa (notificação) quando chegar no preço.")
+            ForEach($state.draft.watch) { $w in
+                HStack {
+                    Image(systemName: "star").foregroundStyle(.purple)
+                    TextField("Ticker", text: $w.ticker).frame(width: 90)
+                    Text("Preço desejado R$").foregroundStyle(.secondary)
+                    TextField("ex. 34,50", text: $w.target).frame(width: 90)
+                    Text("Investir R$").foregroundStyle(.secondary)
+                    TextField("opcional", text: $w.amount).frame(width: 100)
+                    Spacer()
+                    removeButton { state.draft.watch.removeAll { $0.id == w.id } }
+                }
+            }
+            addButton("Adicionar favorito") { state.draft.watch.append(.init()); AlertNotifier.requestPermission() }
+        }
+    }
+
     // MARK: token
     var tokenSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -238,6 +260,45 @@ struct EditorView: View {
     func removeButton(_ a: @escaping () -> Void) -> some View {
         Button(action: a) { Image(systemName: "trash") }.buttonStyle(.borderless).foregroundStyle(.red).help("Remover")
     }
+}
+
+/// Alertas de preço (salvos em ~/.notchinvest/alerts.json; não mexem na carteira).
+struct AlertsEditor: View {
+    @State private var store = AlertStore.load()
+    @State private var ticker = "", value = "", kind: AlertKind = .below
+    @State private var err: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Notificação do macOS quando a ação sobe ou cai mais de X% no dia, ou bate um preço. Um aviso por alerta por dia, checado a cada atualização (5 min).")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                TextField("Ticker", text: $ticker).frame(width: 90)
+                Picker("", selection: $kind) { ForEach(AlertKind.allCases, id: \.self) { Text($0.label).tag($0) } }.labelsHidden().frame(width: 140)
+                TextField(kind == .dropPct || kind == .risePct ? "% (ex. 3)" : "preço (ex. 40,00)", text: $value).frame(width: 110)
+                Button { add() } label: { Label("Criar alerta", systemImage: "bell.badge") }
+            }
+            if let err { Label(err, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.caption) }
+            ForEach(store.alerts) { a in
+                HStack {
+                    Image(systemName: a.kind == .above || a.kind == .risePct ? "arrow.up.circle" : "arrow.down.circle").foregroundStyle(a.enabled ? (a.kind == .above || a.kind == .risePct ? .green : .red) : .secondary)
+                    Text(a.label).foregroundStyle(a.enabled ? .primary : .secondary)
+                    Spacer()
+                    Button { toggle(a) } label: { Image(systemName: a.enabled ? "bell.fill" : "bell.slash") }.buttonStyle(.borderless).help(a.enabled ? "Pausar" : "Ativar")
+                    Button { store.alerts.removeAll { $0.id == a.id }; persist() } label: { Image(systemName: "trash") }.buttonStyle(.borderless).foregroundStyle(.red).help("Remover")
+                }
+            }
+            if store.alerts.isEmpty { Text("Nenhum alerta ainda. Favoritos avisam sozinhos quando chegam no preço.").font(.caption).foregroundStyle(.secondary) }
+        }
+    }
+    func add() {
+        let t = ticker.uppercased().filter { $0.isLetter || $0.isNumber }
+        guard t.count >= 5, t.count <= 7, let v = DecimalInput.parse(value), v > 0 else { err = "Informe o ticker (ex. PETR4) e um valor maior que zero."; return }
+        if (kind == .dropPct || kind == .risePct) && v >= 100 { err = "A variação tem que ser menor que 100%."; return }
+        err = nil; store.alerts.append(PriceAlert(ticker: t, kind: kind, value: v)); ticker = ""; value = ""; persist()
+        AlertNotifier.requestPermission()
+    }
+    func toggle(_ a: PriceAlert) { if let i = store.alerts.firstIndex(where: { $0.id == a.id }) { store.alerts[i].enabled.toggle(); persist() } }
+    func persist() { var s = AlertStore.load(); s.alerts = store.alerts; try? s.save(); store = s }
 }
 
 /// Janela normal (não o painel do entalhe), para o teclado funcionar nos campos.

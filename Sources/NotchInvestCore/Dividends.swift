@@ -56,3 +56,8 @@ public enum Dividends {
         return s
     }
 }
+
+extension Dividends {
+    /// Total já recebido (lançamentos manuais, todo o período).
+    public static func receivedTotal(_ m: [ManualDividend]?) -> (total: Double, count: Int) { ((m ?? []).reduce(0) { $0 + $1.amount }, (m ?? []).count) }
+}
