@@ -11,6 +11,7 @@ final class PrivacyController: ObservableObject {
     @Published var mode: PrivacyMode { didSet { d.set(mode.rawValue, forKey: "privacyMode") } }
     @Published private(set) var lock: PrivacyLock
     @Published var authError: String?
+    @Published private(set) var veil: PrivacyVeil
     private var relockTimer: Timer?
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
 
@@ -19,15 +20,26 @@ final class PrivacyController: ObservableObject {
         if d.string(forKey: "privacyMode") == nil { d.set(PrivacyMode.firstRunDefault.rawValue, forKey: "privacyMode") }
         lock = PrivacyLock(enabled: d.bool(forKey: "lockEnabled"),
                            relockMinutes: d.object(forKey: "relockMinutes") as? Int ?? 5)
+        veil = PrivacyVeil.load(UserDefaults.standard.object(forKey: "hideOnOpen"))   // só lê; grava só se a pessoa mudar
         observeSystemLock()
     }
 
-    var unlocked: Bool { lock.isUnlocked() }
+    /// Valores aparecem? Precisa da trava aberta e do véu de "abrir escondido" já revelado.
+    var unlocked: Bool { lock.isUnlocked() && !veil.veiled }
+    var veiled: Bool { veil.veiled && mode != .porcentagens }
+    var hideOnOpen: Bool {
+        get { veil.hideOnOpen }
+        set { veil.setHideOnOpen(newValue); d.set(newValue, forKey: "hideOnOpen") }
+    }
+    /// Painel/popover abriu: esconde de novo se a opção estiver ligada.
+    func panelOpened() { veil.panelOpened() }
+    /// Clique no total ou no olho com os valores escondidos.
+    func reveal() { veil.reveal(); if needsAuth { authenticate() } }
     var effective: PrivacyMode { mode.effective(unlocked: unlocked) }
     /// Valores precisam de Touch ID agora?
-    var needsAuth: Bool { mode == .valores && !unlocked }
+    var needsAuth: Bool { mode == .valores && !lock.isUnlocked() }
 
-    func cycle() { mode = mode.next; if needsAuth { authenticate() } }
+    func cycle() { if veiled { reveal(); return }; mode = mode.next; if needsAuth { authenticate() } }
     func set(_ m: PrivacyMode) { mode = m; if needsAuth { authenticate() } }
 
     var lockEnabled: Bool {
@@ -57,7 +69,7 @@ final class PrivacyController: ObservableObject {
         }
     }
 
-    func relock() { lock.lock(); relockTimer?.invalidate(); objectWillChange.send() }
+    func relock() { veil.panelOpened(); lock.lock(); relockTimer?.invalidate(); objectWillChange.send() }
 
     private func scheduleRelock() {
         relockTimer?.invalidate()
@@ -94,10 +106,11 @@ struct PrivacyButton: View {
                 .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.12)))
         }
         .buttonStyle(.plain).foregroundStyle(.white)
-        .help("Modo discreto: \(privacy.mode.label)")
+        .help(privacy.veiled ? "Mostrar valores" : "Modo discreto: \(privacy.mode.label)")
         .accessibilityLabel("Modo discreto")
     }
     var icon: String {
+        if privacy.veiled { return "eye.slash" }
         switch privacy.mode { case .valores: return "eye"; case .oculto: return "eye.slash"; case .porcentagens: return "percent" }
     }
 }
@@ -134,6 +147,8 @@ struct PrivacyInfoView: View {
                 Picker("Mostrar", selection: Binding(get: { privacy.mode }, set: { privacy.set($0) })) {
                     ForEach(PrivacyMode.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
+                Toggle("Abrir com valores escondidos (clique no total para mostrar)", isOn: Binding(
+                    get: { privacy.hideOnOpen }, set: { privacy.hideOnOpen = $0 }))
                 Toggle("Pedir Touch ID (ou senha do Mac) para mostrar valores", isOn: Binding(
                     get: { privacy.lockEnabled }, set: { privacy.lockEnabled = $0 }))
                 if privacy.lockEnabled {
@@ -184,7 +199,7 @@ struct PrivacyInfoView: View {
     func erase() {
         do {
             try LocalData.eraseAll()
-            for k in ["privacyMode", "lockEnabled", "relockMinutes"] { UserDefaults.standard.removeObject(forKey: k) }
+            for k in ["privacyMode", "lockEnabled", "relockMinutes", "hideOnOpen"] { UserDefaults.standard.removeObject(forKey: k) }
             privacy.mode = .firstRunDefault; privacy.lockEnabled = false; privacy.relock()
             message = "Tudo apagado."; onErased()
         } catch { message = "Não consegui apagar: \(error.localizedDescription)" }

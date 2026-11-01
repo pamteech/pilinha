@@ -59,3 +59,18 @@ describe('Outros', () => {
   test('dados atrasados', () => { expect(staleInfo([]).stale).toBe(false); const s = staleInfo(['X: HTTP 429']); expect(s.stale).toBe(true); expect(s.title).toBe('Dados atrasados'); expect(s.detail).toContain('429'); });
   test('total recebido', () => { expect(receivedTotal([{ ticker: 'A', date: '2026-01-01', amount: 1.5 }, { ticker: 'B', date: '2026-02-01', amount: 2 }])).toEqual({ total: 3.5, count: 2 }); expect(receivedTotal(undefined).count).toBe(0); });
 });
+
+import { hiddenOnOpen, shouldRehide, hideOnOpenDefault } from '..';
+describe('Abrir com valores escondidos', () => {
+  test('ligado por padrão e sempre começa oculto', () => {
+    expect(hideOnOpenDefault).toBe(true);
+    expect(hiddenOnOpen(undefined, false)).toBe(true); expect(hiddenOnOpen(true, false)).toBe(true);
+    expect(hiddenOnOpen(false, false)).toBe(false); expect(hiddenOnOpen(false, true)).toBe(true);
+  });
+  test('esconde de novo só ao voltar do segundo plano', () => {
+    expect(shouldRehide(true, 'background', 'active')).toBe(true);
+    expect(shouldRehide(undefined, 'background', 'active')).toBe(true);
+    expect(shouldRehide(true, 'inactive', 'active')).toBe(false);
+    expect(shouldRehide(false, 'background', 'active')).toBe(false);
+  });
+});

@@ -27,6 +27,10 @@ export default function Ajustes() {
         <Button title={goal.trim() ? 'Salvar meta' : settings.goal ? 'Remover meta' : 'Salvar meta'} onPress={saveGoal} />
       </Card>
       <Card>
+        <SectionTitle first>Privacidade</SectionTitle>
+        <ToggleRow label="Abrir com valores escondidos" hint="Ao abrir ou voltar para o app, toque no patrimônio para mostrar" value={settings.hideOnOpen !== false} onChange={v => setSettings({ ...settings, hideOnOpen: v })} />
+      </Card>
+      <Card>
         <SectionTitle first>Face ID</SectionTitle>
         {!has && <Txt dim style={{ fontSize: 13 }}>Face ID não disponível ou não configurado neste aparelho. A senha do iPhone funciona como alternativa.</Txt>}
         <ToggleRow label="Exigir ao abrir o app" hint="Também ao voltar do segundo plano" value={settings.faceOnOpen} onChange={v => toggle('faceOnOpen', v)} />

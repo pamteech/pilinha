@@ -105,10 +105,15 @@ struct ExpandedView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         if let t = privacy.mode.money(s.total, unlocked: privacy.unlocked) {
                             Text(t).font(.title3.bold())
+                                .onTapGesture { if privacy.veiled { privacy.reveal() } }
+                                .help(privacy.veiled ? "Clique para mostrar os valores" : "")
+                            if privacy.veiled {
+                                Button("Clique para mostrar") { privacy.reveal() }.buttonStyle(.link).font(.caption)
+                            }
                         } else {
                             Text(String(format: "%+.2f%% no total", s.totalGainPct)).font(.title3.bold())
                         }
-                        if privacy.needsAuth {
+                        if privacy.needsAuth && !privacy.veiled {
                             Button("Mostrar com Touch ID") { privacy.authenticate() }.buttonStyle(.link).font(.caption)
                         }
                         if let d = s.dayChangePct {

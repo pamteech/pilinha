@@ -50,3 +50,15 @@ import Foundation
         #expect(NetworkAudit.leaksNothing(q))
     }
 }
+
+@Suite struct PrivacyVeilTests {
+    @Test func defaultOnAndRehides() {
+        var v = PrivacyVeil.load(nil)
+        #expect(v.hideOnOpen && v.veiled)
+        v.reveal(); #expect(!v.veiled)
+        v.panelOpened(); #expect(v.veiled)
+        v.setHideOnOpen(false); #expect(!v.veiled)
+        v.panelOpened(); #expect(!v.veiled)
+        #expect(!PrivacyVeil.load(false).veiled)
+    }
+}

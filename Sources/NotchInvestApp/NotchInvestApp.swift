@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import SwiftUI
+import Combine
 import NotchInvestCore
 import UserNotifications
 
@@ -25,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let editorWindow = EditorWindow()
     var statusItem: NSStatusItem?
     var menuBar: MenuBarController?
+    var expandedSub: AnyCancellable?
     func applicationDidFinishLaunching(_ n: Notification) {
         if DisplayMode.current == .notch {
             notch = NotchWindowController(model: model, charts: charts, privacy: privacy)
@@ -34,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.onShowEditor = { [weak self] in self?.showEditor() }
         model.onShowSync = { [weak self] in self?.showSync() }
         setupMenu()
+        // Abrir com valores escondidos: cada vez que o painel abre, esconde de novo.
+        expandedSub = model.$expanded.removeDuplicates().sink { [weak self] open in if open { self?.privacy.panelOpened() } }
         model.start()
     }
 

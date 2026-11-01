@@ -39,6 +39,19 @@ public enum PrivacyMode: String, Codable, Sendable, CaseIterable {
     public static func load(_ raw: String?) -> PrivacyMode { raw.flatMap(PrivacyMode.init(rawValue:)) ?? firstRunDefault }
 }
 
+/// "Abrir com valores escondidos": cada vez que o painel abre, os R$ começam ocultos; um clique no total/olho revela.
+/// Só vale na sessão do painel (não muda o modo salvo). Preferência `hideOnOpen` ligada por padrão.
+public struct PrivacyVeil: Sendable, Equatable {
+    public var hideOnOpen: Bool
+    public private(set) var veiled: Bool
+    public init(hideOnOpen: Bool = true) { self.hideOnOpen = hideOnOpen; veiled = hideOnOpen }
+    /// Lê a preferência; sem valor salvo = ligada.
+    public static func load(_ raw: Any?) -> PrivacyVeil { PrivacyVeil(hideOnOpen: (raw as? Bool) ?? true) }
+    public mutating func panelOpened() { veiled = hideOnOpen }
+    public mutating func reveal() { veiled = false }
+    public mutating func setHideOnOpen(_ on: Bool) { hideOnOpen = on; if !on { veiled = false } }
+}
+
 /// Trava opcional (Touch ID/senha do Mac). A autenticação em si é do sistema (LocalAuthentication);
 /// aqui só fica a regra de quando os valores voltam a ser escondidos.
 public struct PrivacyLock: Sendable, Equatable {

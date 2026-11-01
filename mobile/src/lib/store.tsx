@@ -7,7 +7,7 @@ import { codeFromURL, pullFromMac } from './sync';
 import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
 import * as S from './storage';
 import { syncExtensions } from './widget';
-import { PriceAlert } from '../core';
+import { PriceAlert, hiddenOnOpen, shouldRehide } from '../core';
 import { checkAndNotify, quotesFromSnapshot, syncBackgroundTask } from './alerts';
 import { authenticate } from './auth';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
@@ -44,7 +44,13 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { setSettingsState(await S.loadSettings()); setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = await S.loadHidden(); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); pRef.current = p; setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); pRef.current = p; setLoaded(true); await run(p); })(); }, [run]);
+  // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
+  useEffect(() => {
+    let prev: string = AppState.currentState ?? 'active';
+    const sub = AppState.addEventListener('change', st => { if (shouldRehide(setRef.current.hideOnOpen, prev, st)) { hRef.current = true; setHiddenState(true); } prev = st; });
+    return () => sub.remove();
+  }, []);
   useEffect(() => { const t = setInterval(() => run(pRef.current), 5 * 60_000); return () => clearInterval(t); }, [run]);
   // Sincronização com o Mac: ao abrir, ao voltar para o app, a cada 5 min e pelo link do QR.
   const [sync, setSync] = useState<SyncState>({ connected: false, status: 'off' });
