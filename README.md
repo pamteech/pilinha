@@ -118,7 +118,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.pilinha.plis
 ```
 
 ### Ícone
-`Support/AppIcon.icns` é gerado do próprio sprite do porquinho: `python3 Support/make-icon.py` (Pillow).
+`Support/AppIcon.icns` é gerado a partir do ícone do app (`mobile/assets/images/pilinha-icon.png`): `python3 Support/make-icon.py` (Pillow).
 
 ## 📝 O `portfolio.json` (para quem prefere editar à mão)
 ```json
