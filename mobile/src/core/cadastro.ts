@@ -75,6 +75,7 @@ export function validateDraft(d: Draft, p: Portfolio, now = new Date()): string[
   if (d.type === 'acao' || d.type === 'fii') {
     if (!validTicker(d.ticker)) e.push('Escolha a ação pelo nome ou digite o código (ex. PETR4).');
     if (!isPositive(n(d.quantity))) e.push('Quantas você tem? (ex. 100)');
+    else if (!Number.isInteger(n(d.quantity))) e.push('Ações e FIIs são inteiros (ex. 100).');
     if (d.avg.trim() && !isPositive(n(d.avg))) e.push('Preço médio inválido (ex. 32,10).');
     return e;
   }
