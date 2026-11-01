@@ -28,6 +28,14 @@ function Lock({ children }: { children: React.ReactNode }) {
     </View>)}</View>
   );
 }
+// Erro em qualquer tela vira um aviso com "Tentar de novo" em vez de fechar o app.
+export function ErrorBoundary({ retry }: { error: Error; retry: () => Promise<void> }) {
+  return (<View style={{ flex: 1, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center', gap: S.lg, padding: S.xl }}>
+    <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '700' }}>Ops, algo deu errado</Text>
+    <Text style={{ textAlign: 'center' }}>Sua carteira continua salva no aparelho. Toque para tentar de novo.</Text>
+    <Pressable onPress={() => { retry(); }} style={{ backgroundColor: T.champ, borderRadius: 999, paddingVertical: S.md, paddingHorizontal: S.xl }}><Text style={{ color: T.navy, fontWeight: '700' }}>Tentar de novo</Text></Pressable>
+  </View>);
+}
 // Garante que abrir o app (ou um link) sempre tenha as abas por baixo.
 export const unstable_settings = { initialRouteName: '(tabs)', anchor: '(tabs)' };
 export default function Layout() {

@@ -11,8 +11,18 @@ import * as St from '../lib/storage';
 import { T, S, R } from '../lib/theme';
 import {
   ASSET_TYPES, AssetType, CDI_SHORTCUTS, Draft, TickerHit, TreasuryOffer, applyDraft, brl, draftFor, emptyDraft, existingNotice, localSearch,
-  mergeHits, multiDeposit, normTicker, offerName, parseYahooSearch, preview, removeItem, stockQuote, toISO, validTicker, validateDraft, yahooSearchURL, defaultFetcher,
+  mergeHits, multiDeposit, normTicker, offerName, offerRateText, parseYahooSearch, preview, removeItem, stockQuote, toISO, validTicker, validateDraft, yahooSearchURL, defaultFetcher,
 } from '../core';
+// Qualquer erro nesta tela mostra um aviso com "Voltar" em vez de fechar o app (a carteira salva não é tocada).
+export function ErrorBoundary({ retry }: { error: Error; retry: () => Promise<void> }) {
+  const router = useRouter();
+  return (<View style={{ flex: 1, backgroundColor: T.bg, padding: S.lg, gap: S.md, justifyContent: 'center' }}>
+    <Txt style={{ fontSize: 20, lineHeight: 26, fontWeight: '700' }}>Ops, algo deu errado no cadastro</Txt>
+    <Txt dim>Sua carteira continua igual, nada foi apagado. Tenta de novo ou volta para a tela anterior.</Txt>
+    <Button title="Tentar de novo" onPress={() => { retry(); }} />
+    <Pressable onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))} hitSlop={8}><Txt style={{ color: T.lilacDeep, fontWeight: '600', textAlign: 'center' }}>Voltar</Txt></Pressable>
+  </View>);
+}
 type Icon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 const STEP_LABEL: Partial<Record<AssetType, string>> = { renda: 'CAIXINHA OU CDB', tesouro: 'TESOURO', acao: 'AÇÕES', fii: 'FUNDOS IMOBILIÁRIOS', bitcoin: 'BITCOIN', dolar: 'DÓLAR', lcilca: 'LCI OU LCA', provento: 'PROVENTO' };
 const Title = ({ step, label, title, sub }: { step: number; label?: string; title: string; sub?: string }) => (
@@ -39,17 +49,20 @@ export default function Adicionar() {
   const close = () => (router.canGoBack() ? router.back() : router.navigate('/'));
   const pick = (t: AssetType) => { setD(emptyDraft(t, today)); setAdv(false); setPrice(null); setStep(2); };
   const next = () => {
-    if (!d) return; const e = validateDraft(d, p);
-    if (e.length) return Alert.alert('Confere aí', e.join('\n'));
+    if (!d) return;
+    try { const e = validateDraft(d, p); if (e.length) return Alert.alert('Confere aí', e.join('\n')); } catch { return Alert.alert('Confere aí', 'Algum campo ficou inválido.'); }
     setStep(3);
   };
   const save = async () => {
-    if (!d) return; const e = validateDraft(d, p); if (e.length) return Alert.alert('Confere aí', e.join('\n'));
-    await update(applyDraft(p, d).portfolio); close();
+    if (!d) return;
+    try {
+      const e = validateDraft(d, p); if (e.length) return Alert.alert('Confere aí', e.join('\n'));
+      await update(applyDraft(p, d).portfolio); close();
+    } catch { Alert.alert('Não deu para salvar', 'Nada mudou na sua carteira. Confere os campos e tenta de novo.'); }
   };
   const remove = () => {
     if (!params.cat || !params.name) return;
-    Alert.alert('Remover', `Remover ${params.name} da carteira?`, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Remover', style: 'destructive', onPress: async () => { await update(removeItem(p, { category: String(params.cat), name: String(params.name) })); close(); } }]);
+    Alert.alert('Remover', `Remover ${params.name} da carteira?`, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Remover', style: 'destructive', onPress: async () => { try { await update(removeItem(p, { category: String(params.cat), name: String(params.name) })); close(); } catch { Alert.alert('Não deu para remover', 'Nada mudou na sua carteira.'); } } }]);
   };
   // Bitcoin/dólar: cotação que o app já tem; ações: busca na hora.
   React.useEffect(() => {
@@ -205,9 +218,9 @@ function TesouroFields({ d, set, money, advToggle }: { d: Draft; set: (x: Partia
   React.useEffect(() => { let a = true; treasuryOffers().then(o => a && setOffers(o)).catch(() => a && setOffers([])); return () => { a = false; }; }, []);
   const list = (offers ?? []).filter(o => o.type === d.treasury);
   // Na edição a taxa contratada é mantida (a do dia só preenche um cadastro novo).
-  const choose = (o: TreasuryOffer) => set({ title: offerName(o), maturity: o.maturity, ...(!d.editKey && o.type !== 'selic' && o.buyRate != null ? { rate: String(o.buyRate).replace('.', ',') } : {}) });
+  const choose = (o: TreasuryOffer) => set({ title: offerName(o), maturity: o.maturity, ...(!d.editKey && o.type !== 'selic' && typeof o.buyRate === 'number' && Number.isFinite(o.buyRate) ? { rate: String(o.buyRate).replace('.', ',') } : {}) });
   const auto = (o: TreasuryOffer) => o.type !== 'selic' && o.buyRate != null && String(o.buyRate).replace('.', ',') === d.rate;
-  const rateText = (o: TreasuryOffer) => (o.buyRate == null ? 'sem taxa hoje' : o.type === 'selic' ? `Hoje: Selic + ${o.buyRate.toFixed(4).replace('.', ',')}%` : o.type === 'ipca' ? `Hoje: IPCA + ${o.buyRate.toFixed(2).replace('.', ',')}% ao ano` : `Hoje: ${o.buyRate.toFixed(2).replace('.', ',')}% ao ano`);
+  const rateText = offerRateText;
   const chosen = list.find(o => o.maturity === d.maturity && (!d.title || d.title === offerName(o)));
   return (<>
     <Title step={2} label="TESOURO" title="Qual título?" />
@@ -215,9 +228,9 @@ function TesouroFields({ d, set, money, advToggle }: { d: Draft; set: (x: Partia
       {([['selic', 'Selic'], ['prefixado', 'Prefixado'], ['ipca', 'IPCA+']] as const).map(([k, l]) => <Chip key={k} label={l} on={d.treasury === k} onPress={() => set({ treasury: k, title: undefined, maturity: '', rate: '' })} />)}
     </View>
     {offers == null ? <Txt dim style={{ fontSize: 13 }}>Buscando os títulos de hoje na planilha do Tesouro…</Txt>
-      : list.length ? list.map(o => {
+      : list.length ? list.map((o, i) => {
         const on = chosen === o;
-        return <Pressable key={o.title + o.maturity} onPress={() => choose(o)} style={{ backgroundColor: T.card, borderRadius: R.inner, borderWidth: on ? 2 : 1, borderColor: on ? T.pink : T.line, padding: S.md }}>
+        return <Pressable key={`${o.title}|${o.maturity}|${i}`} onPress={() => choose(o)} style={{ backgroundColor: T.card, borderRadius: R.inner, borderWidth: on ? 2 : 1, borderColor: on ? T.pink : T.line, padding: S.md }}>
           <Txt style={{ fontWeight: '700', fontSize: 14 }}>{offerName(o)}</Txt>
           <Txt dim style={{ fontSize: 12 }}>{rateText(o)}{on && auto(o) ? ' · preenchido sozinho' : ''}</Txt>
         </Pressable>; })

@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Portfolio, TESOURO_CSV_URL, TreasuryRow, TreasuryOffer, latestTreasuryOffers, parseTreasuryCSV, toISO, treasuryTitle } from '../core';
+import { Portfolio, TESOURO_CSV_URL, TreasuryRow, TreasuryOffer, latestTreasuryOffers, parseTreasuryCSV, sanitizeOffers, toISO, treasuryTitle } from '../core';
+// Um único download do CSV por vez, compartilhado entre a carteira e o cadastro (antes podiam baixar 2 × 15 MB ao mesmo tempo).
+let csvInflight: Promise<string> | null = null;
+function fetchCSV(): Promise<string> {
+  return csvInflight ??= (async () => {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+    try { return await fetch(TESOURO_CSV_URL, { signal: ctl.signal }).then(r => r.text()); } finally { clearTimeout(t); }
+  })().finally(() => { csvInflight = null; });
+}
 // O CSV oficial tem ~15 MB: baixa no máximo 1 vez a cada 12 h e guarda só as linhas dos títulos da carteira.
 const K = 'pilinha.treasury.v1';
 interface Cache { at: number; keys: string; rows: TreasuryRow[] }
@@ -19,8 +27,7 @@ let inflight: Promise<TreasuryRow[] | null> | null = null;
 function download(p: Portfolio, wanted: { title: string; maturity: string }[], keys: string): Promise<TreasuryRow[] | null> {
   return inflight ??= (async () => {
   try {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
-    const txt = await fetch(TESOURO_CSV_URL, { signal: ctl.signal }).then(r => r.text()).finally(() => clearTimeout(t));
+    const txt = await fetchCSV();
     const since = p.fixedIncome.flatMap(a => a.deposits.map(d => d.date)).sort()[0] ?? toISO(new Date());
     const from = toISO(new Date(new Date(since).getTime() - 15 * 86_400_000));
     const rows = parseTreasuryCSV(txt, wanted, from);
@@ -35,13 +42,11 @@ const KO = 'pilinha.treasury.offers.v1';
 let offersInflight: Promise<TreasuryOffer[]> | null = null;
 export async function treasuryOffers(): Promise<TreasuryOffer[]> {
   let c: { at: number; offers: TreasuryOffer[] } | null = null;
-  try { c = JSON.parse((await AsyncStorage.getItem(KO)) ?? 'null'); } catch {}
+  try { const j = JSON.parse((await AsyncStorage.getItem(KO)) ?? 'null'); if (j && typeof j.at === 'number') c = { at: j.at, offers: sanitizeOffers(j.offers) }; } catch {}
   if (c && Date.now() - c.at < 12 * 3600_000 && c.offers.length) return c.offers;
   return offersInflight ??= (async () => {
     try {
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
-      const txt = await fetch(TESOURO_CSV_URL, { signal: ctl.signal }).then(r => r.text()).finally(() => clearTimeout(t));
-      const offers = latestTreasuryOffers(txt, toISO(new Date()));
+      const offers = sanitizeOffers(latestTreasuryOffers(await fetchCSV(), toISO(new Date())));
       if (offers.length) await AsyncStorage.setItem(KO, JSON.stringify({ at: Date.now(), offers }));
       return offers.length ? offers : c?.offers ?? [];
     } catch { return c?.offers ?? []; }

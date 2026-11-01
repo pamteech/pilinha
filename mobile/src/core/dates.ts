@@ -18,3 +18,13 @@ export const toBR = (d: Date) => { const [y, m, dd] = parts(d); return `${p2(dd)
 export function daysBetween(a: Date, b: Date): number {
   return Math.round((parseISO(toISO(b))!.getTime() - parseISO(toISO(a))!.getTime()) / 86_400_000);
 }
+
+/** Data segura para o calendário nativo do iPhone: sempre uma Date válida, dentro de [min, max]; min/max inválidos ou invertidos são ignorados. */
+export function pickerBounds(value?: string, min?: string, max?: string): { value: Date; min?: Date; max?: Date } {
+  const at = (iso?: string) => { const d = typeof iso === 'string' && iso ? parseISO(iso) : null; return d && Number.isFinite(d.getTime()) ? new Date(d.getTime() + 12 * 3600_000) : undefined; };
+  let lo = at(min), hi = at(max); if (lo && hi && lo.getTime() > hi.getTime()) { lo = undefined; hi = undefined; }
+  let v = at(value) ?? new Date(); if (!Number.isFinite(v.getTime())) v = new Date();
+  if (hi && v.getTime() > hi.getTime()) v = hi;
+  if (lo && v.getTime() < lo.getTime()) v = lo;
+  return { value: v, ...(lo ? { min: lo } : {}), ...(hi ? { max: hi } : {}) };
+}

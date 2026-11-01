@@ -1,5 +1,5 @@
 import { FixedIncomeAsset, treasuryTypeOf, TreasuryType } from './types';
-import { parseBR, toISO } from './dates';
+import { parseBR, parseISO, toISO } from './dates';
 /**
  * Marcação a mercado do Tesouro Direto pelo CSV oficial do Tesouro Transparente
  * (PrecoTaxaTesouroDireto.csv, sai todo dia útil). Só sai do aparelho o pedido do arquivo público.
@@ -19,17 +19,22 @@ export function treasuryTitle(a: FixedIncomeAsset): { title: string; maturity: s
 }
 const num = (s: string | undefined) => { if (!s) return null; const v = parseFloat(s.trim().replace(/\./g, '').replace(',', '.')); return isFinite(v) && v > 0 ? v : null; };
 export const titleKey = (title: string, maturity: string) => `${title.trim().toLowerCase()}|${maturity}`;
+/** Percorre as linhas sem criar um array com todas (o CSV tem ~15 MB; o split dobrava a memória no iPhone). */
+export function forEachLine(text: string, fn: (line: string) => void) {
+  let i = 0; const n = text.length;
+  while (i < n) { let j = text.indexOf('\n', i); if (j < 0) j = n; const e = j > i && text.charCodeAt(j - 1) === 13 ? j - 1 : j; fn(text.slice(i, e)); i = j + 1; }
+}
 /** Lê o CSV (;) guardando só os títulos pedidos e datas a partir de `since` (AAAA-MM-DD). */
 export function parseTreasuryCSV(text: string, wanted: { title: string; maturity: string }[], since = '0000-00-00'): TreasuryRow[] {
   const want = new Set(wanted.map(w => titleKey(w.title, w.maturity)));
   const out: TreasuryRow[] = [];
-  for (const line of text.split(/\r?\n/)) {
-    const c = line.split(';'); if (c.length < 7) continue;
-    const mat = parseBR(c[1]?.trim()), day = parseBR(c[2]?.trim()); if (!mat || !day) continue;
+  forEachLine(text, line => {
+    const c = line.split(';'); if (c.length < 7) return;
+    const mat = parseBR(c[1]?.trim()), day = parseBR(c[2]?.trim()); if (!mat || !day) return;
     const m = toISO(mat), d = toISO(day);
-    if (!want.has(titleKey(c[0], m)) || d < since) continue;
+    if (!want.has(titleKey(c[0], m)) || d < since) return;
     out.push({ title: c[0].trim(), maturity: m, day: d, buyRate: num(c[3]), sellRate: num(c[4]), puBuy: num(c[5]), puSell: num(c[6]) });
-  }
+  });
   return out.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 }
 export interface MarketValue { value: number; day: string; sellRate: number | null; quantity: number }
@@ -55,16 +60,26 @@ export const treasuryTypeOfTitle = (title: string): TreasuryType | null => {
 /** Ofertas do dia mais recente do CSV, sem títulos já vencidos, ordenadas por tipo e vencimento. */
 export function latestTreasuryOffers(text: string, today = '0000-00-00'): TreasuryOffer[] {
   let last = ''; const byDay = new Map<string, TreasuryOffer[]>();
-  for (const line of text.split(/\r?\n/)) {
-    const c = line.split(';'); if (c.length < 7) continue;
-    const mat = parseBR(c[1]?.trim()), day = parseBR(c[2]?.trim()); if (!mat || !day) continue;
-    const type = treasuryTypeOfTitle(c[0]); if (!type) continue;
-    const d = toISO(day), m = toISO(mat); if (m < today) continue;
-    if (d < last) continue;
+  forEachLine(text, line => {
+    const c = line.split(';'); if (c.length < 7) return;
+    const mat = parseBR(c[1]?.trim()), day = parseBR(c[2]?.trim()); if (!mat || !day) return;
+    const type = treasuryTypeOfTitle(c[0]); if (!type) return;
+    const d = toISO(day), m = toISO(mat); if (m < today) return;
+    if (d < last) return;
     if (d > last) { last = d; byDay.clear(); }
-    const list = byDay.get(d) ?? []; list.push({ title: c[0].trim(), maturity: m, type, buyRate: num(c[3]), day: d }); byDay.set(d, list);
-  }
+    const list = byDay.get(d) ?? []; const t = c[0].trim();
+    if (!list.some(o => o.title === t && o.maturity === m)) list.push({ title: t, maturity: m, type, buyRate: num(c[3]), day: d }); byDay.set(d, list);
+  });
   return (byDay.get(last) ?? []).sort((a, b) => (a.type + a.maturity < b.type + b.maturity ? -1 : 1));
 }
 /** Nome curto: "Tesouro IPCA+ 2035". */
 export const offerName = (o: { title: string; maturity: string }) => `${o.title} ${o.maturity.slice(0, 4)}`;
+
+/** Texto da taxa do dia no cadastro; nunca quebra com taxa ausente/inválida. */
+export function offerRateText(o: { type: TreasuryType; buyRate: number | null | undefined }): string {
+  const r = o.buyRate; if (typeof r !== 'number' || !Number.isFinite(r)) return 'sem taxa hoje';
+  return o.type === 'selic' ? `Hoje: Selic + ${r.toFixed(4).replace('.', ',')}%` : o.type === 'ipca' ? `Hoje: IPCA + ${r.toFixed(2).replace('.', ',')}% ao ano` : `Hoje: ${r.toFixed(2).replace('.', ',')}% ao ano`;
+}
+/** Ofertas vindas do cache/planilha: descarta qualquer item malformado (título, vencimento ou tipo). */
+export const sanitizeOffers = (x: unknown): TreasuryOffer[] => (Array.isArray(x) ? x : []).filter((o: any) =>
+  !!o && typeof o.title === 'string' && typeof o.maturity === 'string' && !!parseISO(o.maturity) && ['selic', 'prefixado', 'ipca'].includes(o.type) && (o.buyRate == null || (typeof o.buyRate === 'number' && Number.isFinite(o.buyRate))));
