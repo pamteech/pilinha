@@ -30,7 +30,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#3E2A55",
-          "image": "./assets/images/pilinha-icon.png",
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
         }
       ],
