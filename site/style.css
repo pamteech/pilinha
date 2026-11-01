@@ -29,3 +29,8 @@ footer{border-top:1px solid rgba(255,255,255,.06);padding:36px 0;color:#8E82A3;f
 .donut{display:flex;align-items:center;gap:28px}.donut svg{width:190px;flex:none}.donut text{fill:#9A8DB0;font-size:13px;font-family:Inter,sans-serif}.donut text.big{fill:#fff;font-size:30px;font-weight:800}
 .card.soon{position:relative}.tag{position:absolute;top:22px;right:22px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:linear-gradient(90deg,#7C3AED,#C026D3);color:#fff}.tag.alt2{background:rgba(139,92,246,.2);color:#D8C4FF}
 @media(max-width:860px){.grid2{grid-template-columns:1fr}.donut{flex-direction:column}}
+.grid.soon5{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.grid.soon5>.card{grid-column:span 2}
+.grid.soon5>.card:nth-child(4),.grid.soon5>.card:nth-child(5){grid-column:span 3}
+@media(max-width:900px){.grid.soon5{grid-template-columns:1fr 1fr}.grid.soon5>.card,.grid.soon5>.card:nth-child(4){grid-column:span 1}.grid.soon5>.card:nth-child(5){grid-column:1/-1}}
+@media(max-width:560px){.grid.soon5{grid-template-columns:1fr}.grid.soon5>.card,.grid.soon5>.card:nth-child(n){grid-column:auto}}
