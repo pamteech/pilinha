@@ -52,7 +52,7 @@ export default function Cadastro() {
   };
   const importarDoMac = async () => {
     try {
-      Alert.alert('Importar do Mac', 'Na próxima tela, abra iCloud Drive > Pilinha > carteira.json (o Pilinha do Mac atualiza esse arquivo sozinho).', [
+      Alert.alert('Importar do Mac', 'Na próxima tela, abra iCloud Drive > Pilinha > carteira.json (o Pilinvest do Mac atualiza esse arquivo sozinho).', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Escolher arquivo', onPress: async () => {
           try {
@@ -140,7 +140,7 @@ export default function Cadastro() {
       </Card>
       <Card>
         <SectionTitle first>Quero comprar (favoritos)</SectionTitle>
-        <Txt dim>Ação que você pretende comprar e o preço que quer pagar. O Pilinha mostra a cotação, quanto falta e avisa quando chegar no preço.</Txt>
+        <Txt dim>Ação que você pretende comprar e o preço que quer pagar. O Pilinvest mostra a cotação, quanto falta e avisa quando chegar no preço.</Txt>
         {(p.watchlist ?? []).map(w => <Row key={w.ticker} label={`${w.ticker} · alvo R$ ${w.targetPrice.toFixed(2).replace('.', ',')}`} onDelete={() => save({ ...p, watchlist: (p.watchlist ?? []).filter(x => x.ticker !== w.ticker) })} />)}
         <Input placeholder="Código (ex. TAEE11)" autoCapitalize="characters" value={wl.ticker} onChangeText={ticker => setWl({ ...wl, ticker })} />
         <Input placeholder="Preço que quero pagar (ex. 34,50)" keyboardType="decimal-pad" value={wl.target} onChangeText={target => setWl({ ...wl, target })} />

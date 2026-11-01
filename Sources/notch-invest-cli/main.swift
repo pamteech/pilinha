@@ -4,7 +4,7 @@ import NotchInvestCore
 // Uso: notch-invest-cli [caminho/portfolio.json]
 if let a = CommandLine.arguments.dropFirst().first, ["-h", "--help", "help"].contains(a) {
     print("""
-    Pilinha 🐷 — conferir a carteira no terminal (mesmos cálculos do app de entalhe)
+    Pilinvest 🐷 — conferir a carteira no terminal (mesmos cálculos do app de entalhe)
 
     Uso: notch-invest-cli [caminho/portfolio.json]
       sem argumento, lê \(Portfolio.defaultURL.path)

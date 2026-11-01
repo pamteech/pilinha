@@ -23,7 +23,7 @@ enum SyncPairing {
         let a = NSAlert()
         a.messageText = "Conectar ao iPhone"
         a.informativeText = """
-        No iPhone, abra o Pilinha › Cadastro › "Conectar ao Mac" e digite o código abaixo \
+        No iPhone, abra o Pilinvest › Cadastro › "Conectar ao Mac" e digite o código abaixo \
         (ou aponte a Câmera do iPhone para o QR). Depois disso a carteira daqui aparece lá sozinha.
 
         A carteira vai cifrada: o servidor não consegue ler. Não mostre este código para outras pessoas.

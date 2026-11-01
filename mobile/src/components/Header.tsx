@@ -22,7 +22,7 @@ export function Header({ title, back }: { title: string; back?: boolean }) {
         <MaterialCommunityIcons name="piggy-bank-outline" size={22} color={T.champ} />
       </View>}
       <View style={{ flex: 1 }}>
-        <Eyebrow>Pilinha</Eyebrow>
+        <Eyebrow>Pilinvest</Eyebrow>
         <Text numberOfLines={1} style={{ color: T.onDark, fontSize: 21, lineHeight: 27, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
       </View>
       {!back && <View style={{ flexDirection: 'row', gap: S.sm }}>{btn('bell-outline', 'Alertas', () => router.navigate('/alertas'))}{btn('cog-outline', 'Ajustes', () => router.navigate('/ajustes'))}</View>}

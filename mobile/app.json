@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pilinha",
+    "name": "Pilinvest",
     "slug": "pilinha",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true,
-        "NSFaceIDUsageDescription": "O Pilinha usa o Face ID para abrir o app e mostrar os valores escondidos."
+        "NSFaceIDUsageDescription": "O Pilinvest usa o Face ID para abrir o app e mostrar os valores escondidos."
       },
       "entitlements": {
         "com.apple.security.application-groups": [
@@ -55,7 +55,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "O Pilinha usa o Face ID para abrir o app e mostrar os valores escondidos."
+          "faceIDPermission": "O Pilinvest usa o Face ID para abrir o app e mostrar os valores escondidos."
         }
       ]
     ],

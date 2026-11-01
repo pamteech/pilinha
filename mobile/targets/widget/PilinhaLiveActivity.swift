@@ -27,7 +27,7 @@ struct PilinhaLiveActivity: Widget {
                         .foregroundStyle((context.state.dayChangePct ?? 0) >= 0 ? .green : .red)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.totalText ?? "Pilinha").font(.headline)
+                    Text(context.state.totalText ?? "Pilinvest").font(.headline)
                 }
             } compactLeading: {
                 Image(Fmt.pigName(context.state.mood)).resizable().scaledToFit()

@@ -232,6 +232,6 @@ public struct StaleInfo: Sendable, Equatable {
     public let stale: Bool, title: String, detail: String
     public init(errors: [String]) {
         stale = !errors.isEmpty; title = "Dados atrasados"
-        detail = errors.isEmpty ? "" : "Algumas cotações não chegaram agora (\(errors.count)). O Pilinha mostra o último valor conhecido e tenta de novo sozinho.\n\n" + errors.joined(separator: "\n")
+        detail = errors.isEmpty ? "" : "Algumas cotações não chegaram agora (\(errors.count)). O Pilinvest mostra o último valor conhecido e tenta de novo sozinho.\n\n" + errors.joined(separator: "\n")
     }
 }

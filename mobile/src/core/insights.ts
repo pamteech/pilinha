@@ -54,5 +54,5 @@ export function moodBadge(m: Mood): { icon: string; tone: MoodTone; text: string
 /** Busca com falha vira só um aviso discreto de "dados atrasados"; o texto técnico fica no detalhe (toque). */
 export function staleInfo(errors: string[] | undefined): { stale: boolean; title: string; detail: string } {
   const e = errors ?? [];
-  return { stale: e.length > 0, title: 'Dados atrasados', detail: e.length ? `Algumas cotações não chegaram agora (${e.length}). O Pilinha mostra o último valor conhecido e tenta de novo sozinho.\n\n${e.join('\n')}` : '' };
+  return { stale: e.length > 0, title: 'Dados atrasados', detail: e.length ? `Algumas cotações não chegaram agora (${e.length}). O Pilinvest mostra o último valor conhecido e tenta de novo sozinho.\n\n${e.join('\n')}` : '' };
 }

@@ -78,7 +78,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
             b.title = ""; b.addSubview(host)
             b.target = self; b.action = #selector(clicked(_:))
             b.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            b.setAccessibilityLabel("Pilinha")
+            b.setAccessibilityLabel("Pilinvest")
         }
         popover.behavior = .transient
         popover.animates = true

@@ -4,7 +4,7 @@ import { Header, icon } from '../../components/Header';
 import { T } from '../../lib/theme';
 const TITLES: Record<string, string> = { index: 'Início', carteira: 'Carteira', evolucao: 'Evolução', proventos: 'Proventos', graficos: 'Gráficos', cadastro: 'Cadastro' };
 // Nunca mostra nome de arquivo/rota cru no cabeçalho.
-const tabTitle = (t: string | undefined, name: string) => t ?? TITLES[name] ?? 'Pilinha';
+const tabTitle = (t: string | undefined, name: string) => t ?? TITLES[name] ?? 'Pilinvest';
 export const unstable_settings = { initialRouteName: 'index' };
 export default function TabsLayout() {
   return (

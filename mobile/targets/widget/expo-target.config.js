@@ -5,7 +5,7 @@ module.exports = (config) => {
   return {
     type: 'widget',
     name: 'PilinhaWidget',
-    displayName: 'Pilinha',
+    displayName: 'Pilinvest',
     bundleIdentifier: '.widget',
     deploymentTarget: '17.0',
     frameworks: ['SwiftUI', 'WidgetKit', 'ActivityKit'],

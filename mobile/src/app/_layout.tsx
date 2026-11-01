@@ -13,7 +13,7 @@ import { T, S } from '../lib/theme';
 // Exige Face ID ao abrir (e ao voltar do segundo plano) quando ligado nos Ajustes.
 function Lock({ children }: { children: React.ReactNode }) {
   const { settings, ready } = usePilinha(); const [ok, setOk] = React.useState(false); const busy = React.useRef(false);
-  const ask = React.useCallback(async () => { if (busy.current) return; busy.current = true; setOk(await authenticate('Abrir o Pilinha')); busy.current = false; }, []);
+  const ask = React.useCallback(async () => { if (busy.current) return; busy.current = true; setOk(await authenticate('Abrir o Pilinvest')); busy.current = false; }, []);
   React.useEffect(() => { if (ready && settings.faceOnOpen && !ok) ask(); }, [ready, settings.faceOnOpen]);
   React.useEffect(() => { const sub = AppState.addEventListener('change', st => { if (st === 'background' && settings.faceOnOpen) setOk(false); if (st === 'active' && settings.faceOnOpen && !ok) ask(); }); return () => sub.remove(); }, [settings.faceOnOpen, ok, ask]);
   // O navegador (Tabs) fica sempre montado: trocar a árvore antes de carregar perdia a rota (ia sempre para o Início).
@@ -21,7 +21,7 @@ function Lock({ children }: { children: React.ReactNode }) {
   return (<View style={{ flex: 1 }}>{children}{locked && (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, backgroundColor: T.navy, alignItems: 'center', justifyContent: 'center', gap: S.lg, padding: S.xl }}>{ready && <>
       <MaterialCommunityIcons name="lock-outline" size={48} color={T.champ} />
-      <Text style={{ color: T.onDark, fontSize: 20, lineHeight: 26, fontWeight: '700' }}>Pilinha bloqueado</Text>
+      <Text style={{ color: T.onDark, fontSize: 20, lineHeight: 26, fontWeight: '700' }}>Pilinvest bloqueado</Text>
       <Pressable onPress={ask} style={{ backgroundColor: T.champ, borderRadius: 999, paddingVertical: S.md, paddingHorizontal: S.xl }}>
         <Text style={{ color: T.navy, fontWeight: '700' }}>Desbloquear com Face ID</Text>
       </Pressable></>}

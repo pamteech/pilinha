@@ -60,12 +60,12 @@ export default function Home() {
       </Pressable>
       {liveActivityAvailable() && snap && (
         <Pressable onPress={toggleLive} style={{ backgroundColor: live ? T.card : T.pink, padding: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: live ? T.line : T.navy }}>
-          <Txt style={{ color: live ? T.text : T.bg, fontWeight: '700' }}>{live ? 'Tirar o Pilinha da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>
+          <Txt style={{ color: live ? T.text : T.bg, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>
           {!live && !isTradingHours() && <Txt style={{ color: T.bg, fontSize: 12 }}>A bolsa está fechada agora</Txt>}
         </Pressable>
       )}
       {empty && <Card>
-        <SectionTitle first>Boas-vindas ao Pilinha</SectionTitle>
+        <SectionTitle first>Boas-vindas ao Pilinvest</SectionTitle>
         {[['pencil-outline', 'Cadastre seus investimentos na aba Cadastro: renda fixa, ações, FIIs e cripto.'],
           ['refresh', 'Puxe a tela para atualizar as cotações de fontes públicas.'],
           ['cellphone-lock', 'Tudo fica só neste iPhone. Não há conta nem login.']].map(([i, t]) => (

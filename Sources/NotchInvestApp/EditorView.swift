@@ -161,7 +161,7 @@ struct EditorView: View {
     // MARK: dólar
     var usdSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("Só digite quantos dólares você tem. A cotação é automática: o Pilinha busca o dólar ao vivo (AwesomeAPI; reserva: PTAX do Banco Central) e atualiza sozinho a cada 5 minutos. Deixe vazio para tirar o dólar.")
+            hint("Só digite quantos dólares você tem. A cotação é automática: o Pilinvest busca o dólar ao vivo (AwesomeAPI; reserva: PTAX do Banco Central) e atualiza sozinho a cada 5 minutos. Deixe vazio para tirar o dólar.")
             HStack {
                 Image(systemName: "dollarsign.circle").foregroundStyle(.purple)
                 Text("US$").foregroundStyle(.secondary)
@@ -199,7 +199,7 @@ struct EditorView: View {
     // MARK: favoritos
     var watchSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            hint("Ações que você pretende comprar. Coloque o preço que quer pagar e, se quiser, quanto pretende investir. O painel mostra a cotação, quanto falta e o Pilinha avisa (notificação) quando chegar no preço.")
+            hint("Ações que você pretende comprar. Coloque o preço que quer pagar e, se quiser, quanto pretende investir. O painel mostra a cotação, quanto falta e o Pilinvest avisa (notificação) quando chegar no preço.")
             ForEach($state.draft.watch) { $w in
                 HStack {
                     Image(systemName: "star").foregroundStyle(.purple)
@@ -311,7 +311,7 @@ final class EditorWindow: NSObject, NSWindowDelegate {
         if window == nil {
             let w = NSWindow(contentRect: .init(x: 0, y: 0, width: 700, height: 580), styleMask: [.titled, .closable, .resizable, .miniaturizable],
                              backing: .buffered, defer: false)
-            w.title = "Pilinha — Cadastro da carteira"; w.isReleasedWhenClosed = false; w.delegate = self
+            w.title = "Pilinvest — Cadastro da carteira"; w.isReleasedWhenClosed = false; w.delegate = self
             w.contentView = NSHostingView(rootView: EditorView(onSaved: onSaved))
             w.center(); window = w
         }

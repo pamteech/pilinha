@@ -125,12 +125,12 @@ struct PrivacyInfoView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("O que o Pilinha faz").font(.title2.bold())
+                Text("O que o Pilinvest faz").font(.title2.bold())
                 Group {
                     item("checkmark.shield", "Só mostra números", "Ele lê um arquivo que você mesma preenche e mostra o total e as variações. Nada além disso.")
                     item("building.columns", "Não acessa banco nem Nubank", "Não pede senha de banco, não se conecta à sua conta e não usa Open Finance.")
                     item("arrow.left.arrow.right", "Não move dinheiro", "Não faz Pix, transferência, compra nem venda. Não tem como.")
-                    item("internaldrive", "Seus dados ficam com você", "No arquivo \(Portfolio.defaultURL.path) e, se o iCloud Drive estiver ligado, numa cópia em iCloud Drive/Pilinha/carteira.json (no SEU iCloud) para o app do iPhone importar. Se você ligar \"Conectar ao iPhone\", a carteira também vai cifrada de ponta a ponta para um servidor do Pilinha só para o iPhone baixar: sem o código, ninguém (nem o servidor) consegue ler.")
+                    item("internaldrive", "Seus dados ficam com você", "No arquivo \(Portfolio.defaultURL.path) e, se o iCloud Drive estiver ligado, numa cópia em iCloud Drive/Pilinha/carteira.json (no SEU iCloud) para o app do iPhone importar. Se você ligar \"Conectar ao iPhone\", a carteira também vai cifrada de ponta a ponta para um servidor do Pilinvest só para o iPhone baixar: sem o código, ninguém (nem o servidor) consegue ler.")
                     item("eye.slash", "Sem rastreamento", "Sem conta, sem anúncios, sem estatísticas de uso, sem enviar nada sobre você.")
                 }
                 Text("Sites que ele consulta (só para buscar preços públicos)").font(.headline)
@@ -174,7 +174,7 @@ struct PrivacyInfoView: View {
             .padding(22)
         }
         .frame(width: 520, height: 620)
-        .confirmationDialog("Apagar todos os dados do Pilinha?", isPresented: $confirmErase) {
+        .confirmationDialog("Apagar todos os dados do Pilinvest?", isPresented: $confirmErase) {
             Button("Apagar a pasta \(LocalData.folder.path)", role: .destructive) { erase() }
             Button("Cancelar", role: .cancel) {}
         } message: {
@@ -214,7 +214,7 @@ final class PrivacyWindow {
         if window == nil {
             let w = NSWindow(contentRect: .init(x: 0, y: 0, width: 520, height: 620), styleMask: [.titled, .closable],
                              backing: .buffered, defer: false)
-            w.title = "Pilinha — O que este app faz"; w.isReleasedWhenClosed = false
+            w.title = "Pilinvest — O que este app faz"; w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: PrivacyInfoView(onErased: onErased).environmentObject(privacy))
             w.center(); window = w
         }

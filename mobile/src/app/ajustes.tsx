@@ -10,7 +10,7 @@ export default function Ajustes() {
   useEffect(() => { faceIdAvailable().then(setHas); }, []);
   // Ligar/desligar exige confirmar com Face ID (ou senha do aparelho).
   const toggle = async (k: 'faceOnOpen' | 'faceOnReveal', v: boolean) => {
-    if (!(await authenticate(v ? 'Ativar o Face ID no Pilinha' : 'Desativar o Face ID no Pilinha'))) return;
+    if (!(await authenticate(v ? 'Ativar o Face ID no Pilinvest' : 'Desativar o Face ID no Pilinvest'))) return;
     await setSettings({ ...settings, [k]: v });
   };
   const saveGoal = async () => {
@@ -38,7 +38,7 @@ export default function Ajustes() {
       </Card>
       <Card>
         <SectionTitle first>Sobre</SectionTitle>
-        <Txt dim style={{ fontSize: 13 }}>O Pilinha é uma ferramenta de acompanhamento. Os valores são estimativas com base em cotações públicas (B3 via Yahoo/brapi, Banco Central, Tesouro Direto e CoinGecko) e podem diferir do extrato da corretora. Não é recomendação de investimento.</Txt>
+        <Txt dim style={{ fontSize: 13 }}>O Pilinvest é uma ferramenta de acompanhamento. Os valores são estimativas com base em cotações públicas (B3 via Yahoo/brapi, Banco Central, Tesouro Direto e CoinGecko) e podem diferir do extrato da corretora. Não é recomendação de investimento.</Txt>
         <Txt dim style={{ fontSize: 13 }}>Seus dados ficam só neste iPhone. Política de privacidade e suporte: pamteech.github.io/pilinha</Txt>
       </Card>
     </Screen>

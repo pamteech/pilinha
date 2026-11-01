@@ -50,7 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: "Pilinha")
+        item.button?.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: "Pilinvest")
         let menu = NSMenu(); menu.delegate = self
         item.menu = menu; statusItem = item
     }
@@ -84,7 +84,7 @@ extension AppDelegate: NSMenuDelegate {
         let e = NSMenuItem(title: "Cadastrar carteira…", action: #selector(showEditor), keyEquivalent: ","); e.target = self; menu.addItem(e)
         let sy = NSMenuItem(title: PilinhaSync.savedCode() == nil ? "Conectar ao iPhone…" : "Conectar ao iPhone (ligado)…", action: #selector(showSync), keyEquivalent: ""); sy.target = self; menu.addItem(sy)
         let p = NSMenuItem(title: "O que este app faz…", action: #selector(showPrivacyInfo), keyEquivalent: ""); p.target = self; menu.addItem(p)
-        menu.addItem(NSMenuItem(title: "Sair do Pilinha", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Sair do Pilinvest", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 }
 

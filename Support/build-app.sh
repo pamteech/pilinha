@@ -28,8 +28,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>Pilinha</string>
-  <key>CFBundleDisplayName</key><string>Pilinha</string>
+  <key>CFBundleName</key><string>Pilinvest</string>
+  <key>CFBundleDisplayName</key><string>Pilinvest</string>
   <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
   <key>CFBundleExecutable</key><string>Pilinha</string>
   <key>CFBundlePackageType</key><string>APPL</string>

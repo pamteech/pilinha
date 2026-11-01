@@ -65,7 +65,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (r.kind === 'ok') {
         if (JSON.stringify(r.portfolio) !== JSON.stringify(pRef.current)) { setP(r.portfolio); pRef.current = r.portfolio; await S.savePortfolio(r.portfolio); run(r.portfolio); }
         st = { connected: true, status: 'ok', lastSync: Date.now(), macUpdatedAt: r.updatedAt, message: `${r.items} item(ns) do Mac` };
-      } else if (r.kind === 'waiting') st = { connected: true, status: 'waiting', message: 'Ainda nada do Mac. Abra o Pilinha no Mac com a internet ligada.' };
+      } else if (r.kind === 'waiting') st = { connected: true, status: 'waiting', message: 'Ainda nada do Mac. Abra o Pilinvest no Mac com a internet ligada.' };
       else st = { connected: true, status: 'error', message: r.message };
       setSync(st); return st;
     } finally { syncing.current = false; }
@@ -94,7 +94,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(a.some(x => x.enabled) || !!pRef.current.watchlist?.length); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).
   const toggleHidden = async () => {
-    if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinha'))) return;
+    if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinvest'))) return;
     setHidden(!hRef.current);
   };
   return <C.Provider value={{ settings, setSettings, alerts, setAlerts, toggleHidden, ready,  portfolio, snap, history, loading, hasToken, hidden, setHidden, refresh: () => run(pRef.current), update, setToken, sync, connectMac, disconnectMac, syncNow: doSync }}>{children}</C.Provider>;

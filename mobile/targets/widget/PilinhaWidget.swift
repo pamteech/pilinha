@@ -38,7 +38,7 @@ struct PilinhaWidgetView: View {
             HStack {
                 Image(Fmt.pigName(s.mood)).resizable().scaledToFit()
                 VStack(alignment: .leading) {
-                    Text(s.hidden ? "Pilinha" : Fmt.brl(s.total)).font(.headline).minimumScaleFactor(0.6)
+                    Text(s.hidden ? "Pilinvest" : Fmt.brl(s.total)).font(.headline).minimumScaleFactor(0.6)
                     Text("Hoje \(Fmt.pct(s.dayChangePct))").font(.caption)
                 }
             }
@@ -59,7 +59,7 @@ struct PilinhaWidget: Widget {
             PilinhaWidgetView(entry: entry)
                 .containerBackground(Color(red: 0.08, green: 0.06, blue: 0.10), for: .widget)
         }
-        .configurationDisplayName("Pilinha")
+        .configurationDisplayName("Pilinvest")
         .description("O porquinho e como a carteira está hoje.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
