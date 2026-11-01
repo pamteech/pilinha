@@ -76,7 +76,7 @@ export default function Home() {
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
       <Txt dim style={{ textAlign: 'center', fontSize: 11 }}>Valores estimados para acompanhamento. Não é recomendação de investimento.</Txt>
-      {snap && <Txt dim style={{ textAlign: 'center', fontSize: 12 }}>Atualizado {snap.updatedAt.toLocaleTimeString('pt-BR')} · puxe para atualizar</Txt>}
+      {snap && <Txt dim style={{ textAlign: 'center', fontSize: 12 }}>{loading ? 'Atualizando… · ' : ''}Atualizado {snap.updatedAt.toLocaleTimeString('pt-BR')} · puxe para atualizar</Txt>}
     </ScrollView>
   );
 }

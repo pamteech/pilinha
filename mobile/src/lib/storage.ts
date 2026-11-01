@@ -31,3 +31,10 @@ export const saveFired = (f: import('../core').FiredLog) => AsyncStorage.setItem
 const KS = 'pilinha.syncCode';
 export const loadSyncCode = async () => { try { return await SecureStore.getItemAsync(KS); } catch { return null; } };
 export const saveSyncCode = (c: string | null) => (c ? SecureStore.setItemAsync(KS, c) : SecureStore.deleteItemAsync(KS));
+
+// Último snapshot e cache de séries (abrir o app mostrando os últimos valores na hora).
+import { reviveSnapshot, serializeSnapshot, KV, Snapshot } from '../core';
+const KSNAP = 'pilinha.lastSnapshot.v1';
+export const loadLastSnapshot = async (): Promise<Snapshot | null> => { try { return reviveSnapshot(await AsyncStorage.getItem(KSNAP)); } catch { return null; } };
+export const saveLastSnapshot = (s: Snapshot) => AsyncStorage.setItem(KSNAP, serializeSnapshot(s)).catch(() => {});
+export const kv: KV = { get: k => AsyncStorage.getItem(k), set: (k, v) => AsyncStorage.setItem(k, v) };

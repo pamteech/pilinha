@@ -4,7 +4,8 @@ export type SyncResult = { kind: 'ok'; portfolio: Portfolio; items: number; upda
 export async function pullFromMac(code: string, phone: Portfolio): Promise<SyncResult> {
   try {
     const { id } = deriveKeys(code);
-    const r = await fetch(`${SYNC_URL}/v1/sync/${id}`, { headers: { 'cache-control': 'no-store' } });
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch(`${SYNC_URL}/v1/sync/${id}`, { headers: { 'cache-control': 'no-store' }, signal: ctl.signal }).finally(() => clearTimeout(tm));
     if (r.status === 404) return { kind: 'waiting' };
     if (!r.ok) return { kind: 'error', message: `Servidor respondeu ${r.status}.` };
     const blob = new Uint8Array(await r.arrayBuffer());

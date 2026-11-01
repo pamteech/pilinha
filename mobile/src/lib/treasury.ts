@@ -10,6 +10,14 @@ export async function treasuryRows(p: Portfolio): Promise<TreasuryRow[] | null> 
   let cache: Cache | null = null;
   try { cache = JSON.parse((await AsyncStorage.getItem(K)) ?? 'null'); } catch {}
   if (cache && cache.keys === keys && Date.now() - cache.at < 12 * 3600_000) return cache.rows;
+  // Planilha velha: devolve o cache na hora e atualiza em segundo plano (vale no próximo refresh).
+  const job = download(p, wanted, keys);
+  if (cache && cache.keys === keys) { job.catch(() => {}); return cache.rows; }
+  return (await job.catch(() => null)) ?? cache?.rows ?? null;
+}
+let inflight: Promise<TreasuryRow[] | null> | null = null;
+function download(p: Portfolio, wanted: { title: string; maturity: string }[], keys: string): Promise<TreasuryRow[] | null> {
+  return inflight ??= (async () => {
   try {
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
     const txt = await fetch(TESOURO_CSV_URL, { signal: ctl.signal }).then(r => r.text()).finally(() => clearTimeout(t));
@@ -18,5 +26,6 @@ export async function treasuryRows(p: Portfolio): Promise<TreasuryRow[] | null> 
     const rows = parseTreasuryCSV(txt, wanted, from);
     if (rows.length) { await AsyncStorage.setItem(K, JSON.stringify({ at: Date.now(), keys, rows })); return rows; }
   } catch {}
-  return cache?.rows ?? null; // falha silenciosa: segue só com a curva
+  return null; // falha silenciosa: segue só com a curva
+  })().finally(() => { inflight = null; });
 }

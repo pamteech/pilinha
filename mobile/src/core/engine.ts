@@ -22,21 +22,25 @@ export function dayChangePct(s: Snapshot): number | null {
 }
 export const dayChange = (s: Snapshot) => s.items.reduce((a, i) => a + (i.dayChange ?? 0), 0);
 
-export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null; now?: Date; fetcher?: Fetcher; treasury?: TreasuryRow[] | null } = {}): Promise<Snapshot> {
+export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null; now?: Date; fetcher?: Fetcher; treasury?: TreasuryRow[] | null; cdi?: (start: Date, end: Date) => Promise<CDIDailyRate[]> } = {}): Promise<Snapshot> {
   const now = opts.now ?? new Date(), f = opts.fetcher ?? defaultFetcher;
   const items: LineItem[] = [], errors: string[] = []; let cdiAnnual: number | null = null;
   const dates = p.fixedIncome.flatMap(a => a.deposits).map(d => parseISO(d.date)).filter((d): d is Date => !!d);
+  // Tudo da rede começa junto (antes era em fila: CDI, IPCA, ações, cripto, dólar).
+  const start0 = dates.length ? new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))) : now;
+  const cdiP = dates.length ? (opts.cdi ? opts.cdi(start0, now) : cdiRates(start0, now, f)) : Promise.resolve([] as CDIDailyRate[]);
+  const ipcaP = dates.length && p.fixedIncome.some(a => indexerOf(a) === 'ipca') ? ipcaMonthly(start0, now, f).catch(() => [] as IPCAMonthlyRate[]) : Promise.resolve([] as IPCAMonthlyRate[]);
+  const stocksP = Promise.allSettled(p.stocks.map(s => stockQuote(s.ticker, opts.brapiToken, f)));
+  const cryptoP = p.crypto.length ? cryptoBRL(p.crypto.map(c => c.coinId), f) : null; cryptoP?.catch(() => {});
+  const usdP = usdQuote(f, now); usdP.catch(() => {}); cdiP.catch(() => {});
   if (dates.length) {
     try {
       // Aporte com data futura não pode virar início da consulta (o BCB recusa e some toda a renda fixa).
       let rates: CDIDailyRate[] = [];
-      try { rates = await cdiRates(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch { errors.push('CDI indisponível agora; renda fixa mostrada pelo valor aplicado'); }
+      try { rates = await cdiP; } catch { errors.push('CDI indisponível agora; renda fixa mostrada pelo valor aplicado'); }
       const last = rates[rates.length - 1];
       cdiAnnual = last ? annualized(last.percent) : null;
-      let ipca: IPCAMonthlyRate[] = [];
-      if (p.fixedIncome.some(a => indexerOf(a) === 'ipca')) {
-        try { ipca = await ipcaMonthly(new Date(Math.min(now.getTime(), ...dates.map(d => d.getTime()))), now, f); } catch { ipca = []; }
-      }
+      const ipca: IPCAMonthlyRate[] = await ipcaP;
       const mtm = (a: typeof p.fixedIncome[number]) => { const m = opts.treasury ? markToMarket(a, opts.treasury) : null; return m ? { marketValue: m.value, marketDay: m.day, marketRate: m.sellRate } : {}; };
       for (const a of p.fixedIncome) {
         const v = value(a, rates, now, ipca);
@@ -46,7 +50,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
     } catch (e) { errors.push(`CDI: ${msg(e)}`); }
   }
   let cash: CashDividend[] = [];
-  const qs = await Promise.allSettled(p.stocks.map(s => stockQuote(s.ticker, opts.brapiToken, f)));
+  const qs = await stocksP;
   p.stocks.forEach((s, i) => {
     const r = qs[i];
     if (r.status === 'rejected') { errors.push(msg(r.reason)); return; }
@@ -55,7 +59,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
   });
   if (p.crypto.length) {
     try {
-      const px = await cryptoBRL(p.crypto.map(c => c.coinId), f);
+      const px = await cryptoP!;
       for (const c of p.crypto) {
         const q = px[c.coinId]; if (!q) { errors.push(`${c.symbol}: sem preço`); continue; }
         const v = q.price * c.quantity;
@@ -64,7 +68,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
     } catch (e) { errors.push(`cripto: ${msg(e)}`); }
   }
   let fx: USDQuote | null = null;
-  try { fx = await usdQuote(f, now); } catch (e) { if (p.usd) errors.push(msg(e)); }
+  try { fx = await usdP; } catch (e) { if (p.usd) errors.push(msg(e)); }
   if (p.usd && p.usd.amount > 0 && fx) items.push(usdItem(p.usd, fx));
   // Favoritos: cotação sem entrar no total; falha de um favorito não vira erro da carteira.
   let watch: WatchRow[] | undefined;

@@ -2,7 +2,7 @@ import { treasuryRows } from './treasury';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Linking from 'expo-linking';
-import { normalizeCode } from '../core';
+import { normalizeCode, cachedCdiRates, cdiRates, withTimeout } from '../core';
 import { codeFromURL, pullFromMac } from './sync';
 import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
 import * as S from './storage';
@@ -34,17 +34,16 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     const my = gate.next();
     setL(true);
     try {
-      const token = await S.loadToken(); setHT(!!token);
-      const treasury = await treasuryRows(p).catch(() => null);
-      const s = await snapshot(p, { brapiToken: token, treasury });
+      const [token, treasury] = await Promise.all([S.loadToken(), treasuryRows(p).catch(() => null)]); setHT(!!token);
+      const s = await withTimeout(snapshot(p, { brapiToken: token, treasury, cdi: (a, b) => cachedCdiRates(a, b, S.kv, (x, y) => cdiRates(x, y)) }), 25000);
       if (!gate.isLatest(my)) return;
-      setSnap(s); checkAndNotify(quotesFromSnapshot(s)).catch(() => {}); snapRef.current = s; syncExtensions(s, hRef.current);
+      setSnap(s); S.saveLastSnapshot(s); checkAndNotify(quotesFromSnapshot(s)).catch(() => {}); snapRef.current = s; syncExtensions(s, hRef.current);
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
       const old = await S.loadHistory();
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); pRef.current = p; setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot()]); setP(p); pRef.current = p; if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
   // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
   useEffect(() => {
     let prev: string = AppState.currentState ?? 'active';
