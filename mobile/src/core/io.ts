@@ -1,5 +1,6 @@
 import { Portfolio, FixedIncomeKind } from './types';
 import { parseISO } from './dates';
+import { validWatch } from './watchlist';
 // Mesmo formato do ~/.notchinvest/portfolio.json do app do Mac (campos extras são preservados).
 const kinds: FixedIncomeKind[] = ['caixinha', 'cdb', 'tesouro', 'lci', 'lca'];
 const isNum = (x: unknown): x is number => typeof x === 'number' && isFinite(x);
@@ -32,7 +33,10 @@ export function parsePortfolio(text: string): Portfolio {
     if (!isNum(usd.amount) || usd.amount < 0 || (usd.averageRateBRL != null && (!isNum(usd.averageRateBRL) || usd.averageRateBRL <= 0))) throw new Error('Dólar inválido.');
     usd = { amount: usd.amount, ...(usd.averageRateBRL != null ? { averageRateBRL: usd.averageRateBRL } : {}) };
   }
-  return { ...j, fixedIncome, stocks, crypto, manualDividends, ...(usd ? { usd } : {}) };
+  // Favoritos: itens inválidos são descartados (nunca impedem a carteira de abrir).
+  const wl = Array.isArray(j.watchlist) ? j.watchlist.filter(validWatch).map((w: any) => ({ ...w, ticker: w.ticker.trim().toUpperCase() })) : undefined;
+  const { watchlist: _w, ...rest } = j;
+  return { ...rest, fixedIncome, stocks, crypto, manualDividends, ...(usd ? { usd } : {}), ...(wl && wl.length ? { watchlist: wl } : {}) };
 }
 /**
  * Junta a carteira do Mac na do iPhone sem duplicar: o Mac manda nos itens que tem
@@ -53,6 +57,7 @@ export function mergePortfolio(phone: Portfolio, mac: Portfolio): Portfolio {
     stocks: byKey(phone.stocks, mac.stocks, s => key(s.ticker)),
     crypto: byKey(phone.crypto, mac.crypto, c => key(c.coinId)),
     manualDividends,
+    ...(phone.watchlist || mac.watchlist ? { watchlist: byKey(phone.watchlist ?? [], mac.watchlist ?? [], w => key(w.ticker)) } : {}),
   };
 }
 export const serializePortfolio = (p: Portfolio) => JSON.stringify(p, null, 2);

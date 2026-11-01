@@ -24,6 +24,13 @@ export default function Cadastro() {
   const [tok, setTok] = useState('');
   const [code, setCode] = useState('');
   const [dv, setDv] = useState({ ticker: '', date: '', amount: '' });
+  const [wl, setWl] = useState({ ticker: '', target: '', amount: '' });
+  const addWl = () => {
+    const t = normTicker(wl.ticker), tg = num(wl.target), am = wl.amount ? num(wl.amount) : undefined;
+    if (!validTicker(t) || !isPositive(tg)) return bad('Código (ex. TAEE11) e o preço que você quer pagar.');
+    if (am != null && !isPositive(am)) return bad('Valor a investir inválido (ex. 500,00).');
+    save({ ...p, watchlist: [...(p.watchlist ?? []).filter(w => w.ticker.toUpperCase() !== t), { ticker: t, targetPrice: tg, ...(am != null ? { amount: am } : {}) }] }); setWl({ ticker: '', target: '', amount: '' });
+  };
   const addDv = () => {
     const t = normTicker(dv.ticker), a = num(dv.amount);
     if (!validTicker(t) || !validPastDate(dv.date) || !isPositive(a)) return bad('Código (ex. MXRF11), data até hoje (AAAA-MM-DD) e valor que caiu na conta.');
@@ -130,6 +137,15 @@ export default function Cadastro() {
         <Input placeholder="Quantidade" keyboardType="decimal-pad" value={st.qty} onChangeText={qty => setSt({ ...st, qty })} />
         <Input placeholder="Preço médio (opcional)" keyboardType="decimal-pad" value={st.avg} onChangeText={avg => setSt({ ...st, avg })} />
         <Btn title="Salvar ação" onPress={addSt} />
+      </Card>
+      <Card>
+        <SectionTitle first>Quero comprar (favoritos)</SectionTitle>
+        <Txt dim>Ação que você pretende comprar e o preço que quer pagar. O Pilinha mostra a cotação, quanto falta e avisa quando chegar no preço.</Txt>
+        {(p.watchlist ?? []).map(w => <Row key={w.ticker} label={`${w.ticker} · alvo R$ ${w.targetPrice.toFixed(2).replace('.', ',')}`} onDelete={() => save({ ...p, watchlist: (p.watchlist ?? []).filter(x => x.ticker !== w.ticker) })} />)}
+        <Input placeholder="Código (ex. TAEE11)" autoCapitalize="characters" value={wl.ticker} onChangeText={ticker => setWl({ ...wl, ticker })} />
+        <Input placeholder="Preço que quero pagar (ex. 34,50)" keyboardType="decimal-pad" value={wl.target} onChangeText={target => setWl({ ...wl, target })} />
+        <Input placeholder="Quanto quero investir (opcional)" keyboardType="decimal-pad" value={wl.amount} onChangeText={amount => setWl({ ...wl, amount })} />
+        <Btn title="Salvar favorito" onPress={addWl} />
       </Card>
       <Card>
         <SectionTitle first>Bitcoin</SectionTitle>

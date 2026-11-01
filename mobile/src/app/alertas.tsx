@@ -7,7 +7,7 @@ import { usePilinha } from '../lib/store';
 import { permissionGranted, requestPermission } from '../lib/alerts';
 import { T, S } from '../lib/theme';
 const kinds: { k: AlertKind; label: string; ph: string }[] = [
-  { k: 'above', label: 'Acima de', ph: 'Preço em R$ (ex. 40,00)' }, { k: 'below', label: 'Abaixo de', ph: 'Preço em R$ (ex. 30,00)' }, { k: 'dropPct', label: 'Cair % no dia', ph: 'Queda em % (ex. 3)' }];
+  { k: 'above', label: 'Acima de', ph: 'Preço em R$ (ex. 40,00)' }, { k: 'below', label: 'Abaixo de', ph: 'Preço em R$ (ex. 30,00)' }, { k: 'dropPct', label: 'Cair % no dia', ph: 'Queda em % (ex. 3)' }, { k: 'risePct', label: 'Subir % no dia', ph: 'Alta em % (ex. 3)' }];
 export default function Alertas() {
   const { portfolio: p, alerts, setAlerts, snap } = usePilinha();
   const tickers = useMemo(() => [...new Set([...p.stocks.map(s => s.ticker.toUpperCase()), ...p.crypto.map(c => c.symbol.toUpperCase())])], [p]);
@@ -19,7 +19,7 @@ export default function Alertas() {
   const add = async () => {
     const v = parseNumberBR(val);
     if (!cur || !isPositive(v)) return Alert.alert('Confere aí', 'Escolha o ativo e digite o valor.');
-    if (kind === 'dropPct' && v >= 100) return Alert.alert('Confere aí', 'A queda tem que ser menor que 100%.');
+    if ((kind === 'dropPct' || kind === 'risePct') && v >= 100) return Alert.alert('Confere aí', 'A queda tem que ser menor que 100%.');
     if (!perm) setPerm(await requestPermission());
     await setAlerts([...alerts, { id: newAlertId(), ticker: cur, kind, value: v, enabled: true }]); setVal('');
   };
@@ -45,7 +45,7 @@ export default function Alertas() {
         {!alerts.length && <Txt dim>Nenhum alerta ainda.</Txt>}
         {alerts.map((a, i) => (
           <View key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderTopWidth: i ? 1 : 0, borderTopColor: T.line }}>
-            <MaterialCommunityIcons name={a.kind === 'above' ? 'arrow-up-bold-circle-outline' : a.kind === 'below' ? 'arrow-down-bold-circle-outline' : 'trending-down'} size={22} color={a.enabled ? (a.kind === 'above' ? T.up : T.down) : T.dim} />
+            <MaterialCommunityIcons name={a.kind === 'above' ? 'arrow-up-bold-circle-outline' : a.kind === 'below' ? 'arrow-down-bold-circle-outline' : a.kind === 'risePct' ? 'trending-up' : 'trending-down'} size={22} color={a.enabled ? (a.kind === 'above' || a.kind === 'risePct' ? T.up : T.down) : T.dim} />
             <Txt style={{ flex: 1, color: a.enabled ? T.text : T.dim }}>{alertLabel(a)}</Txt>
             <Pressable hitSlop={8} accessibilityLabel={a.enabled ? 'Pausar' : 'Ativar'} onPress={() => setAlerts(alerts.map(x => x.id === a.id ? { ...x, enabled: !x.enabled } : x))}>
               <MaterialCommunityIcons name={a.enabled ? 'bell-ring-outline' : 'bell-off-outline'} size={22} color={T.pink} />

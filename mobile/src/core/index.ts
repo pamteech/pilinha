@@ -3,3 +3,4 @@ export * from './dividends'; export * from './quotes'; export * from './engine';
 export * from './io'; export * from './sync';
 export * from './insights'; export * from './numbers';
 export * from './alerts'; export * from './goal'; export * from './benchmarks'; export * from './calendar';
+export * from './treasury'; export * from './watchlist';

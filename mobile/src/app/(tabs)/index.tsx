@@ -7,7 +7,8 @@ import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad }
 import { goalProgress, Mood, lastDays, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, shouldCelebrate, total, totalNet } from '../../core';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
-import { isTradingHours } from '../../core';
+import { isTradingHours, staleInfo } from '../../core';
+import { Alert } from 'react-native';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
   const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings } = usePilinha();
@@ -61,7 +62,7 @@ export default function Home() {
         </Pressable>
       )}
       {empty && <Card><Txt>Cadastre a carteira na aba Cadastro. Tudo fica só neste iPhone.</Txt></Card>}
-      {snap?.errors.map(e => <View key={e} style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center', paddingHorizontal: S.xs }}><MaterialCommunityIcons name="alert-outline" size={16} color={T.down} /><Txt style={{ color: T.down, fontSize: 13, flex: 1 }}>{e}</Txt></View>)}
+      <Stale errors={snap?.errors} />
       {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
@@ -111,4 +112,14 @@ function Goal({ total, target, hidden }: { total: number; target: number; hidden
       <Txt dim style={{ fontSize: 13 }}>{g.done ? `Meta de ${money(target, hidden)} alcançada!` : hidden ? 'Valores escondidos' : `${money(total, false)} de ${money(target, false)} · faltam ${money(g.remaining, false)}`}</Txt>
     </Card>
   );
+}
+
+/** Aviso discreto: só um ícone de relógio e "dados atrasados"; o detalhe técnico aparece ao tocar. */
+export function Stale({ errors }: { errors?: string[] }) {
+  const s = staleInfo(errors); if (!s.stale) return null;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Dados atrasados, toque para detalhes" onPress={() => Alert.alert(s.title, s.detail)} hitSlop={8}
+      style={{ flexDirection: 'row', gap: 6, alignItems: 'center', alignSelf: 'center', paddingHorizontal: S.md, paddingVertical: 4, borderRadius: 999, backgroundColor: T.champLight }}>
+      <MaterialCommunityIcons name="clock-alert-outline" size={14} color={T.dim} /><Txt dim style={{ fontSize: 12 }}>{s.title}</Txt>
+    </Pressable>);
 }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Card, Eyebrow, Screen, SectionTitle, Txt, money } from '../../components/ui';
-import { CashDividend, defaultFetcher, dividendCalendar, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA, CalendarEntry } from '../../core';
+import { CashDividend, defaultFetcher, dividendCalendar, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA, CalendarEntry, receivedTotal } from '../../core';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
 import { T, S } from '../../lib/theme';
 const Row = ({ e, hidden, last }: { e: CalendarEntry; hidden: boolean; last: boolean }) => (
@@ -25,6 +26,10 @@ export default function Proventos() {
   const cal = dividendCalendar([...(snap?.cash ?? []), ...yahoo], qty);
   return (
     <Screen>
+      {(() => { const r = receivedTotal(portfolio.manualDividends), nx = cal.upcoming[0]; return (r.count > 0 || nx) ? <Card>
+        {r.count > 0 && <><Eyebrow color={T.text}>Já recebido</Eyebrow><Txt style={{ fontSize: 24, lineHeight: 32, fontWeight: '700' }}>{money(r.total, hidden)}</Txt><Txt dim style={{ fontSize: 12 }}>{r.count} lançamento(s) no Cadastro</Txt></>}
+        {nx && <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm, marginTop: r.count ? S.sm : 0 }}><MaterialCommunityIcons name="calendar-clock" size={18} color={T.lilacDeep} /><Txt style={{ flex: 1 }}>Próximo: {nx.ticker} em {toBR(nx.date)}</Txt><Txt style={{ fontWeight: '600' }}>{nx.total > 0 ? money(nx.total, hidden) : ''}</Txt></View>}
+      </Card> : null; })()}
       <Card><Eyebrow color={T.text}>Últimos 12 meses</Eyebrow><Txt dim style={{ fontSize: 13 }}>Estimativa com a quantidade atual</Txt><Txt style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>{money(s?.last12m ?? 0, hidden)}</Txt></Card>
       <Card style={{ gap: 0 }}>
         <SectionTitle first>Próximos anunciados</SectionTitle>

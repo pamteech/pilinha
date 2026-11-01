@@ -29,12 +29,15 @@ export const colorFor = (v: number | null | undefined) => (v == null ? T.dim : v
 export function AssetRow({ item, hidden, label, last }: { item: import('../core').LineItem; hidden: boolean; label?: string; last?: boolean }) {
   const C = require('../core');
   const market = C.isMarket(item), dp = C.itemDayPct(item), vs = C.priceVsAvg(item);
+  const gain = C.itemGain(item) as number | null;
   const qColor = vs === 'up' ? T.up : vs === 'down' ? T.down : T.text;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: S.md, gap: S.md, borderBottomWidth: last ? 0 : 1, borderBottomColor: T.line }}>
       <View style={{ flex: 1 }}>
         <Text style={{ color: T.text, fontSize: 15, fontWeight: '600' }}>{item.name}{label ? <Text style={{ color: T.dim, fontWeight: '400', fontSize: 12 }}>  {label}</Text> : null}</Text>
         <Text style={{ color: T.dim, fontSize: 12, marginTop: 2 }}>{money(item.current, hidden)}{item.net != null && !hidden ? ` · líq. ${money(item.net, false)}` : ''}</Text>
+        {item.marketValue != null && <Text style={{ color: T.dim, fontSize: 12, marginTop: 2 }}>Venda hoje {money(item.marketValue, hidden)}{item.marketRate != null ? ` · taxa ${item.marketRate.toFixed(2).replace('.', ',')}%` : ''}</Text>}
+        {gain != null && <Text style={{ color: colorFor(gain), fontSize: 12, fontWeight: '600', marginTop: 2 }}>{hidden ? '' : `${gain >= 0 ? '+' : '−'}${C.brl(Math.abs(gain))} · `}{C.pct(item.invested ? (gain / item.invested) * 100 : null)}</Text>}
       </View>
       <View style={{ alignItems: 'flex-end', gap: 2 }}>
         {market && item.unitPrice != null

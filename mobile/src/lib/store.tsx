@@ -1,3 +1,4 @@
+import { treasuryRows } from './treasury';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -34,7 +35,8 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     setL(true);
     try {
       const token = await S.loadToken(); setHT(!!token);
-      const s = await snapshot(p, { brapiToken: token });
+      const treasury = await treasuryRows(p).catch(() => null);
+      const s = await snapshot(p, { brapiToken: token, treasury });
       if (!gate.isLatest(my)) return;
       setSnap(s); checkAndNotify(quotesFromSnapshot(s)).catch(() => {}); snapRef.current = s; syncExtensions(s, hRef.current);
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
@@ -42,7 +44,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { setSettingsState(await S.loadSettings()); setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled)); const h = await S.loadHidden(); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); pRef.current = p; setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { setSettingsState(await S.loadSettings()); setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = await S.loadHidden(); hRef.current = h; setHiddenState(h); const p = await S.loadPortfolio(); setP(p); pRef.current = p; setLoaded(true); await run(p); })(); }, [run]);
   useEffect(() => { const t = setInterval(() => run(pRef.current), 5 * 60_000); return () => clearInterval(t); }, [run]);
   // Sincronização com o Mac: ao abrir, ao voltar para o app, a cada 5 min e pelo link do QR.
   const [sync, setSync] = useState<SyncState>({ connected: false, status: 'off' });
@@ -80,10 +82,10 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     const t = setInterval(() => { if (AppState.currentState === 'active') doSync(); }, 5 * 60_000);
     return () => { alive = false; sub.remove(); clearInterval(t); };
   }, [loaded, doSync]);
-  const update = async (p: Portfolio) => { setP(p); await S.savePortfolio(p); await run(p); };
+  const update = async (p: Portfolio) => { setP(p); syncBackgroundTask(alerts.some(a => a.enabled) || !!p.watchlist?.length); await S.savePortfolio(p); await run(p); };
   const setToken = async (t: string) => { await S.saveToken(t.trim()); await run(pRef.current); };
   const setSettings = async (x: S.Settings) => { setSettingsState(x); await S.saveSettings(x); };
-  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(a.some(x => x.enabled)); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
+  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(a.some(x => x.enabled) || !!pRef.current.watchlist?.length); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).
   const toggleHidden = async () => {
     if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinha'))) return;

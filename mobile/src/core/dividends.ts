@@ -28,3 +28,5 @@ export function summary(stocks: StockPosition[], brapi: CashDividend[], manual: 
   s.last12m = Object.values(s.byTicker).reduce((a, b) => a + b, 0);
   return s;
 }
+/** Total já recebido (lançamentos manuais, todo o período). */
+export const receivedTotal = (m: ManualDividend[] | undefined) => ({ total: (m ?? []).reduce((a, x) => a + x.amount, 0), count: (m ?? []).length });

@@ -13,6 +13,8 @@ export interface Portfolio {
   manualDividends?: ManualDividend[]; tradingview?: unknown;
   /** Dólares guardados (opcional; carteiras antigas não têm). */
   usd?: USDPosition | null;
+  /** Favoritos que ela quer comprar (opcional; carteiras antigas não têm). */
+  watchlist?: import('./watchlist').WatchItem[];
 }
 export interface USDPosition { amount: number; averageRateBRL?: number | null }
 export const emptyPortfolio = (): Portfolio => ({ fixedIncome: [], stocks: [], crypto: [], manualDividends: [] });
