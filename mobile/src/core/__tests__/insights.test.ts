@@ -1,4 +1,4 @@
-import { LineItem, topMovers, groupItems, priceVsAvg, itemDayPct, lastDays, moodBadge, moodFrom } from '..';
+import { LineItem, topMovers, groupItems, priceVsAvg, itemDayPct, lastDays, weekSummary, moodBadge, moodFrom } from '..';
 const it = (name: string, category: string, current: number, dayChange: number | null, extra: Partial<LineItem> = {}): LineItem =>
   ({ name, category, invested: null, current, dayChange, net: null, ...extra });
 describe('Insights', () => {
@@ -23,6 +23,14 @@ describe('Insights', () => {
   test('últimos 7 dias', () => {
     const h = ['2026-10-10', '2026-10-19', '2026-10-20', '2026-10-26'].map(day => ({ day, total: 1, invested: 1 }));
     expect(lastDays(h, 7, new Date('2026-10-26T12:00:00Z')).map(p => p.day)).toEqual(['2026-10-20', '2026-10-26']);
+  });
+  test('semana: aporte novo não vira alta, escondido ou não', () => {
+    const pts = [{ total: 1010, invested: 1000 }, { total: 3030, invested: 3000 }];
+    for (const h of [true, false]) { const w = weekSummary(pts, h); expect(w.pct).toBeCloseTo(0); expect(w.gain).toBeCloseTo(20); }
+    expect(weekSummary(pts, false).ys).toEqual([1010, 3030]);
+    expect(weekSummary([{ total: 100, invested: 100 }, { total: 110, invested: 100 }], false).pct).toBeCloseTo(10);
+    expect(weekSummary([{ total: 1, invested: 1 }], false)).toMatchObject({ pct: null, gain: null });
+    expect(weekSummary([{ total: NaN, invested: 1 }, { total: 5, invested: 0 }], false).pct).toBeNull();
   });
   test('humor do porquinho', () => {
     expect(moodBadge(moodFrom(1, false, false))).toMatchObject({ icon: 'trending-up', tone: 'up' }); expect(moodBadge(moodFrom(-1, false, false))).toMatchObject({ icon: 'trending-down', tone: 'down' });

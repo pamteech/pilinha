@@ -56,3 +56,14 @@ export function staleInfo(errors: string[] | undefined): { stale: boolean; title
   const e = errors ?? [];
   return { stale: e.length > 0, title: 'Dados atrasados', detail: e.length ? `Algumas cotações não chegaram agora (${e.length}). O Pilinvest mostra o último valor conhecido e tenta de novo sozinho.\n\n${e.join('\n')}` : '' };
 }
+/** Resumo da semana: a porcentagem é o rendimento (patrimônio/aplicado), então novos aportes não viram "alta".
+ *  O valor é o ganho em reais no período, também sem contar aportes. O traço segue o rendimento quando escondido. */
+export function weekSummary(points: { total: number; invested: number }[], hidden: boolean): { ys: number[]; pct: number | null; gain: number | null } {
+  const ok = points.filter(p => Number.isFinite(p.total) && Number.isFinite(p.invested));
+  const ratio = (p: { total: number; invested: number }) => (p.invested > 0 ? p.total / p.invested : null);
+  const ys = ok.map(p => (hidden ? ratio(p) ?? 0 : p.total));
+  if (ok.length < 2) return { ys, pct: null, gain: null };
+  const a = ok[0], b = ok[ok.length - 1], ra = ratio(a), rb = ratio(b);
+  const pct = ra != null && rb != null && ra > 0 ? (rb / ra - 1) * 100 : null;
+  return { ys, pct, gain: (b.total - b.invested) - (a.total - a.invested) };
+}
