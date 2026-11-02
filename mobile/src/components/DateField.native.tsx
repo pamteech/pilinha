@@ -5,8 +5,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Txt } from './ui';
 import { T, S, R } from '../lib/theme';
 import { pickerBounds, toISO } from '../core';
-import { longDate, DateFieldProps } from './DateField';
-export { longDate } from './DateField';
+import { longDate, DateFieldProps } from './dateFormat';
+export { longDate } from './dateFormat';
 // iPhone: calendário do sistema numa janela que sobe só ao tocar (nunca fica montado na tela).
 // A data passada ao calendário é sempre válida e dentro de [min, max] (pickerBounds); datas sempre AAAA-MM-DD no fuso de Brasília.
 export function DateField({ value, onChange, max, min, placeholder }: DateFieldProps) {

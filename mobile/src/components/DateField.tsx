@@ -5,9 +5,9 @@ import { Txt } from './ui';
 import { T, S, R } from '../lib/theme';
 import { parseISO, toISO } from '../core';
 // Web e telas de teste: calendário próprio (no iPhone vale o DateField.native.tsx com o calendário do sistema).
-const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-export const longDate = (iso: string) => { const d = parseISO(iso); if (!d) return 'Escolher data'; const [y, m, dd] = iso.split('-').map(Number); return `${dd} de ${MESES[m - 1]} de ${y}`; };
-export interface DateFieldProps { value: string; onChange: (iso: string) => void; max?: string; min?: string; placeholder?: string }
+import { MESES, longDate, DateFieldProps } from './dateFormat';
+export { longDate } from './dateFormat';
+export type { DateFieldProps } from './dateFormat';
 export function DateField({ value, onChange, max, min, placeholder }: DateFieldProps) {
   const [open, setOpen] = React.useState(false);
   const base = parseISO(value) ? value : max ?? toISO(new Date());
