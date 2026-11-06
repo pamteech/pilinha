@@ -1,5 +1,5 @@
 import { CDIDailyRate } from './cdi';
-import { parseBR, toBR } from './dates';
+import { parseBR, parseISO, toBR, toISO } from './dates';
 import { CashDividend, parseBrapiDividends } from './dividends';
 // Só códigos públicos (tickers, ids de moeda, datas) saem do aparelho; nada da carteira.
 export type Fetcher = (url: string, headers?: Record<string, string>) => Promise<any>;
@@ -20,7 +20,7 @@ export function parseBCB(json: any): CDIDailyRate[] {
   return json.flatMap((r: any) => { const d = parseBR(r.data), v = parseFloat(r.valor); return d && !isNaN(v) ? [{ date: d, percent: v }] : []; });
 }
 export const ipcaURL = (start: Date, end: Date) =>
-  `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${toBR(new Date(start.getFullYear(), start.getMonth(), 1))}&dataFinal=${toBR(end)}`;
+  `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=${toBR(parseISO(toISO(start).slice(0, 7) + '-01')!)}&dataFinal=${toBR(end)}`; // 1º do mês em Brasília, não no fuso do aparelho
 export function parseIPCA(json: any): { month: Date; percent: number }[] {
   if (!Array.isArray(json)) return [];
   return json.flatMap((r: any) => { const d = parseBR(r.data), v = parseFloat(r.valor); return d && !isNaN(v) ? [{ month: d, percent: v }] : []; });

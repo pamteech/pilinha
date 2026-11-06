@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Card, Measure, Screen, SectionTitle, Txt, colorFor } from '../../components/ui';
-import { BenchPoint, CDIDailyRate, HistoryRange, benchmarkSeries, cdiRates, gainPct, inRange, parseISO, pct, selicAnnual, trMonthly } from '../../core';
+import { BenchPoint, CDIDailyRate, HISTORY_RANGES, HistoryRange, benchmarkSeries, cdiRates, gainPct, inRange, parseISO, pct, selicAnnual, trMonthly } from '../../core';
 import { usePilinha } from '../../lib/store';
 import { T, S, R } from '../../lib/theme';
-const ranges: HistoryRange[] = ['Dia', 'Semana', 'Mês', 'Tudo'];
+const ranges: HistoryRange[] = HISTORY_RANGES; // Semana, Mês, 6 meses, 1 ano, Tudo (como na landing)
 const C = { carteira: T.pink, cdi: '#B58BC7', poupanca: '#A08F5A' };
 const line = (ys: number[], W: number, H: number, min: number, span: number) =>
   ys.map((y, i) => `${i ? 'L' : 'M'}${2 + (i / Math.max(1, ys.length - 1)) * (W - 4)},${H - ((y - min) / span) * (H - 10) - 5}`).join(' ');
@@ -40,7 +40,7 @@ export default function Evolucao() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-        {ranges.map(x => <Pressable key={x} onPress={() => setR(x)} style={{ paddingVertical: S.sm, paddingHorizontal: S.lg, borderRadius: R.pill, borderWidth: 1, borderColor: x === r ? T.pink : T.line, backgroundColor: x === r ? T.pink : T.card }}><Txt style={{ color: x === r ? T.bg : T.text }}>{x}</Txt></Pressable>)}
+        {ranges.map(x => <Pressable key={x} onPress={() => setR(x)} style={{ paddingVertical: S.sm, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: x === r ? T.pink : T.line, backgroundColor: x === r ? T.pink : T.card }}><Txt style={{ color: x === r ? T.bg : T.text }}>{x}</Txt></Pressable>)}
       </View>
       <Card>
         <SectionTitle first>{hidden ? 'Ganho sobre o investido' : 'Patrimônio'}</SectionTitle>

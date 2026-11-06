@@ -67,3 +67,27 @@ export function weekSummary(points: { total: number; invested: number }[], hidde
   const pct = ra != null && rb != null && ra > 0 ? (rb / ra - 1) * 100 : null;
   return { ys, pct, gain: (b.total - b.invested) - (a.total - a.invested) };
 }
+
+/**
+ * Distribuição por tipo (landing: renda fixa, Tesouro, ações, FIIs, bitcoin; mais dólar). Ordem e cores fixas por
+ * categoria, nunca pela posição: a cor segue o tipo mesmo quando algum deles não existe na carteira.
+ * Paleta validada (OKLCH, daltonismo, contraste) pelo validador do skill de dataviz: a legenda com % e valor é o
+ * canal de apoio para os tons claros (aqua, amarelo, magenta) sobre o card branco.
+ */
+export type AllocKey = 'renda' | 'tesouro' | 'acoes' | 'fiis' | 'bitcoin' | 'dolar';
+export interface AllocSlice { key: AllocKey; title: string; color: string; total: number; pct: number }
+export const ALLOC_ORDER: AllocKey[] = ['renda', 'tesouro', 'acoes', 'fiis', 'bitcoin', 'dolar'];
+export const ALLOC_COLORS: Record<AllocKey, string> = { renda: '#6250d6', tesouro: '#eb6834', acoes: '#1baf7a', fiis: '#eda100', bitcoin: '#2a78d6', dolar: '#e87ba4' };
+const ALLOC_TITLES: Record<AllocKey, string> = { renda: 'Renda fixa', tesouro: 'Tesouro', acoes: 'Ações', fiis: 'FIIs', bitcoin: 'Bitcoin', dolar: 'Dólar' };
+const allocOf = (c: string): AllocKey => (c === 'tesouro' ? 'tesouro' : c === 'acao' ? 'acoes' : c === 'fii' ? 'fiis' : c === 'cripto' ? 'bitcoin' : c === 'dolar' ? 'dolar' : 'renda');
+export function allocation(items: LineItem[]): AllocSlice[] {
+  const sum = items.reduce((a, i) => a + Math.max(0, i.current), 0); if (!(sum > 0)) return [];
+  return ALLOC_ORDER.flatMap(key => {
+    const it = items.filter(i => allocOf(i.category) === key); const total = it.reduce((a, i) => a + Math.max(0, i.current), 0);
+    if (!(total > 0)) return [];
+    const title = key === 'bitcoin' && it.some(i => i.name.toUpperCase() !== 'BTC') ? 'Cripto' : ALLOC_TITLES[key];
+    return [{ key, title, color: ALLOC_COLORS[key], total, pct: (total / sum) * 100 }];
+  });
+}
+/** "45%" ou "7,5%" (sem sinal; abaixo de 10% com uma casa). */
+export const sharePct = (p: number) => `${(p >= 10 || p === 0 ? p.toFixed(0) : p.toFixed(1)).replace('.', ',')}%`;

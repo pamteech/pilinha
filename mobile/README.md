@@ -19,6 +19,12 @@ Depois das 17h, em dia útil, se o dólar fechou em queda: notificação com a m
 e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, limiar e desligar em Alertas. Código em `src/core/news.ts` (testes em `usdnews.test.ts`),
 `src/lib/news.ts` e `src/lib/alerts.ts`.
 
+## Gráficos e simulador da landing (site/index.html)
+- **Distribuição por tipo** (Carteira): barra empilhada com cor fixa por tipo (renda fixa, Tesouro, ações, FIIs, bitcoin, dólar) e legenda com % e valor. Paleta validada para daltonismo (`allocation` em `src/core/insights.ts`).
+- **Dividendos por mês** (Proventos): últimos 12 meses por data de pagamento, média mensal e melhor mês (`dividendsByMonth` em `src/core/dividends.ts`).
+- **Evolução contra o CDI** com Semana, Mês, 6 meses, 1 ano e Tudo (`HISTORY_RANGES`).
+- **Simulador de metas** (Ajustes): prazo para um aporte mensal, aporte para um prazo, e a renda passiva projetada da meta pelo CDI de hoje (`monthsToGoal`, `monthlyForGoal`, `passiveIncome` em `src/core/goal.ts`). Testes em `landing.test.ts`.
+
 ## Estrutura
 - `src/core` — cálculos (CDI, IR/IOF, cotações, proventos, histórico, import/export). Testado com jest.
 - `src/app` — telas (expo-router): Pilinha, Carteira, Evolução, Proventos, Gráficos (TradingView), Cadastro.

@@ -1,7 +1,9 @@
 import { toISO } from './dates';
 export interface HistoryPoint { day: string; total: number; invested: number; net?: number | null }
-export type HistoryRange = 'Dia' | 'Semana' | 'Mês' | 'Tudo';
-const rangeDays: Record<HistoryRange, number | null> = { Dia: 1, Semana: 7, 'Mês': 30, Tudo: null };
+export type HistoryRange = 'Dia' | 'Semana' | 'Mês' | '6 meses' | '1 ano' | 'Tudo';
+const rangeDays: Record<HistoryRange, number | null> = { Dia: 1, Semana: 7, 'Mês': 30, '6 meses': 182, '1 ano': 365, Tudo: null };
+/** Períodos oferecidos na Evolução (o 'Dia' fica só por compatibilidade: com um ponto por dia não dá gráfico). */
+export const HISTORY_RANGES: HistoryRange[] = ['Semana', 'Mês', '6 meses', '1 ano', 'Tudo'];
 export function record(points: HistoryPoint[], total: number, invested: number, net: number | null, now: Date = new Date()): HistoryPoint[] {
   if (!(total > 0)) return points;
   const day = toISO(now), p = { day, total, invested, net };

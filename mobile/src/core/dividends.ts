@@ -1,5 +1,5 @@
 import { ManualDividend, StockPosition } from './types';
-import { parseISO } from './dates';
+import { parseISO, toISO } from './dates';
 export interface CashDividend { ticker: string; paymentDate: Date; ratePerShare: number; label: string }
 export function parseBrapiDividends(json: any): CashDividend[] {
   const out: CashDividend[] = [];
@@ -30,3 +30,26 @@ export function summary(stocks: StockPosition[], brapi: CashDividend[], manual: 
 }
 /** Total já recebido (lançamentos manuais, todo o período). */
 export const receivedTotal = (m: ManualDividend[] | undefined) => ({ total: (m ?? []).reduce((a, x) => a + x.amount, 0), count: (m ?? []).length });
+
+export const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+export interface MonthDividends { month: string; label: string; total: number }
+export interface MonthlyDividends { months: MonthDividends[]; total: number; average: number; best: MonthDividends | null }
+/**
+ * Proventos por mês de pagamento nos últimos `months` meses (o atual incluído), para o gráfico "Dividendos por mês".
+ * brapi/Yahoo: taxa × quantidade atual, só pagamentos já ocorridos; lançamento manual vence a brapi no mesmo ticker.
+ * `average` é a média sobre todos os meses da janela, meses sem provento contam como zero.
+ */
+export function dividendsByMonth(stocks: StockPosition[], cash: CashDividend[], manual: ManualDividend[], now: Date = new Date(), months = 12): MonthlyDividends {
+  const [y0, m0] = toISO(now).split('-').map(Number);
+  const keys: string[] = []; for (let k = months - 1; k >= 0; k--) { const d = new Date(Date.UTC(y0, m0 - 1 - k, 1)); keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`); }
+  const sum: Record<string, number> = Object.fromEntries(keys.map(k => [k, 0]));
+  const add = (month: string, v: number) => { if (month in sum && v > 0) sum[month] += v; };
+  const mt = new Set(manual.map(m => m.ticker.toUpperCase()));
+  for (const m of manual) { const d = parseISO(m.date); if (d && d <= now) add(m.date.slice(0, 7), m.amount); }
+  const qty = new Map(stocks.map(s => [s.ticker.toUpperCase(), s.quantity]));
+  for (const c of cash) { const q = qty.get(c.ticker.toUpperCase()); if (!q || mt.has(c.ticker.toUpperCase()) || c.paymentDate > now) continue; add(toISO(c.paymentDate).slice(0, 7), c.ratePerShare * q); }
+  const list = keys.map(month => ({ month, label: MONTH_SHORT[Number(month.slice(5, 7)) - 1], total: sum[month] }));
+  const total = list.reduce((a, m) => a + m.total, 0);
+  const best = list.reduce<MonthDividends | null>((b, m) => (m.total > 0 && (!b || m.total > b.total) ? m : b), null);
+  return { months: list, total, average: months > 0 ? total / months : 0, best };
+}
