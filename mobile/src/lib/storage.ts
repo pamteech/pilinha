@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { emptyPortfolio, HistoryPoint, Portfolio } from '../core';
+import { emptyPortfolio, HistoryPoint, Portfolio, UsdAlert, defaultUsdAlert } from '../core';
 // Tudo fica só no aparelho: carteira e histórico no AsyncStorage, token da brapi no Keychain.
 const K = { portfolio: 'pilinha.portfolio.v1', history: 'pilinha.history.v1', token: 'pilinha.brapiToken', hidden: 'pilinha.hidden' };
 export async function loadPortfolio(): Promise<Portfolio> {
@@ -16,8 +16,8 @@ export const loadHidden = async () => (await AsyncStorage.getItem(K.hidden)) ===
 export const saveHidden = (b: boolean) => AsyncStorage.setItem(K.hidden, b ? '1' : '0');
 
 // Ajustes, alertas e registro de alertas disparados (também só no aparelho).
-export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean }
-export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true });
+export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert }
+export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert() });
 const K2 = { settings: 'pilinha.settings.v1', alerts: 'pilinha.alerts.v1', fired: 'pilinha.alertsFired.v1' };
 const loadJSON = async <T,>(k: string, def: T): Promise<T> => { try { const s = await AsyncStorage.getItem(k); return s ? { ...(def as any), ...JSON.parse(s) } : def; } catch { return def; } };
 const loadArr = async <T,>(k: string): Promise<T[]> => { try { const v = JSON.parse((await AsyncStorage.getItem(k)) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
@@ -27,6 +27,16 @@ export const loadAlerts = () => loadArr<import('../core').PriceAlert>(K2.alerts)
 export const saveAlerts = (a: import('../core').PriceAlert[]) => AsyncStorage.setItem(K2.alerts, JSON.stringify(a));
 export const loadFired = () => loadJSON<import('../core').FiredLog>(K2.fired, {});
 export const saveFired = (f: import('../core').FiredLog) => AsyncStorage.setItem(K2.fired, JSON.stringify(f));
+// Aviso do dólar: dia da sessão já avisada (um aviso por fechamento).
+const KUSD = 'pilinha.usdFired.v1';
+export const loadUsdFired = () => loadJSON<{ day: string | null }>(KUSD, { day: null });
+export const saveUsdFired = (day: string) => AsyncStorage.setItem(KUSD, JSON.stringify({ day }));
+// Última carteira que o Mac mandou (base do merge de três vias): sem ela o Mac venceria e desfaria o que foi editado aqui.
+const KBASE = 'pilinha.macBase.v1';
+export async function loadMacBase(): Promise<Portfolio | null> {
+  try { const s = await AsyncStorage.getItem(KBASE); return s ? { ...emptyPortfolio(), ...JSON.parse(s) } : null; } catch { return null; }
+}
+export const saveMacBase = (p: Portfolio | null) => (p ? AsyncStorage.setItem(KBASE, JSON.stringify(p)) : AsyncStorage.removeItem(KBASE));
 // Código de pareamento com o Mac (sincronização cifrada) fica no Keychain.
 const KS = 'pilinha.syncCode';
 export const loadSyncCode = async () => { try { return await SecureStore.getItemAsync(KS); } catch { return null; } };

@@ -1,13 +1,22 @@
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
-import { PriceAlert, QuoteLite, Snapshot, cryptoBRL, evaluateAlerts, watchAlerts, itemDayPct, stockQuote } from '../core';
+import { PriceAlert, QuoteLite, Snapshot, UsdAlert, cryptoBRL, defaultUsdAlert, evaluateAlerts, safeNewsLink, usdDropDue, usdNotification, usdQuote, watchAlerts, itemDayPct, stockQuote } from '../core';
 import * as S from './storage';
+import { fetchUsdNews } from './news';
 export const ALERT_TASK = 'pilinha-alertas';
 const native = Platform.OS === 'ios' || Platform.OS === 'android';
 if (native) {
   try { Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) }); } catch {}
+  // Tocar no aviso do dólar abre a notícia (só https). Vale para o app aberto, em segundo plano e fechado (última resposta).
+  const opened = new Set<string>();
+  const open = (r: Notifications.NotificationResponse | null | undefined) => {
+    const id = r?.notification?.request?.identifier, url = safeNewsLink(r?.notification?.request?.content?.data?.url);
+    if (!url || !id || opened.has(id)) return; opened.add(id);
+    Linking.openURL(url).catch(() => {});
+  };
+  try { Notifications.addNotificationResponseReceivedListener(open); Notifications.getLastNotificationResponseAsync().then(open).catch(() => {}); } catch {}
 }
 export async function requestPermission(): Promise<boolean> {
   if (!native) return false;
@@ -27,9 +36,25 @@ export async function checkAndNotify(quotes: Record<string, QuoteLite>, alerts?:
   if (native) for (const n of r.toFire) { try { await Notifications.scheduleNotificationAsync({ content: { title: n.title, body: n.body }, trigger: null }); } catch {} }
   return r.toFire.length;
 }
+export const usdAlertOf = (st: Pick<S.Settings, 'usdAlert'> | null | undefined): UsdAlert => ({ ...defaultUsdAlert(), ...(st?.usdAlert ?? {}) });
+/**
+ * Dólar fechou em queda: um aviso por sessão (depois das 17h, dias úteis) com a manchete do motivo e o link.
+ * Marca a sessão como avisada antes de buscar a notícia (duas checagens juntas não avisam duas vezes). Sem notícia, avisa mesmo assim.
+ */
+export async function checkUsdDrop(q: { bid: number | null | undefined; changePct: number | null | undefined } | null | undefined, settings?: S.Settings, now = new Date()): Promise<boolean> {
+  if (!q || q.bid == null) return false;
+  const cfg = usdAlertOf(settings ?? (await S.loadSettings()));
+  const day = usdDropDue(q, cfg, (await S.loadUsdFired()).day, now); if (!day) return false;
+  await S.saveUsdFired(day);
+  const news = await fetchUsdNews('down', now).catch(() => null);
+  const n = usdNotification(q, news);
+  if (native) { try { await Notifications.scheduleNotificationAsync({ content: { title: n.title, body: n.body, data: { url: n.url } }, trigger: null }); } catch {} }
+  return true;
+}
 /** Em segundo plano o iOS decide quando rodar (no mínimo a cada ~15 min, sem garantia). */
 async function backgroundCheck() {
-  const p = await S.loadPortfolio();
+  const p = await S.loadPortfolio(), st = await S.loadSettings();
+  if (usdAlertOf(st).enabled) { try { const fx = await usdQuote(); await checkUsdDrop({ bid: fx.bid, changePct: fx.changePct }, st); } catch {} }
   const alerts = [...(await S.loadAlerts()), ...watchAlerts(p.watchlist)].filter(a => a.enabled); if (!alerts.length) return;
   const token = await S.loadToken(), q: Record<string, QuoteLite> = {};
   const tickers = [...new Set(alerts.map(a => a.ticker.toUpperCase()))];

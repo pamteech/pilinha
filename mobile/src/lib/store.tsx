@@ -2,18 +2,22 @@ import { treasuryRows } from './treasury';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Linking from 'expo-linking';
-import { normalizeCode, cachedCdiRates, cdiRates, withTimeout } from '../core';
+import { normalizeCode, cachedCdiRates, cdiRates, mergeFromMac, withTimeout, NewsItem, UsdDirection } from '../core';
 import { codeFromURL, pullFromMac } from './sync';
 import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
 import * as S from './storage';
 import { syncExtensions } from './widget';
 import { PriceAlert, hiddenOnOpen, shouldRehide } from '../core';
-import { checkAndNotify, quotesFromSnapshot, syncBackgroundTask } from './alerts';
+import { checkAndNotify, checkUsdDrop, quotesFromSnapshot, syncBackgroundTask, usdAlertOf } from './alerts';
+import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
   setHidden: (b: boolean) => void; refresh: () => Promise<void>; update: (p: Portfolio) => Promise<void>; setToken: (t: string) => Promise<void>;
   settings: S.Settings; setSettings: (s: S.Settings) => Promise<void>; alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => Promise<void>; toggleHidden: () => Promise<void>; ready: boolean;
-  sync: SyncState; connectMac: (code: string) => Promise<SyncState>; disconnectMac: () => Promise<void>; syncNow: () => Promise<SyncState> }
+  sync: SyncState; connectMac: (code: string) => Promise<SyncState>; disconnectMac: () => Promise<void>; syncNow: () => Promise<SyncState>;
+  /** Última carteira recebida do Mac (para saber se um item também existe lá). */ macBase: Portfolio | null;
+  /** Manchete que explica a variação do dólar hoje (card do Início). */ usdNews: UsdNewsState | null }
+export interface UsdNewsState { dir: UsdDirection; pct: number; item: NewsItem }
 export interface SyncState { connected: boolean; status: 'off' | 'syncing' | 'ok' | 'waiting' | 'error'; message?: string; lastSync?: number; macUpdatedAt?: number | null }
 const C = createContext<Ctx>(null as any);
 export const usePilinha = () => useContext(C);
@@ -28,6 +32,9 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const setHidden = (b: boolean) => { hRef.current = b; setHiddenState(b); S.saveHidden(b); if (snapRef.current) syncExtensions(snapRef.current, b); };
   const snapRef = useRef<Snapshot | null>(null);
   const pRef = useRef(portfolio); pRef.current = portfolio;
+  const [macBase, setMacBase] = useState<Portfolio | null>(null);
+  const [usdNews, setUsdNews] = useState<UsdNewsState | null>(null);
+  const needsBackground = (p: Portfolio, al: PriceAlert[], st: S.Settings) => al.some(a => a.enabled) || !!p.watchlist?.length || usdAlertOf(st).enabled;
   // Só o refresh mais recente vale: um mais lento (ex. do timer) não sobrescreve a carteira recém-editada.
   const gate = useRef(latestGate()).current;
   const run = useCallback(async (p: Portfolio) => {
@@ -38,12 +45,19 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       const s = await withTimeout(snapshot(p, { brapiToken: token, treasury, cdi: (a, b) => cachedCdiRates(a, b, S.kv, (x, y) => cdiRates(x, y)) }), 25000);
       if (!gate.isLatest(my)) return;
       setSnap(s); S.saveLastSnapshot(s); checkAndNotify(quotesFromSnapshot(s)).catch(() => {}); snapRef.current = s; syncExtensions(s, hRef.current);
+      // Dólar: aviso de fechamento em queda e, no Início, a manchete do motivo (só com o aviso ligado nos Alertas).
+      const fx = { bid: s.usdBRL, changePct: s.usdChangePct };
+      checkUsdDrop(fx, setRef.current).catch(() => {});
+      if (usdAlertOf(setRef.current).enabled && fx.changePct != null && Math.abs(fx.changePct) >= 0.01) {
+        const dir: UsdDirection = fx.changePct < 0 ? 'down' : 'up', pctNow = fx.changePct;
+        fetchUsdNews(dir).then(item => { if (gate.isLatest(my)) setUsdNews(item ? { dir, pct: pctNow, item } : null); }).catch(() => {});
+      } else setUsdNews(null);
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
       const old = await S.loadHistory();
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); syncBackgroundTask(al.some(a => a.enabled) || !!(await S.loadPortfolio()).watchlist?.length); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot()]); setP(p); pRef.current = p; if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
   // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
   useEffect(() => {
     let prev: string = AppState.currentState ?? 'active';
@@ -59,10 +73,15 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     if (syncing.current) return { connected: true, status: 'syncing' };
     syncing.current = true; setSync(s => ({ ...s, connected: true, status: 'syncing' }));
     try {
-      const r = await pullFromMac(code, pRef.current);
+      const r = await pullFromMac(code);
       let st: SyncState;
       if (r.kind === 'ok') {
-        if (JSON.stringify(r.portfolio) !== JSON.stringify(pRef.current)) { setP(r.portfolio); pRef.current = r.portfolio; await S.savePortfolio(r.portfolio); run(r.portfolio); }
+        // Merge de três vias com a carteira do iPhone DE AGORA (não a de antes do download): o que foi editado aqui
+        // enquanto baixava, ou desde o último sync, fica; o Mac só sobrescreve o item que mudou lá.
+        const base = await S.loadMacBase();
+        const merged = mergeFromMac(pRef.current, r.portfolio, base);
+        await S.saveMacBase(r.portfolio); setMacBase(r.portfolio);
+        if (JSON.stringify(merged) !== JSON.stringify(pRef.current)) { pRef.current = merged; setP(merged); await S.savePortfolio(merged); run(merged); }
         st = { connected: true, status: 'ok', lastSync: Date.now(), macUpdatedAt: r.updatedAt, message: `${r.items} item(ns) do Mac` };
       } else if (r.kind === 'waiting') st = { connected: true, status: 'waiting', message: 'Ainda nada do Mac. Abra o Pilinvest no Mac com a internet ligada.' };
       else st = { connected: true, status: 'error', message: r.message };
@@ -71,9 +90,10 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   }, [run]);
   const connectMac = async (raw: string): Promise<SyncState> => {
     const c = normalizeCode(raw); if (!c) { const st: SyncState = { connected: !!codeRef.current, status: 'error', message: 'Código inválido: são 16 letras e números (ex. ABCD-EFGH-2345-6789).' }; setSync(st); return st; }
+    if (codeRef.current !== c) { await S.saveMacBase(null); setMacBase(null); } // outro Mac/código: a base antiga não vale
     codeRef.current = c; await S.saveSyncCode(c); return doSync();
   };
-  const disconnectMac = async () => { codeRef.current = null; await S.saveSyncCode(null); setSync({ connected: false, status: 'off' }); };
+  const disconnectMac = async () => { codeRef.current = null; await S.saveSyncCode(null); await S.saveMacBase(null); setMacBase(null); setSync({ connected: false, status: 'off' }); };
   useEffect(() => {
     if (!loaded) return;
     let alive = true;
@@ -87,14 +107,19 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     const t = setInterval(() => { if (AppState.currentState === 'active') doSync(); }, 5 * 60_000);
     return () => { alive = false; sub.remove(); clearInterval(t); };
   }, [loaded, doSync]);
-  const update = async (p: Portfolio) => { setP(p); syncBackgroundTask(alerts.some(a => a.enabled) || !!p.watchlist?.length); await S.savePortfolio(p); await run(p); };
+  // pRef muda já (não só no próximo render): um sync que termine agora junta com a carteira recém-editada, não com a antiga.
+  const update = async (p: Portfolio) => { pRef.current = p; setP(p); syncBackgroundTask(needsBackground(p, alerts, setRef.current)); await S.savePortfolio(p); await run(p); };
   const setToken = async (t: string) => { await S.saveToken(t.trim()); await run(pRef.current); };
-  const setSettings = async (x: S.Settings) => { setSettingsState(x); await S.saveSettings(x); };
-  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(a.some(x => x.enabled) || !!pRef.current.watchlist?.length); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
+  const setSettings = async (x: S.Settings) => {
+    setSettingsState(x); setRef.current = x; await S.saveSettings(x);
+    await syncBackgroundTask(needsBackground(pRef.current, alerts, x));
+    if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdDrop({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
+  };
+  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(needsBackground(pRef.current, a, setRef.current)); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).
   const toggleHidden = async () => {
     if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinvest'))) return;
     setHidden(!hRef.current);
   };
-  return <C.Provider value={{ settings, setSettings, alerts, setAlerts, toggleHidden, ready,  portfolio, snap, history, loading, hasToken, hidden, setHidden, refresh: () => run(pRef.current), update, setToken, sync, connectMac, disconnectMac, syncNow: doSync }}>{children}</C.Provider>;
+  return <C.Provider value={{ settings, setSettings, alerts, setAlerts, toggleHidden, ready,  portfolio, snap, history, loading, hasToken, hidden, setHidden, refresh: () => run(pRef.current), update, setToken, sync, connectMac, disconnectMac, syncNow: doSync, macBase, usdNews }}>{children}</C.Provider>;
 }

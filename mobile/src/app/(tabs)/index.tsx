@@ -1,17 +1,18 @@
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Pig } from '../../components/Pig';
 import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
-import { goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, shouldCelebrate, total, totalNet } from '../../core';
+import { goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, totalNet, usdNewsTitle } from '../../core';
+import type { UsdNewsState } from '../../lib/store';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
 import { isTradingHours, staleInfo } from '../../core';
 import { Alert } from 'react-native';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
-  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings } = usePilinha();
+  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews } = usePilinha();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
   const base = moodFrom(d, loading && !snap, !!snap?.errors.length);
   const [mood, setMood] = useState<Mood>(base); const prev = useRef<number | null>(null);
@@ -72,6 +73,7 @@ export default function Home() {
           <View key={i} style={{ flexDirection: 'row', gap: S.md, alignItems: 'center' }}><MaterialCommunityIcons name={i as any} size={20} color={T.pink} /><Txt style={{ flex: 1 }}>{t}</Txt></View>))}
       </Card>}
       <Stale errors={snap?.errors} />
+      {usdNews ? <UsdNews n={usdNews} /> : null}
       {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
@@ -81,6 +83,23 @@ export default function Home() {
   );
 }
 
+/** Manchete do dia sobre o dólar (Google Notícias); toque abre a matéria no navegador. Só aparece com o aviso do dólar ligado. */
+function UsdNews({ n }: { n: UsdNewsState }) {
+  const url = safeNewsLink(n.item.link), when = n.item.publishedAt ? n.item.publishedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null;
+  return (
+    <Pressable accessibilityRole="link" accessibilityLabel={`${usdNewsTitle(n.dir)}: ${n.item.title}. Abre a notícia`} disabled={!url} onPress={() => url && Linking.openURL(url).catch(() => {})}>
+      <Card>
+        <SectionTitle first right={<Txt style={{ color: colorFor(n.pct), fontWeight: '700' }}>{pct(n.pct)}</Txt>}>{usdNewsTitle(n.dir)}</SectionTitle>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
+          <MaterialCommunityIcons name="newspaper-variant-outline" size={20} color={T.lilacDeep} />
+          <Txt style={{ flex: 1, fontWeight: '600' }}>{n.item.title}</Txt>
+          {url ? <MaterialCommunityIcons name="open-in-new" size={16} color={T.dim} /> : null}
+        </View>
+        <Txt dim style={{ fontSize: 12 }}>{[n.item.source, when].filter(Boolean).join(' · ')}{n.item.source || when ? ' · ' : ''}manchete do Google Notícias</Txt>
+      </Card>
+    </Pressable>
+  );
+}
 function Week({ points, hidden }: { points: { total: number; invested: number }[]; hidden: boolean }) {
   const H = 72;
   const { ys, pct: ch, gain } = weekSummary(points, hidden);

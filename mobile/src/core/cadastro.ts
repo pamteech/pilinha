@@ -58,6 +58,8 @@ export function draftFor(p: Portfolio, ref: { category: string; name: string }):
   return null;
 }
 
+/** O item (categoria + nome da tela) também existe na última carteira que o Mac mandou? */
+export const itemOnMac = (base: Portfolio | null | undefined, ref: { category: string; name: string }) => !!base && draftFor(base, ref) != null;
 /** Na edição de renda fixa com vários aportes, valor/data não são reescritos (só taxa, nome, vencimento). */
 export const multiDeposit = (p: Portfolio, d: Draft) => !!d.editKey && isFixedType(d.type) && (p.fixedIncome.find(a => a.name === d.editKey)?.deposits.length ?? 0) > 1;
 

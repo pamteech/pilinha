@@ -51,7 +51,7 @@ export function DadosAvancados() {
       <Card>
         <SectionTitle first>Conectar ao Mac</SectionTitle>
         {sync.connected ? <>
-          <Txt dim>{sync.status === 'syncing' ? 'Buscando a carteira do Mac…' : sync.status === 'ok' ? `Conectado. A carteira do Mac chega sozinha (${sync.message}${sync.macUpdatedAt ? `, enviada ${new Date(sync.macUpdatedAt).toLocaleString('pt-BR')}` : ''}). O que só existe no iPhone fica.` : sync.message ?? 'Conectado.'}</Txt>
+          <Txt dim>{sync.status === 'syncing' ? 'Buscando a carteira do Mac…' : sync.status === 'ok' ? `Conectado. A carteira do Mac chega sozinha (${sync.message}${sync.macUpdatedAt ? `, enviada ${new Date(sync.macUpdatedAt).toLocaleString('pt-BR')}` : ''}). O que você edita aqui fica salvo; o Mac só substitui um item quando ele muda lá. O que só existe no iPhone fica.` : sync.message ?? 'Conectado.'}</Txt>
           <Btn title="Buscar agora" onPress={async () => { const r = await syncNow(); if (r.status === 'error') bad(r.message ?? 'Não deu.'); }} />
           <Btn title="Desconectar do Mac" onPress={() => Alert.alert('Desconectar do Mac', 'A carteira deste iPhone fica como está, mas para de receber as mudanças do Mac.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desconectar', style: 'destructive', onPress: () => disconnectMac() }])} />
         </> : <>

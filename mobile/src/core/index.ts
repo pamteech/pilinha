@@ -7,3 +7,4 @@ export * from './treasury'; export * from './watchlist';
 export * from './privacy';
 export * from './cache';
 export * from './cadastro';
+export * from './news';

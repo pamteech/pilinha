@@ -40,7 +40,7 @@ export default function Ajustes() {
       <DadosAvancados />
       <Card>
         <SectionTitle first>Sobre</SectionTitle>
-        <Txt dim style={{ fontSize: 13 }}>O Pilinvest é uma ferramenta de acompanhamento. Os valores são estimativas com base em cotações públicas (B3 via Yahoo/brapi, Banco Central, Tesouro Direto e CoinGecko) e podem diferir do extrato da corretora. Não é recomendação de investimento.</Txt>
+        <Txt dim style={{ fontSize: 13 }}>O Pilinvest é uma ferramenta de acompanhamento. Os valores são estimativas com base em cotações públicas (B3 via Yahoo/brapi, Banco Central, Tesouro Direto, CoinGecko e AwesomeAPI) e podem diferir do extrato da corretora. A manchete sobre o dólar vem do Google Notícias (busca fixa). Não é recomendação de investimento.</Txt>
         <Txt dim style={{ fontSize: 13 }}>Seus dados ficam só neste iPhone. Política de privacidade e suporte: pamteech.github.io/pilinha</Txt>
       </Card>
     </Screen>

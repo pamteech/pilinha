@@ -10,7 +10,7 @@ import { treasuryOffers } from '../lib/treasury';
 import * as St from '../lib/storage';
 import { T, S, R } from '../lib/theme';
 import {
-  ASSET_TYPES, AssetType, CDI_SHORTCUTS, Draft, TickerHit, TreasuryOffer, applyDraft, brl, draftFor, emptyDraft, existingNotice, localSearch,
+  ASSET_TYPES, AssetType, CDI_SHORTCUTS, Draft, TickerHit, TreasuryOffer, applyDraft, brl, draftFor, emptyDraft, existingNotice, itemOnMac, localSearch,
   mergeHits, multiDeposit, normTicker, offerName, offerRateText, parseYahooSearch, preview, removeItem, stockQuote, toISO, validTicker, validateDraft, yahooSearchURL, defaultFetcher,
 } from '../core';
 // Qualquer erro nesta tela mostra um aviso com "Voltar" em vez de fechar o app (a carteira salva não é tocada).
@@ -38,8 +38,10 @@ const IconBox = ({ name }: { name: Icon }) => <View style={{ width: 34, height: 
 export default function Adicionar() {
   const params = useLocalSearchParams<{ cat?: string; name?: string; type?: string }>();
   const router = useRouter();
-  const { portfolio: p, update, snap, hidden } = usePilinha();
+  const { portfolio: p, update, snap, hidden, sync, macBase } = usePilinha();
   const today = toISO(new Date());
+  // Editando um item que o Mac também manda: a edição fica aqui; o Mac só passa por cima se mudar o mesmo item lá.
+  const onMac = !!(params.cat && params.name) && sync.connected && itemOnMac(macBase, { category: String(params.cat), name: String(params.name) });
   const editing = React.useMemo(() => (params.cat && params.name ? draftFor(p, { category: String(params.cat), name: String(params.name) }) : null), []); // eslint-disable-line
   const [d, setD] = React.useState<Draft | null>(editing ?? (params.type ? emptyDraft(params.type as AssetType, today) : null));
   const [step, setStep] = React.useState(editing || params.type ? 2 : 1);
@@ -84,7 +86,7 @@ export default function Adicionar() {
       <ScrollView contentContainerStyle={{ padding: S.lg, gap: S.sm, paddingBottom: S.xxl }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {step === 1 && <TypeStep onPick={pick} />}
         {step === 2 && d && <FieldsStep d={d} set={set} adv={adv} setAdv={setAdv} price={price} setPrice={setPrice} editing={!!editing} multi={multiDeposit(p, d)} today={today} />}
-        {step === 3 && d && <ConfirmStep d={d} price={price} hidden={hidden} notice={existingNotice(d, p, hidden)} cdiAnnual={snap?.cdiAnnual ?? null} editing={!!editing} multi={multiDeposit(p, d)} />}
+        {step === 3 && d && <ConfirmStep d={d} price={price} hidden={hidden} notice={existingNotice(d, p, hidden)} cdiAnnual={snap?.cdiAnnual ?? null} editing={!!editing} multi={multiDeposit(p, d)} onMac={onMac} />}
       </ScrollView>
       {footer}
     </View>);
@@ -248,7 +250,7 @@ function TesouroFields({ d, set, money, advToggle }: { d: Draft; set: (x: Partia
   </>);
 }
 
-function ConfirmStep({ d, price, hidden, notice, cdiAnnual, editing, multi }: { d: Draft; price: number | null; hidden: boolean; notice: string | null; cdiAnnual: number | null; editing: boolean; multi: boolean }) {
+function ConfirmStep({ d, price, hidden, notice, cdiAnnual, editing, multi, onMac }: { d: Draft; price: number | null; hidden: boolean; notice: string | null; cdiAnnual: number | null; editing: boolean; multi: boolean; onMac?: boolean }) {
   const pv = preview(d, { cdiAnnual, price });
   const icon = (ASSET_TYPES.find(a => a.type === d.type)?.icon ?? 'wallet-outline') as Icon;
   const row = (l: string, v: React.ReactNode, color?: string, last?: boolean) => (
@@ -279,5 +281,6 @@ function ConfirmStep({ d, price, hidden, notice, cdiAnnual, editing, multi }: { 
     {notice ? <Hint>{notice}</Hint> : null}
     {fixed && !multi ? <Hint>{`Estimativa${d.type === 'tesouro' && d.treasury === 'ipca' ? ' com IPCA de 4,5% ao ano' : d.type === 'tesouro' && d.treasury === 'prefixado' ? ' pela taxa prefixada' : ' pelo CDI de hoje'}, antes do IR. O valor real aparece na carteira${d.type === 'tesouro' ? ', marcado a mercado pela planilha do Tesouro' : ''}.`}</Hint> : null}
     {editing ? <Hint>Você está editando um item que já existe. Só ele muda; o resto da carteira fica igual.</Hint> : null}
+    {editing && onMac ? <Hint>Este item também vem do Mac. A mudança fica salva aqui no iPhone; o Mac só passa por cima se você alterar o mesmo item lá depois.</Hint> : null}
   </>);
 }

@@ -64,6 +64,45 @@ export function mergePortfolio(phone: Portfolio, mac: Portfolio): Portfolio {
     ...(phone.watchlist || mac.watchlist ? { watchlist: byKey(phone.watchlist ?? [], mac.watchlist ?? [], w => key(w.ticker)) } : {}),
   };
 }
+/** JSON com chaves ordenadas: compara itens sem depender da ordem em que o Mac ou o iPhone gravaram. */
+export const canon = (x: unknown): string | undefined =>
+  JSON.stringify(x, (_k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((o: any, k) => { o[k] = v[k]; return o; }, {}) : v));
+/**
+ * Sincronização contínua com o Mac (a cada abertura, 5 min, "Buscar agora"). Junta o que o Mac acabou de mandar (`mac`)
+ * na carteira do iPhone (`phone`) sabendo o que o Mac tinha mandado da última vez (`base`). Por item (mesma chave do mergePortfolio):
+ *  - o Mac mudou o item desde a última vez, ou ele é novo lá → vale o do Mac;
+ *  - o Mac não mudou → vale o do iPhone: editado aqui (ex. VIVT3 de 5 para 10 cotas, US$ 1.500), igual ou removido aqui.
+ * Antes o Mac vencia sempre, então o que era alterado no celular voltava ao valor antigo no próximo sync.
+ * Sem `base` (primeira sincronização) é o mergePortfolio de sempre. Nunca apaga o que só existe no iPhone.
+ */
+export function mergeFromMac(phone: Portfolio, mac: Portfolio, base: Portfolio | null | undefined): Portfolio {
+  if (!base) return mergePortfolio(phone, mac);
+  const key = (s: string) => s.trim().toLowerCase();
+  const list = <T,>(ph: T[], mc: T[], bs: T[], k: (x: T) => string): T[] => {
+    const was = new Map(bs.map(x => [k(x), canon(x)]));
+    const changed = mc.filter(x => was.get(k(x)) !== canon(x)); // novo no Mac ou mudado lá
+    const ck = new Set(changed.map(k));
+    return [...ph.filter(x => !ck.has(k(x))), ...changed];
+  };
+  const dv = (d: { ticker: string; date: string; amount: number }) => `${d.ticker.toUpperCase()}|${d.date}|${Math.round(d.amount * 100)}`;
+  const dvSet = (xs: { ticker: string; date: string; amount: number }[] | undefined) => (xs ?? []).map(dv).sort().join('\n');
+  let manualDividends = phone.manualDividends ?? [];
+  if (dvSet(mac.manualDividends) !== dvSet(base.manualDividends)) {
+    const seen = new Set<string>();
+    manualDividends = [...manualDividends, ...(mac.manualDividends ?? [])].filter(d => { const k = dv(d); if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  // Campos soltos (usd, owner, tradingview…): o do Mac só entra se mudou lá; se o Mac apagou, o do iPhone fica.
+  const LISTS = new Set(['fixedIncome', 'stocks', 'crypto', 'manualDividends', 'watchlist']);
+  const out: any = { ...phone };
+  for (const k of Object.keys(mac)) if (!LISTS.has(k) && canon((mac as any)[k]) !== canon((base as any)[k])) out[k] = (mac as any)[k];
+  out.fixedIncome = list(phone.fixedIncome, mac.fixedIncome, base.fixedIncome, a => key(a.name));
+  out.stocks = list(phone.stocks, mac.stocks, base.stocks, s => key(s.ticker));
+  out.crypto = list(phone.crypto, mac.crypto, base.crypto, c => key(c.coinId));
+  out.manualDividends = manualDividends;
+  const wl = list(phone.watchlist ?? [], mac.watchlist ?? [], base.watchlist ?? [], w => key(w.ticker));
+  if (wl.length) out.watchlist = wl; else delete out.watchlist;
+  return out as Portfolio;
+}
 export const serializePortfolio = (p: Portfolio) => JSON.stringify(p, null, 2);
 
 export const tradingViewSymbol = (ticker: string, tv?: any) =>

@@ -10,6 +10,15 @@ npm run typecheck # tsc --noEmit
 npm run smoke     # testa as APIs reais (mostra só ok/erro)
 ```
 
+## Sincronização com o Mac e edições no iPhone
+O Mac manda a carteira cifrada; o iPhone junta com a dele por um merge de três vias (`mergeFromMac` em `src/core/io.ts`, base = última carteira do Mac,
+guardada no aparelho). O Mac só substitui um item que mudou **lá**; o que foi editado no iPhone (quantidade, dólar, remoção) fica. Testes em `macmerge.test.ts`.
+
+## Aviso do dólar
+Depois das 17h, em dia útil, se o dólar fechou em queda: notificação com a manchete do motivo (RSS público do Google Notícias, busca fixa "dólar hoje")
+e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, limiar e desligar em Alertas. Código em `src/core/news.ts` (testes em `usdnews.test.ts`),
+`src/lib/news.ts` e `src/lib/alerts.ts`.
+
 ## Estrutura
 - `src/core` — cálculos (CDI, IR/IOF, cotações, proventos, histórico, import/export). Testado com jest.
 - `src/app` — telas (expo-router): Pilinha, Carteira, Evolução, Proventos, Gráficos (TradingView), Cadastro.

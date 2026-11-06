@@ -1,6 +1,6 @@
 # Pilinha no iPhone — plano (rota Expo + EAS)
 
-Privacidade: só leitura, sem conexão com banco, dados só no aparelho (carteira e histórico no AsyncStorage, token da brapi no Keychain via expo-secure-store). Só tickers, ids de moeda e datas saem do iPhone.
+Privacidade: só leitura, sem conexão com banco, dados só no aparelho (carteira e histórico no AsyncStorage, token da brapi no Keychain via expo-secure-store). Só tickers, ids de moeda e datas saem do iPhone (e, com o aviso do dólar ligado, uma busca fixa "dólar hoje" no RSS do Google Notícias).
 
 ## Rota escolhida: Expo + EAS (sem Xcode local)
 - App em `mobile/` (Expo SDK 58, TypeScript, expo-router), só iOS, bundle `com.pamtech.pilinha`.
@@ -34,3 +34,14 @@ Privacidade: só leitura, sem conexão com banco, dados só no aparelho (carteir
 
 ## Observação
 O Yahoo responde 429 para alguns User-Agents completos de navegador (visto em 23/10/2026); o app usa `Mozilla/5.0` curto. Vale conferir o app do Mac, que usa um UA longo de Chrome.
+
+## Sincronização com o Mac (merge de três vias)
+O iPhone guarda a última carteira que o Mac mandou (`pilinha.macBase.v1`). A cada sync, `mergeFromMac(iPhone, Mac, base)` só deixa o Mac
+sobrescrever um item que **mudou no Mac** desde a última vez; o resto (editado, igual ou removido no iPhone) fica. Antes o Mac vencia sempre
+e desfazia o que era alterado no celular (US$, quantidade de uma ação) no próximo sync — às vezes segundos depois de salvar, porque o
+download já estava em andamento. O merge também usa a carteira do iPhone *de agora*, não a de antes do download.
+
+## Aviso do dólar
+Depois das 17h (dias úteis), se o dólar caiu no dia (AwesomeAPI/PTAX), uma notificação "Dólar fechou em queda (−x%)" com a manchete que
+explica o motivo (RSS do Google Notícias, busca fixa) e o link; tocar abre a matéria. Um aviso por sessão; o mesmo card aparece no Início.
+Ligado por padrão; limiar e desligar em Alertas.
