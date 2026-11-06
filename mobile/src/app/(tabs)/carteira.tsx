@@ -17,7 +17,7 @@ export default function Carteira() {
     <Screen>
       <EyeToggle />
       <AddButton onPress={add} />
-      <Allocation slices={allocation(snap!.items)} hidden={hidden} />
+      <Allocation slices={allocation(snap!.items, T.scheme === 'dark')} hidden={hidden} />
       {groupItems(snap!.items).map(g => (
         <Card key={g.key} style={{ paddingBottom: S.xs, gap: 0 }}>
           <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>

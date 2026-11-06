@@ -65,5 +65,5 @@ export const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPre
 export const ToggleRow = ({ label, hint, value, onChange, disabled }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm }}>
     <View style={{ flex: 1 }}><Txt style={{ fontWeight: '600' }}>{label}</Txt>{hint ? <Txt dim style={{ fontSize: 13 }}>{hint}</Txt> : null}</View>
-    <RNSwitch value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: T.navy2, false: T.line }} thumbColor="#FFFFFF" />
+    <RNSwitch value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: T.navy2, false: T.line }} thumbColor={T.thumb} />
   </View>);

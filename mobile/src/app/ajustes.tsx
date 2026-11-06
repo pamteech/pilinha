@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Button, Card, Field, Screen, SectionTitle, ToggleRow, Txt, money } from '../components/ui';
+import { Button, Card, Chip, Field, Screen, SectionTitle, ToggleRow, Txt, money } from '../components/ui';
+import { View } from 'react-native';
+import { S } from '../lib/theme';
 import { parseNumberBR, isPositive, formatMonths, monthlyForGoal, monthsToGoal, passiveIncome, total } from '../core';
 import { usePilinha } from '../lib/store';
 import { DadosAvancados } from '../components/DadosAvancados';
@@ -36,6 +38,13 @@ export default function Ajustes() {
           <Field placeholder="Ou prazo em anos (ex. 5)" keyboardType="decimal-pad" value={sim.years} onChangeText={years => setSim({ ...sim, years })} />
           <GoalSim target={settings.goal} current={snap ? total(snap) : 0} cdi={snap?.cdiAnnual ?? null} monthly={parseNumberBR(sim.monthly)} years={parseNumberBR(sim.years)} hidden={hidden} />
         </>}
+      </Card>
+      <Card>
+        <SectionTitle first>Aparência</SectionTitle>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+          {([['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Escuro']] as const).map(([k, l]) => <Chip key={k} label={l} on={(settings.appearance ?? 'auto') === k} onPress={() => setSettings({ ...settings, appearance: k })} />)}
+        </View>
+        <Txt dim style={{ fontSize: 13 }}>Automático segue o modo claro ou escuro do iPhone.</Txt>
       </Card>
       <Card>
         <SectionTitle first>Privacidade</SectionTitle>

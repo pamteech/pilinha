@@ -16,8 +16,9 @@ export const loadHidden = async () => (await AsyncStorage.getItem(K.hidden)) ===
 export const saveHidden = (b: boolean) => AsyncStorage.setItem(K.hidden, b ? '1' : '0');
 
 // Ajustes, alertas e registro de alertas disparados (também só no aparelho).
-export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert }
-export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert() });
+import type { Appearance } from './theme';
+export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert; /** Automático segue o iPhone */ appearance: Appearance }
+export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert(), appearance: 'auto' });
 const K2 = { settings: 'pilinha.settings.v1', alerts: 'pilinha.alerts.v1', fired: 'pilinha.alertsFired.v1' };
 const loadJSON = async <T,>(k: string, def: T): Promise<T> => { try { const s = await AsyncStorage.getItem(k); return s ? { ...(def as any), ...JSON.parse(s) } : def; } catch { return def; } };
 const loadArr = async <T,>(k: string): Promise<T[]> => { try { const v = JSON.parse((await AsyncStorage.getItem(k)) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };

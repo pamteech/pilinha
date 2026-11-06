@@ -3,13 +3,20 @@ import { Stack } from 'expo-router';
 import { Header } from '../components/Header';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { AppState, Pressable, View } from 'react-native';
+import { AppState, Pressable, View, useColorScheme } from 'react-native';
 import { useFonts, Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import { Text } from '../components/ui';
 import { PilinhaProvider, usePilinha } from '../lib/store';
 import { authenticate } from '../lib/auth';
 import '../lib/alerts'; // registra a tarefa de segundo plano no início do app
-import { T, S } from '../lib/theme';
+import { T, S, applyTheme, resolveScheme } from '../lib/theme';
+// Claro/escuro: Automático segue o iPhone. A paleta T é trocada antes dos filhos renderizarem e a árvore remonta (key) ao mudar.
+function Themed({ children }: { children: React.ReactNode }) {
+  const { settings } = usePilinha(); const system = useColorScheme();
+  const scheme = resolveScheme(settings.appearance, system);
+  applyTheme(scheme);
+  return <View key={scheme} style={{ flex: 1, backgroundColor: T.bg }}>{children}</View>;
+}
 // Exige Face ID ao abrir (e ao voltar do segundo plano) quando ligado nos Ajustes.
 function Lock({ children }: { children: React.ReactNode }) {
   const { settings, ready } = usePilinha(); const [ok, setOk] = React.useState(false); const busy = React.useRef(false);
@@ -42,7 +49,7 @@ export default function Layout() {
   const [fontsOk] = useFonts({ Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold });
   if (!fontsOk) return null;
   return (
-    <PilinhaProvider><Lock>
+    <PilinhaProvider><Themed><Lock>
       <StatusBar style="light" />
       {/* Raiz: as abas ficam embaixo e só Ajustes/Alertas sobem por cima com voltar. Qualquer outra rota fica sem header próprio. */}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
@@ -51,6 +58,6 @@ export default function Layout() {
         <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
         <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
       </Stack>
-    </Lock></PilinhaProvider>
+    </Lock></Themed></PilinhaProvider>
   );
 }

@@ -74,7 +74,7 @@ function MonthlyChart({ m }: { m: MonthlyDividends }) {
     <Measure height={H}>{W => { const w = (W - GAP * (m.months.length - 1)) / m.months.length; return (
       <Svg width={W} height={H}>
         <Path d={`M0,${H - 0.5} L${W},${H - 0.5}`} stroke={T.line} strokeWidth={1} />
-        {m.months.map((x, i) => x.total > 0 ? <Path key={x.month} d={bar(i * (w + GAP), w, Math.max(3, (x.total / max) * (H - 6)))} fill={m.best?.month === x.month ? T.pink : T.lilac} /> : null)}
+        {m.months.map((x, i) => x.total > 0 ? <Path key={x.month} d={bar(i * (w + GAP), w, Math.max(3, (x.total / max) * (H - 6)))} fill={m.best?.month === x.month ? T.bar : T.barSoft} /> : null)}
       </Svg>); }}</Measure>
     <View style={{ flexDirection: 'row' }}>{m.months.map(x => <Txt key={x.month} dim style={{ flex: 1, fontSize: 10, lineHeight: 14, textAlign: 'center' }}>{x.label}</Txt>)}</View>
   </>);

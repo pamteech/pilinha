@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/pilinha-icon.png",
     "scheme": "pilinha",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.pamtech.pilinha",
       "supportsTablet": false,

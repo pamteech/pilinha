@@ -6,11 +6,11 @@ import { BenchPoint, CDIDailyRate, HISTORY_RANGES, HistoryRange, benchmarkSeries
 import { usePilinha } from '../../lib/store';
 import { T, S, R } from '../../lib/theme';
 const ranges: HistoryRange[] = HISTORY_RANGES; // Semana, Mês, 6 meses, 1 ano, Tudo (como na landing)
-const C = { carteira: T.pink, cdi: '#B58BC7', poupanca: '#A08F5A' };
+const colors = () => ({ carteira: T.pink, cdi: T.lilac, poupanca: '#A08F5A' }); // lido na renderização: muda com o tema
 const line = (ys: number[], W: number, H: number, min: number, span: number) =>
   ys.map((y, i) => `${i ? 'L' : 'M'}${2 + (i / Math.max(1, ys.length - 1)) * (W - 4)},${H - ((y - min) / span) * (H - 10) - 5}`).join(' ');
 export default function Evolucao() {
-  const { history, hidden } = usePilinha(); const [r, setR] = useState<HistoryRange>('Mês');
+  const { history, hidden } = usePilinha(); const [r, setR] = useState<HistoryRange>('Mês'); const C = colors();
   const pts = inRange(history, r); const H = 180;
   // No modo discreto o gráfico mostra o ganho em %, nunca R$.
   const ys = pts.map(p => (hidden ? gainPct(p) : p.total));

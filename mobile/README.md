@@ -25,6 +25,9 @@ e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, lim
 - **Evolução contra o CDI** com Semana, Mês, 6 meses, 1 ano e Tudo (`HISTORY_RANGES`).
 - **Simulador de metas** (Ajustes): prazo para um aporte mensal, aporte para um prazo, e a renda passiva projetada da meta pelo CDI de hoje (`monthsToGoal`, `monthlyForGoal`, `passiveIncome` em `src/core/goal.ts`). Testes em `landing.test.ts`.
 
+## Modo escuro
+Ajustes › Aparência: Automático (segue o iPhone), Claro ou Escuro. As paletas ficam em `src/lib/theme.ts` (`PALETTES`); `T` é um objeto mutável que o `_layout` troca com `applyTheme` e remonta a árvore ao mudar de esquema, por isso nenhuma cor de `T` pode ser guardada em constante de módulo. A distribuição por tipo usa uma paleta própria para o fundo escuro, validada para daltonismo.
+
 ## Estrutura
 - `src/core` — cálculos (CDI, IR/IOF, cotações, proventos, histórico, import/export). Testado com jest.
 - `src/app` — telas (expo-router): Pilinha, Carteira, Evolução, Proventos, Gráficos (TradingView), Cadastro.

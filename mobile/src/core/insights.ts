@@ -78,15 +78,18 @@ export type AllocKey = 'renda' | 'tesouro' | 'acoes' | 'fiis' | 'bitcoin' | 'dol
 export interface AllocSlice { key: AllocKey; title: string; color: string; total: number; pct: number }
 export const ALLOC_ORDER: AllocKey[] = ['renda', 'tesouro', 'acoes', 'fiis', 'bitcoin', 'dolar'];
 export const ALLOC_COLORS: Record<AllocKey, string> = { renda: '#6250d6', tesouro: '#eb6834', acoes: '#1baf7a', fiis: '#eda100', bitcoin: '#2a78d6', dolar: '#e87ba4' };
+/** Mesmas cores em passos para fundo escuro (validadas sobre o card escuro). */
+export const ALLOC_COLORS_DARK: Record<AllocKey, string> = { renda: '#9085e9', tesouro: '#d95926', acoes: '#199e70', fiis: '#c98500', bitcoin: '#3987e5', dolar: '#d55181' };
 const ALLOC_TITLES: Record<AllocKey, string> = { renda: 'Renda fixa', tesouro: 'Tesouro', acoes: 'Ações', fiis: 'FIIs', bitcoin: 'Bitcoin', dolar: 'Dólar' };
 const allocOf = (c: string): AllocKey => (c === 'tesouro' ? 'tesouro' : c === 'acao' ? 'acoes' : c === 'fii' ? 'fiis' : c === 'cripto' ? 'bitcoin' : c === 'dolar' ? 'dolar' : 'renda');
-export function allocation(items: LineItem[]): AllocSlice[] {
+export function allocation(items: LineItem[], dark = false): AllocSlice[] {
+  const colors = dark ? ALLOC_COLORS_DARK : ALLOC_COLORS;
   const sum = items.reduce((a, i) => a + Math.max(0, i.current), 0); if (!(sum > 0)) return [];
   return ALLOC_ORDER.flatMap(key => {
     const it = items.filter(i => allocOf(i.category) === key); const total = it.reduce((a, i) => a + Math.max(0, i.current), 0);
     if (!(total > 0)) return [];
     const title = key === 'bitcoin' && it.some(i => i.name.toUpperCase() !== 'BTC') ? 'Cripto' : ALLOC_TITLES[key];
-    return [{ key, title, color: ALLOC_COLORS[key], total, pct: (total / sum) * 100 }];
+    return [{ key, title, color: colors[key], total, pct: (total / sum) * 100 }];
   });
 }
 /** "45%" ou "7,5%" (sem sinal; abaixo de 10% com uma casa). */
