@@ -49,6 +49,9 @@ describe('Dividendos por mês', () => {
     expect(r.byTicker).toEqual([{ ticker: 'PETR4', total: 15, source: 'brapi' }, { ticker: 'MXRF11', total: 9.8, source: 'manual' }, { ticker: 'VIVT3', total: 5, source: 'yahoo' }]);
     expect(r.total).toBeCloseTo(29.8);
     expect(dividendsByMonth(stocks, cash, [], now).usesYahoo).toBe(false);
+    // lista de pagamentos: do mais recente ao mais antigo, com por cota e fonte
+    expect(r.entries.map(e => [e.date, e.ticker, e.total, e.perShare, e.source])).toEqual([
+      ['2026-10-20', 'PETR4', 15, 1.5, 'brapi'], ['2026-10-16', 'MXRF11', 9.8, null, 'manual'], ['2026-10-10', 'VIVT3', 5, 0.5, 'yahoo']]);
   });
 });
 describe('Simulador de metas', () => {

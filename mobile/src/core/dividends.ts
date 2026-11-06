@@ -34,7 +34,8 @@ export const receivedTotal = (m: ManualDividend[] | undefined) => ({ total: (m ?
 export const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 export interface MonthDividends { month: string; label: string; total: number }
 export type DividendSource = 'brapi' | 'manual' | 'yahoo';
-export interface MonthlyDividends { months: MonthDividends[]; total: number; average: number; best: MonthDividends | null; byTicker: { ticker: string; total: number; source: DividendSource }[]; usesYahoo: boolean }
+export interface DividendEntry { date: string; ticker: string; total: number; perShare: number | null; source: DividendSource }
+export interface MonthlyDividends { months: MonthDividends[]; total: number; average: number; best: MonthDividends | null; byTicker: { ticker: string; total: number; source: DividendSource }[]; usesYahoo: boolean; /** pagamentos da janela, do mais recente ao mais antigo */ entries: DividendEntry[] }
 /**
  * Proventos por mês de pagamento nos últimos `months` meses (o atual incluído), para o gráfico "Dividendos por mês".
  * brapi/Yahoo: taxa × quantidade atual, só pagamentos já ocorridos; lançamento manual vence a brapi no mesmo ticker.
@@ -45,12 +46,14 @@ export function dividendsByMonth(stocks: StockPosition[], cash: CashDividend[], 
   const keys: string[] = []; for (let k = months - 1; k >= 0; k--) { const d = new Date(Date.UTC(y0, m0 - 1 - k, 1)); keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`); }
   const sum: Record<string, number> = Object.fromEntries(keys.map(k => [k, 0]));
   const by: Record<string, { total: number; source: DividendSource }> = {};
-  const add = (month: string, ticker: string, v: number, source: DividendSource) => {
-    if (!(month in sum) || !(v > 0)) return;
+  const entries: DividendEntry[] = [];
+  const add = (date: string, ticker: string, v: number, source: DividendSource, perShare: number | null) => {
+    const month = date.slice(0, 7); if (!(month in sum) || !(v > 0)) return;
     sum[month] += v; const t = ticker.toUpperCase(); by[t] = { total: (by[t]?.total ?? 0) + v, source };
+    entries.push({ date, ticker: t, total: v, perShare, source });
   };
   const mt = new Set(manual.map(m => m.ticker.toUpperCase()));
-  for (const m of manual) { const d = parseISO(m.date); if (d && d <= now) add(m.date.slice(0, 7), m.ticker, m.amount, 'manual'); }
+  for (const m of manual) { const d = parseISO(m.date); if (d && d <= now) add(m.date.slice(0, 10), m.ticker, m.amount, 'manual', null); }
   const qty = new Map(stocks.map(s => [s.ticker.toUpperCase(), s.quantity]));
   // Por ticker: brapi (data de pagamento) vence o Yahoo (data ex, só referência); o Yahoo entra só onde não há brapi.
   const hasBrapi = new Set(cash.filter(c => c.label !== 'data ex').map(c => c.ticker.toUpperCase()));
@@ -59,11 +62,12 @@ export function dividendsByMonth(stocks: StockPosition[], cash: CashDividend[], 
     const t = c.ticker.toUpperCase(), q = qty.get(t), yahoo = c.label === 'data ex';
     if (!q || mt.has(t) || c.paymentDate > now || (yahoo && hasBrapi.has(t))) continue;
     if (yahoo) usesYahoo = true;
-    add(toISO(c.paymentDate).slice(0, 7), t, c.ratePerShare * q, yahoo ? 'yahoo' : 'brapi');
+    add(toISO(c.paymentDate), t, c.ratePerShare * q, yahoo ? 'yahoo' : 'brapi', c.ratePerShare);
   }
   const list = keys.map(month => ({ month, label: MONTH_SHORT[Number(month.slice(5, 7)) - 1], total: sum[month] }));
   const total = list.reduce((a, m) => a + m.total, 0);
   const best = list.reduce<MonthDividends | null>((b, m) => (m.total > 0 && (!b || m.total > b.total) ? m : b), null);
   const byTicker = Object.entries(by).map(([ticker, x]) => ({ ticker, ...x })).sort((a, b) => b.total - a.total);
-  return { months: list, total, average: months > 0 ? total / months : 0, best, byTicker, usesYahoo };
+  entries.sort((a, b) => b.date.localeCompare(a.date) || a.ticker.localeCompare(b.ticker));
+  return { months: list, total, average: months > 0 ? total / months : 0, best, byTicker, usesYahoo, entries };
 }
