@@ -7,8 +7,8 @@ import { codeFromURL, pullFromMac } from './sync';
 import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, snapshot, total, totalInvested, totalNet } from '../core';
 import * as S from './storage';
 import { syncExtensions } from './widget';
-import { PriceAlert, hiddenOnOpen, shouldRehide } from '../core';
-import { checkAndNotify, checkUsdDrop, quotesFromSnapshot, syncBackgroundTask, usdAlertOf } from './alerts';
+import { PriceAlert, hiddenOnOpen, shouldRehide, watchAlerts } from '../core';
+import { checkAndNotify, checkUsdDrop, quotesForAlerts, syncBackgroundTask, usdAlertOf } from './alerts';
 import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
@@ -28,7 +28,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const [loading, setL] = useState(true); const [hasToken, setHT] = useState(false); const [hidden, setHiddenState] = useState(false);
   const hRef = useRef(false);
   const [settings, setSettingsState] = useState<S.Settings>(S.defaultSettings()); const setRef = useRef(settings); setRef.current = settings;
-  const [alerts, setAlertsState] = useState<PriceAlert[]>([]); const [ready, setReady] = useState(false); const [loaded, setLoaded] = useState(false);
+  const [alerts, setAlertsState] = useState<PriceAlert[]>([]); const alRef = useRef(alerts); alRef.current = alerts; const [ready, setReady] = useState(false); const [loaded, setLoaded] = useState(false);
   const setHidden = (b: boolean) => { hRef.current = b; setHiddenState(b); S.saveHidden(b); if (snapRef.current) syncExtensions(snapRef.current, b); };
   const snapRef = useRef<Snapshot | null>(null);
   const pRef = useRef(portfolio); pRef.current = portfolio;
@@ -44,7 +44,9 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       const [token, treasury] = await Promise.all([S.loadToken(), treasuryRows(p).catch(() => null)]); setHT(!!token);
       const s = await withTimeout(snapshot(p, { brapiToken: token, treasury, cdi: (a, b) => cachedCdiRates(a, b, S.kv, (x, y) => cdiRates(x, y)) }), 25000);
       if (!gate.isLatest(my)) return;
-      setSnap(s); S.saveLastSnapshot(s); checkAndNotify(quotesFromSnapshot(s)).catch(() => {}); snapRef.current = s; syncExtensions(s, hRef.current);
+      setSnap(s); S.saveLastSnapshot(s); snapRef.current = s; syncExtensions(s, hRef.current);
+      // Alertas: ativos fora da carteira (ação que ela ainda não tem, dólar, bitcoin) têm a cotação buscada à parte.
+      quotesForAlerts([...alRef.current, ...watchAlerts(p.watchlist)], s, token).then(q => checkAndNotify(q)).catch(() => {});
       // Dólar: aviso de fechamento em queda e, no Início, a manchete do motivo (só com o aviso ligado nos Alertas).
       const fx = { bid: s.usdBRL, changePct: s.usdChangePct };
       checkUsdDrop(fx, setRef.current).catch(() => {});
@@ -115,7 +117,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     await syncBackgroundTask(needsBackground(pRef.current, alerts, x));
     if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdDrop({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
   };
-  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); await S.saveAlerts(a); await syncBackgroundTask(needsBackground(pRef.current, a, setRef.current)); if (snapRef.current) await checkAndNotify(quotesFromSnapshot(snapRef.current), a); };
+  const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); alRef.current = a; await S.saveAlerts(a); await syncBackgroundTask(needsBackground(pRef.current, a, setRef.current)); if (snapRef.current) { try { await checkAndNotify(await quotesForAlerts([...a, ...watchAlerts(pRef.current.watchlist)], snapRef.current, await S.loadToken()), a); } catch {} } };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).
   const toggleHidden = async () => {
     if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinvest'))) return;

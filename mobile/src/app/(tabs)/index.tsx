@@ -2,6 +2,7 @@ import { Linking, Pressable, RefreshControl, ScrollView, View } from 'react-nati
 import Svg, { Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Pig } from '../../components/Pig';
 import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
 import { goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, totalNet, usdNewsTitle } from '../../core';
@@ -12,7 +13,8 @@ import { isTradingHours, staleInfo } from '../../core';
 import { Alert } from 'react-native';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
-  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews } = usePilinha();
+  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews, alerts } = usePilinha();
+  const router = useRouter();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
   const base = moodFrom(d, loading && !snap, !!snap?.errors.length);
   const [mood, setMood] = useState<Mood>(base); const prev = useRef<number | null>(null);
@@ -74,6 +76,13 @@ export default function Home() {
       </Card>}
       <Stale errors={snap?.errors} />
       {usdNews ? <UsdNews n={usdNews} /> : null}
+      {!empty && !alerts.length && <Pressable accessibilityRole="button" onPress={() => router.navigate('/alertas')}>
+        <Card><View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+          <MaterialCommunityIcons name="bell-plus-outline" size={22} color={T.pink} />
+          <View style={{ flex: 1 }}><Txt style={{ fontWeight: '600' }}>Crie um alerta de preço</Txt><Txt dim style={{ fontSize: 13 }}>Para qualquer ação ou FII, mesmo que você ainda não tenha, para o dólar e para o bitcoin.</Txt></View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={T.dim} />
+        </View></Card>
+      </Pressable>}
       {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}

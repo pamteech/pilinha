@@ -25,7 +25,11 @@ export function Header({ title, back }: { title: string; back?: boolean }) {
         <Eyebrow>Pilinvest</Eyebrow>
         <Text numberOfLines={1} style={{ color: T.onDark, fontSize: 21, lineHeight: 27, fontWeight: '700', letterSpacing: -0.3 }}>{title}</Text>
       </View>
-      {!back && <View style={{ flexDirection: 'row', gap: S.sm }}>{btn('bell-outline', 'Alertas', () => router.navigate('/alertas'))}{btn('cog-outline', 'Ajustes', () => router.navigate('/ajustes'))}</View>}
+      {!back && <View style={{ flexDirection: 'row', gap: S.sm }}>
+        <Pressable onPress={() => router.navigate('/alertas')} accessibilityLabel="Alertas de preço" hitSlop={8} style={{ height: 40, borderRadius: 12, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T.navy2 }}>
+          <MaterialCommunityIcons name="bell-plus-outline" size={20} color={T.onDark} /><Text style={{ color: T.onDark, fontWeight: '600', fontSize: 13 }}>Alertas</Text>
+        </Pressable>
+        {btn('cog-outline', 'Ajustes', () => router.navigate('/ajustes'))}</View>}
     </View>
   );
 }

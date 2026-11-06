@@ -2,7 +2,7 @@ import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
-import { PriceAlert, QuoteLite, Snapshot, UsdAlert, cryptoBRL, defaultUsdAlert, evaluateAlerts, safeNewsLink, usdDropDue, usdNotification, usdQuote, watchAlerts, itemDayPct, stockQuote } from '../core';
+import { BTC_TICKER, PriceAlert, QuoteLite, Snapshot, USD_TICKER, UsdAlert, cryptoBRL, defaultUsdAlert, evaluateAlerts, missingAlertTickers, safeNewsLink, usdDropDue, usdNotification, usdQuote, watchAlerts, itemDayPct, stockQuote } from '../core';
 import * as S from './storage';
 import { fetchUsdNews } from './news';
 export const ALERT_TASK = 'pilinha-alertas';
@@ -27,7 +27,18 @@ export async function requestPermission(): Promise<boolean> {
 }
 export async function permissionGranted(): Promise<boolean> { if (!native) return false; try { return (await Notifications.getPermissionsAsync()).granted; } catch { return false; } }
 export const quotesFromSnapshot = (s: Snapshot): Record<string, QuoteLite> =>
-  ({ ...Object.fromEntries((s.watch ?? []).map(w => [w.ticker, { price: w.price, dayPct: w.dayPct }])), ...Object.fromEntries(s.items.filter(i => i.unitPrice != null).map(i => [i.name.toUpperCase(), { price: i.unitPrice ?? null, dayPct: itemDayPct(i) }])) });
+  ({ ...Object.fromEntries((s.watch ?? []).map(w => [w.ticker, { price: w.price, dayPct: w.dayPct }])), ...Object.fromEntries(s.items.filter(i => i.unitPrice != null).map(i => [i.name.toUpperCase(), { price: i.unitPrice ?? null, dayPct: itemDayPct(i) }])),
+    ...(s.usdBRL != null ? { [USD_TICKER]: { price: s.usdBRL, dayPct: s.usdChangePct ?? null } } : {}) });
+/** Cotação de cada alerta: o que já está no snapshot e, para o resto (ação fora da carteira, dólar, bitcoin), busca na hora. Falha de um não derruba os outros. */
+export async function quotesForAlerts(alerts: PriceAlert[], snap: Snapshot | null, token: string | null | undefined): Promise<Record<string, QuoteLite>> {
+  const q: Record<string, QuoteLite> = snap ? quotesFromSnapshot(snap) : {};
+  await Promise.allSettled(missingAlertTickers(alerts, q).map(async t => {
+    if (t === BTC_TICKER) { const v = (await cryptoBRL(['bitcoin'])).bitcoin; if (v) q[t] = { price: v.price, dayPct: v.change24h }; }
+    else if (t === USD_TICKER) { const u = await usdQuote(); q[t] = { price: u.bid, dayPct: u.changePct }; }
+    else { const x = await stockQuote(t, token); q[t] = { price: x.price, dayPct: x.changePct }; }
+  }));
+  return q;
+}
 /** Avalia os alertas, notifica os novos e grava o registro (um aviso por alerta por dia). */
 export async function checkAndNotify(quotes: Record<string, QuoteLite>, alerts?: PriceAlert[]) {
   const list = [...(alerts ?? (await S.loadAlerts())), ...watchAlerts((await S.loadPortfolio()).watchlist)]; if (!list.some(a => a.enabled)) return 0;
@@ -56,11 +67,7 @@ async function backgroundCheck() {
   const p = await S.loadPortfolio(), st = await S.loadSettings();
   if (usdAlertOf(st).enabled) { try { const fx = await usdQuote(); await checkUsdDrop({ bid: fx.bid, changePct: fx.changePct }, st); } catch {} }
   const alerts = [...(await S.loadAlerts()), ...watchAlerts(p.watchlist)].filter(a => a.enabled); if (!alerts.length) return;
-  const token = await S.loadToken(), q: Record<string, QuoteLite> = {};
-  const tickers = [...new Set(alerts.map(a => a.ticker.toUpperCase()))];
-  const btc = p.crypto.filter(c => tickers.includes(c.symbol.toUpperCase()));
-  await Promise.allSettled(tickers.filter(t => !btc.some(c => c.symbol.toUpperCase() === t)).map(async t => { const x = await stockQuote(t, token); q[t] = { price: x.price, dayPct: x.changePct }; }));
-  if (btc.length) { try { const px = await cryptoBRL(btc.map(c => c.coinId)); for (const c of btc) { const v = px[c.coinId]; if (v) q[c.symbol.toUpperCase()] = { price: v.price, dayPct: v.change24h }; } } catch {} }
+  const q = await quotesForAlerts(alerts, null, await S.loadToken());
   await checkAndNotify(q, alerts.filter(a => !a.id.startsWith('w:')));
 }
 if (native) {

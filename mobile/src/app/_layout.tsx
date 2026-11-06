@@ -47,7 +47,7 @@ export default function Layout() {
       {/* Raiz: as abas ficam embaixo e só Ajustes/Alertas sobem por cima com voltar. Qualquer outra rota fica sem header próprio. */}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas de preço" back /> }} />
+        <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas" back /> }} />
         <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
         <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
       </Stack>
