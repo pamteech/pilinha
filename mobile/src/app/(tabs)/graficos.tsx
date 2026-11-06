@@ -18,7 +18,7 @@ export default function Graficos() {
       <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ gap: S.sm, paddingHorizontal: S.lg, paddingTop: S.lg, paddingBottom: S.sm }}>
         {(syms.length ? syms : ['IBOV']).map(s => (
           <Pressable key={s} onPress={() => setSel(s)} style={{ paddingVertical: S.sm, paddingHorizontal: S.lg, borderRadius: R.pill, borderWidth: 1, borderColor: s === cur ? T.pink : T.line, backgroundColor: s === cur ? T.pink : T.card }}>
-            <Txt style={{ color: s === cur ? T.bg : T.text }}>{s}</Txt>
+            <Txt style={{ color: s === cur ? T.onPrimary : T.text }}>{s}</Txt>
           </Pressable>))}
       </ScrollView>
       <Txt dim style={{ fontSize: 12, lineHeight: 18, paddingHorizontal: S.lg, paddingBottom: S.md }}>Entre com e-mail e senha do TradingView. Login com Google não funciona aqui.</Txt>

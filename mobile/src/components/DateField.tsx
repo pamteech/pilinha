@@ -35,7 +35,7 @@ export function DateField({ value, onChange, max, min, placeholder }: DateFieldP
             const iso = `${ym}-${String(d).padStart(2, '0')}`, off = (max && iso > max) || (min && iso < min), on = iso === value;
             return <Pressable key={iso} disabled={!!off} onPress={() => { onChange(iso); setOpen(false); }} style={{ width: '14.28%', height: 36, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? T.pink : 'transparent' }}>
-                <Txt style={{ color: on ? T.bg : off ? T.line : T.text, fontSize: 14 }}>{d}</Txt></View></Pressable>;
+                <Txt style={{ color: on ? T.onPrimary : off ? T.dim : T.text, fontSize: 14 }}>{d}</Txt></View></Pressable>;
           })}
         </View>
       </View>}

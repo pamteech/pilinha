@@ -52,15 +52,15 @@ export function AssetRow({ item, hidden, label, last }: { item: import('../core'
 // Campos e botões compartilhados (Ajustes, Alertas).
 import { Pressable as RNPressable, TextInput as RNTextInput, Switch as RNSwitch } from 'react-native';
 export const Field = (p: React.ComponentProps<typeof RNTextInput>) => (
-  <RNTextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance="light" {...p}
+  <RNTextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance={T.scheme} {...p}
     style={{ color: T.text, fontFamily: 'Manrope_400Regular', fontSize: 15, lineHeight: 20, backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, borderWidth: 1, borderColor: T.line }} />);
 export const Button = ({ title, onPress, kind = 'primary' }: { title: string; onPress: () => void; kind?: 'primary' | 'secondary' }) => (
   <RNPressable onPress={onPress} accessibilityRole="button" style={{ backgroundColor: kind === 'primary' ? T.pink : T.card, borderWidth: 1, borderColor: kind === 'primary' ? T.pink : T.line, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}>
-    <Text style={{ color: kind === 'primary' ? T.bg : T.pink, fontWeight: '700' }}>{title}</Text>
+    <Text style={{ color: kind === 'primary' ? T.onPrimary : T.pink, fontWeight: '700' }}>{title}</Text>
   </RNPressable>);
 export const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (
   <RNPressable onPress={onPress} style={{ paddingVertical: S.xs + 2, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: on ? T.pink : T.line, backgroundColor: on ? T.pink : T.bg }}>
-    <Text style={{ color: on ? T.bg : T.text, fontSize: 14 }}>{label}</Text>
+    <Text style={{ color: on ? T.onPrimary : T.text, fontSize: 14 }}>{label}</Text>
   </RNPressable>);
 export const ToggleRow = ({ label, hint, value, onChange, disabled }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm }}>

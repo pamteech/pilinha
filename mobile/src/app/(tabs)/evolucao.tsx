@@ -40,7 +40,7 @@ export default function Evolucao() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-        {ranges.map(x => <Pressable key={x} onPress={() => setR(x)} style={{ paddingVertical: S.sm, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: x === r ? T.pink : T.line, backgroundColor: x === r ? T.pink : T.card }}><Txt style={{ color: x === r ? T.bg : T.text }}>{x}</Txt></Pressable>)}
+        {ranges.map(x => <Pressable key={x} onPress={() => setR(x)} style={{ paddingVertical: S.sm, paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1, borderColor: x === r ? T.pink : T.line, backgroundColor: x === r ? T.pink : T.card }}><Txt style={{ color: x === r ? T.onPrimary : T.text }}>{x}</Txt></Pressable>)}
       </View>
       <Card>
         <SectionTitle first>{hidden ? 'Ganho sobre o investido' : 'Patrimônio'}</SectionTitle>

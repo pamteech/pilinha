@@ -63,8 +63,8 @@ export default function Home() {
       </Pressable>
       {liveActivityAvailable() && snap && (
         <Pressable onPress={toggleLive} style={{ backgroundColor: live ? T.card : T.pink, padding: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: live ? T.line : T.navy }}>
-          <Txt style={{ color: live ? T.text : T.bg, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>
-          {!live && !isTradingHours() && <Txt style={{ color: T.bg, fontSize: 12 }}>A bolsa está fechada agora</Txt>}
+          <Txt style={{ color: live ? T.text : T.onPrimary, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>
+          {!live && !isTradingHours() && <Txt style={{ color: T.onPrimary, fontSize: 12 }}>A bolsa está fechada agora</Txt>}
         </Pressable>
       )}
       {empty && <Card>
@@ -144,7 +144,7 @@ function Goal({ total, target, hidden }: { total: number; target: number; hidden
     <Card>
       <SectionTitle first right={<Txt style={{ fontWeight: '700', color: g.done ? T.up : T.text }}>{g.pct.toFixed(0)}%</Txt>}>Meta do cofrinho</SectionTitle>
       <View style={{ height: 10, borderRadius: 999, backgroundColor: T.champLight, overflow: 'hidden' }}>
-        <View style={{ width: `${g.pct}%`, height: '100%', backgroundColor: g.done ? T.up : T.navy2, borderRadius: 999 }} />
+        <View style={{ width: `${g.pct}%`, height: '100%', backgroundColor: g.done ? T.up : T.bar, borderRadius: 999 }} />
       </View>
       <Txt dim style={{ fontSize: 13 }}>{g.done ? `Meta de ${money(target, hidden)} alcançada!` : hidden ? 'Valores escondidos' : `${money(total, false)} de ${money(target, false)} · faltam ${money(g.remaining, false)}`}</Txt>
     </Card>

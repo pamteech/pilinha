@@ -8,18 +8,14 @@ const LIGHT = {
   pink: '#3E2A55', navy: '#3E2A55', navy2: '#5A3F72', champ: '#D0B0E0', champLight: '#EEE2F4', lilac: '#B58BC7', lilacDeep: '#7A5590',
   up: '#2E7D57', upLight: '#E6F1EA', down: '#8A2E3B', downLight: '#F4E6E8', neutralLight: '#EEE2F4',
   onDark: '#FFFFFF', onDarkDim: '#E3D6EC', upOnDark: '#9EE0BC', downOnDark: '#F2AEB8',
-  purple: '#3E2A55', purpleDeep: '#FFFFFF',
+  purple: '#3E2A55', purpleDeep: '#FFFFFF', /** texto sobre a cor primária (botões, chips ligados) */ onPrimary: '#FFFFFF',
   /** selo sobre o porquinho */ badge: 'rgba(255,255,255,0.85)', /** barras de gráfico: destaque e normal */ bar: '#3E2A55', barSoft: '#B58BC7', thumb: '#FFFFFF',
 };
-// Modo escuro: mesmo roxo, fundo quase preto arroxeado, texto claro; a cor primária vira lilás claro (botões com texto escuro).
+// Modo escuro de alto contraste: fundo quase preto, cards bem mais claros que o fundo, bordas visíveis, cabeçalho e barra de abas
+// destacados, texto branco; a cor primária é o violeta da landing com texto branco.
 const DARK: typeof LIGHT = {
   scheme: 'dark',
-  bg: '#120B1C', card: '#1C1329', text: '#F1EAF8', dim: '#B3A6C4', line: '#2E2240',
-  pink: '#C9A8FF', navy: '#2A1A3F', navy2: '#3E2A55', champ: '#D0B0E0', champLight: '#2A1F3B', lilac: '#B58BC7', lilacDeep: '#C9A8FF',
-  up: '#6FD3A0', upLight: '#1A3328', down: '#F29AA6', downLight: '#3B1E25', neutralLight: '#2A1F3B',
-  onDark: '#FFFFFF', onDarkDim: '#E3D6EC', upOnDark: '#9EE0BC', downOnDark: '#F2AEB8',
-  purple: '#C9A8FF', purpleDeep: '#120B1C',
-  badge: 'rgba(28,19,41,0.85)', bar: '#C9A8FF', barSoft: '#5E4680', thumb: '#FFFFFF',
+  bg: '#0B0712', card: '#241A33', text: '#FFFFFF', dim: '#C2B5D3', line: '#3F3155', pink: '#8B5CF6', navy: '#3E2A55', navy2: '#5A3F72', champ: '#D8C4FF', champLight: '#33264A', lilac: '#C4B5FD', lilacDeep: '#D8C4FF', up: '#5FE0A0', upLight: '#163A2A', down: '#FF8A96', downLight: '#4A1F2A', neutralLight: '#33264A', onDark: '#FFFFFF', onDarkDim: '#E3D6EC', upOnDark: '#9EE0BC', downOnDark: '#F2AEB8', purple: '#8B5CF6', purpleDeep: '#0B0712', onPrimary: '#FFFFFF', badge: 'rgba(36,26,51,0.9)', bar: '#C4B5FD', barSoft: '#6B57A0', thumb: '#FFFFFF',
 };
 export const PALETTES = { light: LIGHT, dark: DARK };
 /**

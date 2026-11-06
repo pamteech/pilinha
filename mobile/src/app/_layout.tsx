@@ -43,6 +43,17 @@ export function ErrorBoundary({ retry }: { error: Error; retry: () => Promise<vo
     <Pressable onPress={() => { retry(); }} style={{ backgroundColor: T.champ, borderRadius: 999, paddingVertical: S.md, paddingHorizontal: S.xl }}><Text style={{ color: T.navy, fontWeight: '700' }}>Tentar de novo</Text></Pressable>
   </View>);
 }
+// Raiz: as abas ficam embaixo e só Ajustes/Alertas sobem por cima com voltar. Qualquer outra rota fica sem header próprio.
+// Fica num componente próprio, renderizado dentro de Themed, para o fundo (contentStyle) ser lido já com o tema certo.
+function AppStack() {
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas" back /> }} />
+      <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
+      <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
+    </Stack>);
+}
 // Garante que abrir o app (ou um link) sempre tenha as abas por baixo.
 export const unstable_settings = { initialRouteName: '(tabs)', anchor: '(tabs)' };
 export default function Layout() {
@@ -51,13 +62,7 @@ export default function Layout() {
   return (
     <PilinhaProvider><Themed><Lock>
       <StatusBar style="light" />
-      {/* Raiz: as abas ficam embaixo e só Ajustes/Alertas sobem por cima com voltar. Qualquer outra rota fica sem header próprio. */}
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="alertas" options={{ headerShown: true, header: () => <Header title="Alertas" back /> }} />
-        <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
-        <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
-      </Stack>
+      <AppStack />
     </Lock></Themed></PilinhaProvider>
   );
 }

@@ -23,12 +23,12 @@ export function DateField({ value, onChange, max, min, placeholder }: DateFieldP
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} onPress={() => setOpen(false)} />
-        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: S.xl, paddingTop: S.sm }}>
+        <View style={{ backgroundColor: T.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: S.xl, paddingTop: S.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: S.lg, paddingVertical: S.sm }}>
             <Pressable onPress={() => setOpen(false)} hitSlop={8}><Txt style={{ color: T.lilacDeep, fontWeight: '600' }}>Cancelar</Txt></Pressable>
             <Pressable onPress={done} hitSlop={8}><Txt style={{ color: T.pink, fontWeight: '700' }}>Pronto</Txt></Pressable>
           </View>
-          {open ? <DateTimePicker value={temp} mode="date" display="spinner" locale="pt-BR" themeVariant="light" textColor="#000"
+          {open ? <DateTimePicker value={temp} mode="date" display="spinner" locale="pt-BR" themeVariant={T.scheme} textColor={T.text}
             {...(b.max ? { maximumDate: b.max } : {})} {...(b.min ? { minimumDate: b.min } : {})}
             onChange={(_e, d) => { if (d && Number.isFinite(d.getTime())) setTemp(d); }} /> : null}
         </View>

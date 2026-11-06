@@ -8,7 +8,7 @@ import { Portfolio, parsePortfolio, mergePortfolio, serializePortfolio } from '.
 import { usePilinha } from '../lib/store';
 import { T, S, R } from '../lib/theme';
 // Antes ficava no Cadastro: conectar ao Mac, exportar/importar e token da brapi (agora nos Ajustes).
-const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance="light" {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
+const Input = (p: React.ComponentProps<typeof TextInput>) => <TextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance={T.scheme} {...p} style={{ color: T.text, fontFamily: 'Manrope_400Regular', backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, fontSize: 15, borderWidth: 1, borderColor: T.line }} />;
 export function DadosAvancados() {
   const { portfolio: p, update, setToken, hasToken, sync, connectMac, disconnectMac, syncNow } = usePilinha();
   const save = (np: Portfolio) => update(np);
