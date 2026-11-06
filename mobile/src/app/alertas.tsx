@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, Chip, Field, Screen, SectionTitle, ToggleRow, Txt } from '../components/ui';
-import { AlertKind, BROWSER_UA, BTC_TICKER, USD_DROP_STEPS, USD_TICKER, TickerHit, alertAssetName, alertLabel, brl, cryptoBRL, defaultFetcher, isPositive, localSearch, mergeHits, newAlertId, normTicker, parseNumberBR, parseYahooSearch, stockQuote, usdQuote, validAlertTicker, validTicker, yahooSearchURL } from '../core';
+import { AlertKind, BROWSER_UA, BTC_TICKER, USD_TICKER, TickerHit, alertAssetName, alertLabel, brl, cryptoBRL, defaultFetcher, isPositive, localSearch, mergeHits, newAlertId, normTicker, parseNumberBR, parseYahooSearch, stockQuote, usdQuote, validAlertTicker, validTicker, yahooSearchURL } from '../core';
 import { usePilinha } from '../lib/store';
 import { permissionGranted, requestPermission, usdAlertOf } from '../lib/alerts';
 import * as St from '../lib/storage';
@@ -16,7 +16,6 @@ export default function Alertas() {
   useEffect(() => { permissionGranted().then(setPerm); }, []);
   const usd = usdAlertOf(settings);
   const setUsd = async (x: Partial<typeof usd>) => { const nx = { ...usd, ...x }; if (nx.enabled && !perm) setPerm(await requestPermission()); await setSettings({ ...settings, usdAlert: nx }); };
-  const stepLabel = (v: number) => (v === 0 ? 'Qualquer queda' : `${String(v).replace('.', ',')}% ou mais`);
   // Atalhos: dólar, bitcoin, o que está na carteira e os favoritos; o resto pela busca.
   const quick = useMemo(() => [USD_TICKER, BTC_TICKER, ...new Set([...p.stocks.map(s => s.ticker.toUpperCase()), ...(p.watchlist ?? []).map(w => w.ticker.toUpperCase())])], [p]);
   const [t, setT] = useState<string>(quick[2] ?? USD_TICKER); const [kind, setKind] = useState<AlertKind>('below'); const [val, setVal] = useState('');
@@ -95,12 +94,11 @@ export default function Alertas() {
       </Card>
       <Card>
         <SectionTitle first>Fechamento do dólar</SectionTitle>
-        <ToggleRow label="Avisar quando o dólar fechar em queda" hint="No fechamento (depois das 17h, dias úteis), com a manchete do motivo. Toque no aviso para ler a notícia." value={usd.enabled} onChange={v => setUsd({ enabled: v })} />
+        <ToggleRow label="Avisar o fechamento todo dia útil" hint="Às 17h10 chega o aviso com a variação do dia e a manchete do motivo, mesmo com o app fechado. Toque no aviso para ler a notícia." value={usd.enabled} onChange={v => setUsd({ enabled: v })} />
         {usd.enabled ? <>
-          <Txt dim style={{ fontSize: 13 }}>Avisar quando cair:</Txt>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>{USD_DROP_STEPS.map(v => <Chip key={v} label={stepLabel(v)} on={usd.minDropPct === v} onPress={() => setUsd({ minDropPct: v })} />)}</View>
+          <ToggleRow label="Só quando cair" hint="Desligado: avisa também quando subir" value={!!usd.onlyDrops} onChange={v => setUsd({ onlyDrops: v })} />
           {snap?.usdBRL != null ? <Txt dim style={{ fontSize: 13 }}>Dólar agora: R$ {snap.usdBRL.toFixed(2).replace('.', ',')}{snap.usdChangePct != null ? ` (${(snap.usdChangePct >= 0 ? '+' : '') + snap.usdChangePct.toFixed(2).replace('.', ',')}% hoje)` : ''}</Txt> : null}
-          <Txt dim style={{ fontSize: 12 }}>A manchete vem do Google Notícias (busca fixa por "dólar hoje"; nada da sua carteira é enviado). O motivo é o que a imprensa apontou, não uma análise do Pilinvest.</Txt>
+          <Txt dim style={{ fontSize: 12 }}>Com o app fechado, o iPhone entrega às 17h10 um aviso curto ("Dólar fechou hoje"); tocando nele o app abre com a cotação e o motivo. Quando o app consegue buscar o fechamento antes, o aviso já vem completo. A manchete vem do Google Notícias (busca fixa; nada da sua carteira é enviado).</Txt>
         </> : null}
       </Card>
     </Screen>

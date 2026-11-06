@@ -1,4 +1,4 @@
-import { NewsItem, decodeEntities, defaultUsdAlert, parseRSS, pickUsdNews, safeNewsLink, usdDropDue, usdNewsPageURL, usdNewsURL, usdNotification, usdSessionDay } from '..';
+import { NewsItem, decodeEntities, defaultUsdAlert, parseRSS, pickUsdNews, safeNewsLink, usdCloseDue, usdCloseSchedule, usdDirection, usdNewsPageURL, usdNewsURL, usdNotification, usdReminder, usdReminderTime, usdSessionDay } from '..';
 // Aviso "dólar fechou em queda" com a manchete do motivo. RSS de exemplo no formato do Google Notícias (dados fictícios).
 const item = (title: string, src: string, pub: string, link = 'https://news.google.com/rss/articles/CBMiAbc?oc=5') =>
   `<item><title>${title} - ${src}</title><link>${link}</link><guid isPermaLink="false">x</guid><pubDate>${pub}</pubDate><description>&lt;a href="${link}"&gt;${title}&lt;/a&gt;</description><source url="https://exemplo.com">${src}</source></item>`;
@@ -42,22 +42,38 @@ test('janela do fechamento: 17h–23h59 vale hoje; 0h–8h59 vale ontem; pregão
   expect(usdSessionDay(new Date('2026-11-07T05:00:00Z'))).toBe('2026-11-06'); // sáb 2h → fechamento de sexta
   expect(usdSessionDay(new Date('2026-11-09T05:00:00Z'))).toBeNull(); // seg 2h → "ontem" é domingo
 });
-test('usdDropDue: ligado, caiu, depois do fechamento e uma vez por sessão', () => {
-  const cfg = defaultUsdAlert(); expect(cfg).toEqual({ enabled: true, minDropPct: 0 });
-  expect(usdDropDue({ changePct: -0.8 }, cfg, null, NOW)).toBe('2026-11-05');
-  expect(usdDropDue({ changePct: -0.8 }, cfg, '2026-11-05', NOW)).toBeNull(); // já avisou
-  expect(usdDropDue({ changePct: -0.8 }, cfg, '2026-11-04', NOW)).toBe('2026-11-05');
-  expect(usdDropDue({ changePct: 0.3 }, cfg, null, NOW)).toBeNull(); // subiu
-  expect(usdDropDue({ changePct: -0.004 }, cfg, null, NOW)).toBeNull(); // −0,00%
-  expect(usdDropDue({ changePct: null }, cfg, null, NOW)).toBeNull();
-  expect(usdDropDue({ changePct: -0.8 }, { enabled: false, minDropPct: 0 }, null, NOW)).toBeNull();
-  expect(usdDropDue({ changePct: -0.8 }, { enabled: true, minDropPct: 1 }, null, NOW)).toBeNull(); // caiu menos que o mínimo
-  expect(usdDropDue({ changePct: -1.2 }, { enabled: true, minDropPct: 1 }, null, NOW)).toBe('2026-11-05');
-  expect(usdDropDue({ changePct: -0.8 }, cfg, null, new Date('2026-11-05T15:00:00Z'))).toBeNull(); // meio-dia
+test('usdCloseDue: ligado, depois do fechamento, uma vez por sessão, alta ou queda; "só quedas" opcional', () => {
+  const cfg = defaultUsdAlert(); expect(cfg).toEqual({ enabled: true, onlyDrops: false });
+  expect(usdCloseDue({ changePct: -0.8 }, cfg, null, NOW)).toBe('2026-11-05');
+  expect(usdCloseDue({ changePct: 0.3 }, cfg, null, NOW)).toBe('2026-11-05'); // subiu: avisa também
+  expect(usdCloseDue({ changePct: 0 }, cfg, null, NOW)).toBe('2026-11-05'); // estável: avisa
+  expect(usdCloseDue({ changePct: -0.8 }, cfg, '2026-11-05', NOW)).toBeNull(); // já avisou
+  expect(usdCloseDue({ changePct: -0.8 }, cfg, '2026-11-04', NOW)).toBe('2026-11-05');
+  expect(usdCloseDue({ changePct: null }, cfg, null, NOW)).toBeNull();
+  expect(usdCloseDue({ changePct: -0.8 }, { enabled: false }, null, NOW)).toBeNull();
+  expect(usdCloseDue({ changePct: 0.3 }, { enabled: true, onlyDrops: true }, null, NOW)).toBeNull(); // só quedas
+  expect(usdCloseDue({ changePct: -0.3 }, { enabled: true, onlyDrops: true }, null, NOW)).toBe('2026-11-05');
+  expect(usdCloseDue({ changePct: -0.8 }, cfg, null, new Date('2026-11-05T15:00:00Z'))).toBeNull(); // meio-dia
+  // ajuste antigo (build 23/24) ainda abre
+  expect(usdCloseDue({ changePct: 0.5 }, { enabled: true, minDropPct: 1 } as any, null, NOW)).toBe('2026-11-05');
+  expect(usdDirection(-0.5)).toBe('down'); expect(usdDirection(0.004)).toBe('flat'); expect(usdDirection(0.2)).toBe('up');
+});
+test('lembretes locais: 17h10 de Brasília nos próximos dias úteis, hoje só se ainda não passou', () => {
+  const s = usdCloseSchedule(new Date('2026-11-05T15:00:00Z'), 3); // qui 12h
+  expect(s.map(x => x.day)).toEqual(['2026-11-05', '2026-11-06', '2026-11-09']); // qui, sex, seg
+  expect(s[0].date.toISOString()).toBe('2026-11-05T20:10:00.000Z');
+  expect(usdCloseSchedule(new Date('2026-11-05T20:30:00Z'), 2).map(x => x.day)).toEqual(['2026-11-06', '2026-11-09']); // qui 17h30: hoje já passou
+  expect(usdCloseSchedule(new Date('2026-11-07T13:00:00Z'), 10)).toHaveLength(10); // sábado: 10 dias úteis à frente
+  expect(usdReminder('2026-11-06')).toEqual({ id: 'usd-close-2026-11-06', title: 'Dólar fechou hoje', body: 'Toque para ver a cotação de fechamento e o motivo.' });
+  expect(usdReminderTime('2026-11-06').toISOString()).toBe('2026-11-06T20:10:00.000Z');
 });
 test('texto do aviso com e sem notícia; só https vai para o navegador', () => {
   const n = usdNotification({ bid: 5.3212, changePct: -0.82 }, parseRSS(xml)[0]);
   expect(n.title).toBe('Dólar fechou em queda (−0,82%)');
+  expect(usdNotification({ bid: 5.5, changePct: 0.41 }, parseRSS(xml)[1]).title).toBe('Dólar fechou em alta (+0,41%)');
+  expect(usdNotification({ bid: 5.5, changePct: 0.41 }, parseRSS(xml)[1]).body).toContain('Possível motivo: Dólar sobe e Ibovespa cai');
+  expect(usdNotification({ bid: 5.5, changePct: 0 }, parseRSS(xml)[0]).title).toBe('Dólar fechou estável (+0,00%)');
+  expect(usdNotification({ bid: 5.5, changePct: 0 }, parseRSS(xml)[0]).body).toBe('R$ 5,50 · Toque para ver as notícias do dia.');
   expect(n.body).toBe('R$ 5,32 · Possível motivo: Dólar fecha em queda de 0,8% com derrota de Trump no Senado (InfoMoney). Toque para ler.');
   expect(n.url).toBe('https://news.google.com/rss/articles/CBMiAbc?oc=5');
   const s = usdNotification({ bid: 5.3212, changePct: -0.5 }, null);

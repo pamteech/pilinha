@@ -29,8 +29,10 @@ export const loadFired = () => loadJSON<import('../core').FiredLog>(K2.fired, {}
 export const saveFired = (f: import('../core').FiredLog) => AsyncStorage.setItem(K2.fired, JSON.stringify(f));
 // Aviso do dólar: dia da sessão já avisada (um aviso por fechamento).
 const KUSD = 'pilinha.usdFired.v1';
-export const loadUsdFired = () => loadJSON<{ day: string | null }>(KUSD, { day: null });
-export const saveUsdFired = (day: string) => AsyncStorage.setItem(KUSD, JSON.stringify({ day }));
+export interface UsdFired { day: string | null; /** dias com lembrete local agendado */ scheduled?: string[] }
+export const loadUsdFired = () => loadJSON<UsdFired>(KUSD, { day: null, scheduled: [] });
+export const saveUsdFired = async (day: string) => { const f = await loadUsdFired(); await AsyncStorage.setItem(KUSD, JSON.stringify({ ...f, day })); };
+export const saveUsdScheduled = async (scheduled: string[]) => { const f = await loadUsdFired(); await AsyncStorage.setItem(KUSD, JSON.stringify({ ...f, scheduled })); };
 // Última carteira que o Mac mandou (base do merge de três vias): sem ela o Mac venceria e desfaria o que foi editado aqui.
 const KBASE = 'pilinha.macBase.v1';
 export async function loadMacBase(): Promise<Portfolio | null> {

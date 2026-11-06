@@ -8,7 +8,7 @@ import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, 
 import * as S from './storage';
 import { syncExtensions } from './widget';
 import { PriceAlert, hiddenOnOpen, shouldRehide, watchAlerts } from '../core';
-import { checkAndNotify, checkUsdDrop, quotesForAlerts, syncBackgroundTask, usdAlertOf } from './alerts';
+import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
 import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
@@ -47,9 +47,9 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       setSnap(s); S.saveLastSnapshot(s); snapRef.current = s; syncExtensions(s, hRef.current);
       // Alertas: ativos fora da carteira (ação que ela ainda não tem, dólar, bitcoin) têm a cotação buscada à parte.
       quotesForAlerts([...alRef.current, ...watchAlerts(p.watchlist)], s, token).then(q => checkAndNotify(q)).catch(() => {});
-      // Dólar: aviso de fechamento em queda e, no Início, a manchete do motivo (só com o aviso ligado nos Alertas).
+      // Dólar: aviso do fechamento (alta ou queda) e, no Início, a manchete do motivo (só com o aviso ligado nos Alertas).
       const fx = { bid: s.usdBRL, changePct: s.usdChangePct };
-      checkUsdDrop(fx, setRef.current).catch(() => {});
+      checkUsdClose(fx, setRef.current).then(() => scheduleUsdCloseReminders(usdAlertOf(setRef.current).enabled)).catch(() => {});
       if (usdAlertOf(setRef.current).enabled && fx.changePct != null && Math.abs(fx.changePct) >= 0.01) {
         const dir: UsdDirection = fx.changePct < 0 ? 'down' : 'up', pctNow = fx.changePct;
         fetchUsdNews(dir).then(item => { if (gate.isLatest(my)) setUsdNews(item ? { dir, pct: pctNow, item } : null); }).catch(() => {});
@@ -59,7 +59,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); scheduleUsdCloseReminders(usdAlertOf(st0).enabled); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
   // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
   useEffect(() => {
     let prev: string = AppState.currentState ?? 'active';
@@ -115,7 +115,8 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const setSettings = async (x: S.Settings) => {
     setSettingsState(x); setRef.current = x; await S.saveSettings(x);
     await syncBackgroundTask(needsBackground(pRef.current, alerts, x));
-    if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdDrop({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
+    if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdClose({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
+    await scheduleUsdCloseReminders(usdAlertOf(x).enabled);
   };
   const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); alRef.current = a; await S.saveAlerts(a); await syncBackgroundTask(needsBackground(pRef.current, a, setRef.current)); if (snapRef.current) { try { await checkAndNotify(await quotesForAlerts([...a, ...watchAlerts(pRef.current.watchlist)], snapRef.current, await S.loadToken()), a); } catch {} } };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).

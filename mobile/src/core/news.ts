@@ -1,4 +1,4 @@
-import { toISO } from './dates';
+import { parseISO, toISO } from './dates';
 import { brl, pct } from './format';
 /**
  * Dólar fechou em queda → aviso com a notícia do porquê (ex. "Dólar fecha em queda com derrota de Trump no Senado").
@@ -13,10 +13,11 @@ export const usdNewsPageURL = `https://${GNEWS_HOST}/search?q=${encodeURICompone
 
 export interface NewsItem { title: string; link: string; source: string | null; publishedAt: Date | null }
 export type UsdDirection = 'down' | 'up';
-/** Configuração do aviso do dólar (Ajustes › Alertas). minDropPct 0 = qualquer queda. */
-export interface UsdAlert { enabled: boolean; minDropPct: number }
-export const defaultUsdAlert = (): UsdAlert => ({ enabled: true, minDropPct: 0 });
-export const USD_DROP_STEPS = [0, 0.5, 1, 2];
+/** Aviso do fechamento do dólar (Alertas): todo dia útil, caiu ou subiu; `onlyDrops` limita às quedas. */
+export interface UsdAlert { enabled: boolean; onlyDrops?: boolean; /** antigo (build 23/24): queda mínima em %; ignorado */ minDropPct?: number }
+export const defaultUsdAlert = (): UsdAlert => ({ enabled: true, onlyDrops: false });
+/** Hora do lembrete local (Brasília): o dólar comercial fecha às 17h. */
+export const USD_CLOSE_HOUR = 17, USD_CLOSE_MINUTE = 10;
 
 const ENT: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 export const decodeEntities = (s: string) =>
@@ -85,25 +86,43 @@ export function usdSessionDay(now: Date): string | null {
   if (h < 9) { const y = new Date(b.getTime() - 86400_000); if (weekday(y)) return toISO(new Date(now.getTime() - 86400_000)); }
   return null;
 }
+/** Direção do dia: abaixo de 0,01% em módulo conta como estável. */
+export const usdDirection = (changePct: number): UsdDirection | 'flat' => (changePct <= -0.01 ? 'down' : changePct >= 0.01 ? 'up' : 'flat');
 /**
- * Dia da sessão a avisar, ou null: aviso ligado, dólar caiu pelo menos minDropPct no dia, estamos depois do fechamento
- * e ainda não avisamos essa sessão. Queda abaixo de 0,01% não conta (seria "−0,00%").
+ * Dia da sessão a avisar, ou null: aviso ligado, cotação com variação do dia, depois do fechamento e ainda não avisado.
+ * Com `onlyDrops`, só quando caiu.
  */
-export function usdDropDue(q: { changePct: number | null | undefined }, cfg: UsdAlert, firedDay: string | null | undefined, now = new Date()): string | null {
+export function usdCloseDue(q: { changePct: number | null | undefined }, cfg: UsdAlert, firedDay: string | null | undefined, now = new Date()): string | null {
   if (!cfg?.enabled || q.changePct == null || !Number.isFinite(q.changePct)) return null;
-  if (q.changePct > -Math.max(cfg.minDropPct || 0, 0.01)) return null;
+  if (cfg.onlyDrops && usdDirection(q.changePct) !== 'down') return null;
   const day = usdSessionDay(now); if (!day || firedDay === day) return null;
   return day;
 }
 export interface UsdNotification { title: string; body: string; url: string }
 /** Texto do aviso. Ex.: "Dólar fechou em queda (−0,82%)" / "R$ 5,32 · Possível motivo: Dólar cai com derrota de Trump no Senado (InfoMoney). Toque para ler." */
 export function usdNotification(q: { bid: number | null | undefined; changePct: number | null | undefined }, news: NewsItem | null): UsdNotification {
-  const px = q.bid != null ? brl(q.bid) : null;
-  const title = `Dólar fechou em queda (${pct(q.changePct).replace('-', '−')})`;
-  const body = news
+  const px = q.bid != null ? brl(q.bid) : null, dir = q.changePct != null ? usdDirection(q.changePct) : 'flat';
+  const title = `Dólar fechou ${dir === 'down' ? 'em queda' : dir === 'up' ? 'em alta' : 'estável'} (${pct(q.changePct).replace('-', '−')})`;
+  const body = news && dir !== 'flat'
     ? `${px ? `${px} · ` : ''}Possível motivo: ${news.title}${news.source ? ` (${news.source})` : ''}. Toque para ler.`
     : `${px ? `${px} · ` : ''}Toque para ver as notícias do dia.`;
   return { title, body, url: news?.link ?? usdNewsPageURL };
+}
+/** Lembrete genérico agendado no iPhone (vale mesmo com o app fechado); o app troca pelo completo quando consegue buscar o fechamento antes. */
+export const USD_REMINDER_PREFIX = 'usd-close-';
+export const usdReminder = (day: string) => ({ id: `${USD_REMINDER_PREFIX}${day}`, title: 'Dólar fechou hoje', body: 'Toque para ver a cotação de fechamento e o motivo.' });
+/** Instante do lembrete do dia (17h10 de Brasília), para um AAAA-MM-DD. */
+export const usdReminderTime = (day: string) => new Date(parseISO(day)!.getTime() + (USD_CLOSE_HOUR * 60 + USD_CLOSE_MINUTE) * 60_000);
+/** Próximos `count` dias úteis cujo lembrete ainda está no futuro (hoje incluído se ainda não deu 17h10). */
+export function usdCloseSchedule(now: Date, count = 10): { day: string; date: Date }[] {
+  const out: { day: string; date: Date }[] = [];
+  for (let i = 0; out.length < count && i < count * 2 + 7; i++) {
+    const d = new Date(now.getTime() + i * 86400_000), b = bsb(d);
+    if (!weekday(b)) continue;
+    const day = toISO(d), date = usdReminderTime(day);
+    if (date.getTime() > now.getTime()) out.push({ day, date });
+  }
+  return out;
 }
 /** Título do card do Início. */
 export const usdNewsTitle = (dir: UsdDirection) => (dir === 'down' ? 'Por que o dólar caiu hoje' : 'Por que o dólar subiu hoje');

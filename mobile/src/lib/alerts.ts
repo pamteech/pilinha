@@ -2,7 +2,7 @@ import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
-import { BTC_TICKER, PriceAlert, QuoteLite, Snapshot, USD_TICKER, UsdAlert, cryptoBRL, defaultUsdAlert, evaluateAlerts, missingAlertTickers, safeNewsLink, usdDropDue, usdNotification, usdQuote, watchAlerts, itemDayPct, stockQuote } from '../core';
+import { BTC_TICKER, PriceAlert, QuoteLite, Snapshot, USD_REMINDER_PREFIX, USD_TICKER, UsdAlert, cryptoBRL, defaultUsdAlert, evaluateAlerts, missingAlertTickers, safeNewsLink, usdCloseDue, usdCloseSchedule, usdDirection, usdNotification, usdQuote, usdReminder, usdReminderTime, watchAlerts, itemDayPct, stockQuote } from '../core';
 import * as S from './storage';
 import { fetchUsdNews } from './news';
 export const ALERT_TASK = 'pilinha-alertas';
@@ -49,23 +49,50 @@ export async function checkAndNotify(quotes: Record<string, QuoteLite>, alerts?:
 }
 export const usdAlertOf = (st: Pick<S.Settings, 'usdAlert'> | null | undefined): UsdAlert => ({ ...defaultUsdAlert(), ...(st?.usdAlert ?? {}) });
 /**
- * Dólar fechou em queda: um aviso por sessão (depois das 17h, dias úteis) com a manchete do motivo e o link.
+ * Fechamento do dólar: um aviso por sessão (depois das 17h, dias úteis), alta ou queda, com a manchete do motivo e o link.
  * Marca a sessão como avisada antes de buscar a notícia (duas checagens juntas não avisam duas vezes). Sem notícia, avisa mesmo assim.
+ * Se o lembrete genérico das 17h10 daquele dia já tocou (app fechado), não manda o completo de novo: o card do Início mostra o motivo.
  */
-export async function checkUsdDrop(q: { bid: number | null | undefined; changePct: number | null | undefined } | null | undefined, settings?: S.Settings, now = new Date()): Promise<boolean> {
+export async function checkUsdClose(q: { bid: number | null | undefined; changePct: number | null | undefined } | null | undefined, settings?: S.Settings, now = new Date()): Promise<boolean> {
   if (!q || q.bid == null) return false;
   const cfg = usdAlertOf(settings ?? (await S.loadSettings()));
-  const day = usdDropDue(q, cfg, (await S.loadUsdFired()).day, now); if (!day) return false;
+  const fired = await S.loadUsdFired();
+  const day = usdCloseDue(q, cfg, fired.day, now); if (!day) return false;
   await S.saveUsdFired(day);
-  const news = await fetchUsdNews('down', now).catch(() => null);
+  const reminderDone = (fired.scheduled ?? []).includes(day) && now.getTime() >= usdReminderTime(day).getTime();
+  if (native) { try { await Notifications.cancelScheduledNotificationAsync(usdReminder(day).id); } catch {} }
+  if (reminderDone) return false;
+  const dir = usdDirection(q.changePct!);
+  const news = dir === 'flat' ? null : await fetchUsdNews(dir, now).catch(() => null);
   const n = usdNotification(q, news);
   if (native) { try { await Notifications.scheduleNotificationAsync({ content: { title: n.title, body: n.body, data: { url: n.url } }, trigger: null }); } catch {} }
   return true;
 }
+/** @deprecated nome antigo */
+export const checkUsdDrop = checkUsdClose;
+/**
+ * Lembretes locais das 17h10 dos próximos dias úteis: o iOS entrega mesmo com o app fechado, sem servidor.
+ * Reagendado a cada abertura e ao mudar o ajuste; o dia que já teve o aviso completo não entra.
+ */
+export async function scheduleUsdCloseReminders(enabled: boolean, now = new Date()) {
+  if (!native) return;
+  try {
+    const mine = (await Notifications.getAllScheduledNotificationsAsync()).filter(n => n.identifier.startsWith(USD_REMINDER_PREFIX));
+    await Promise.all(mine.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+    if (!enabled || !(await permissionGranted())) { await S.saveUsdScheduled([]); return; }
+    const fired = await S.loadUsdFired();
+    const days = usdCloseSchedule(now).filter(d => d.day !== fired.day);
+    for (const d of days) {
+      const r = usdReminder(d.day);
+      await Notifications.scheduleNotificationAsync({ identifier: r.id, content: { title: r.title, body: r.body, data: { kind: 'usd-close' } }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: d.date } });
+    }
+    await S.saveUsdScheduled(days.map(d => d.day));
+  } catch {}
+}
 /** Em segundo plano o iOS decide quando rodar (no mínimo a cada ~15 min, sem garantia). */
 async function backgroundCheck() {
   const p = await S.loadPortfolio(), st = await S.loadSettings();
-  if (usdAlertOf(st).enabled) { try { const fx = await usdQuote(); await checkUsdDrop({ bid: fx.bid, changePct: fx.changePct }, st); } catch {} }
+  if (usdAlertOf(st).enabled) { try { const fx = await usdQuote(); await checkUsdClose({ bid: fx.bid, changePct: fx.changePct }, st); } catch {} await scheduleUsdCloseReminders(true); }
   const alerts = [...(await S.loadAlerts()), ...watchAlerts(p.watchlist)].filter(a => a.enabled); if (!alerts.length) return;
   const q = await quotesForAlerts(alerts, null, await S.loadToken());
   await checkAndNotify(q, alerts.filter(a => !a.id.startsWith('w:')));
