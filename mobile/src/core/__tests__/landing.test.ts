@@ -42,6 +42,14 @@ describe('Dividendos por mês', () => {
     expect(by['2026-10']).toBeCloseTo(9.8 + 15); expect(by['2026-09']).toBe(0); expect(r.total).toBeCloseTo(24.8);
     expect(dividendsByMonth([], [], [], now).best).toBeNull();
   });
+  test('Yahoo (data ex) só entra onde não há brapi; por ativo com a fonte', () => {
+    const yahoo = [{ ticker: 'PETR4', paymentDate: new Date('2026-10-10T03:00:00Z'), ratePerShare: 9, label: 'data ex' }, { ticker: 'VIVT3', paymentDate: new Date('2026-10-10T03:00:00Z'), ratePerShare: 0.5, label: 'data ex' }];
+    const r = dividendsByMonth([...stocks, { ticker: 'VIVT3', quantity: 10 }], [...cash, ...yahoo], [{ ticker: 'MXRF11', date: '2026-10-16', amount: 9.8 }], now);
+    expect(r.usesYahoo).toBe(true);
+    expect(r.byTicker).toEqual([{ ticker: 'PETR4', total: 15, source: 'brapi' }, { ticker: 'MXRF11', total: 9.8, source: 'manual' }, { ticker: 'VIVT3', total: 5, source: 'yahoo' }]);
+    expect(r.total).toBeCloseTo(29.8);
+    expect(dividendsByMonth(stocks, cash, [], now).usesYahoo).toBe(false);
+  });
 });
 describe('Simulador de metas', () => {
   test('taxa mensal e renda passiva', () => {

@@ -61,7 +61,7 @@ export default function Ajustes() {
 function GoalSim({ target, current, cdi, monthly, years, hidden }: { target: number; current: number; cdi: number | null; monthly: number; years: number; hidden: boolean }) {
   const rate = cdi ?? 10, lines: string[] = [];
   if (isPositive(monthly)) { const n = monthsToGoal(current, target, monthly, rate); lines.push(n == null ? `Com ${money(monthly, hidden)} por mês a meta não chega em 100 anos.` : n === 0 ? 'Você já chegou na meta!' : `Aportando ${money(monthly, hidden)} por mês, você chega em ${formatMonths(n)}.`); }
-  if (isPositive(years)) { const a = monthlyForGoal(current, target, Math.round(years * 12), rate); if (a != null) lines.push(a === 0 ? 'Você já chegou na meta!' : `Para chegar em ${formatMonths(Math.round(years * 12))}: ${money(a, hidden)} por mês.`); }
+  if (isPositive(years)) { const m = Math.round(years * 12), a = monthlyForGoal(current, target, m, rate); if (a != null) lines.push(a === 0 ? (current >= target ? 'Você já chegou na meta!' : `Em ${formatMonths(m)} a meta chega só com o rendimento, sem precisar aportar.`) : `Para chegar em ${formatMonths(m)}: ${money(a, hidden)} por mês.`); }
   if (!lines.length) { const n = monthsToGoal(current, target, 0, rate); lines.push(n == null ? 'Preencha o aporte ou o prazo.' : n === 0 ? 'Você já chegou na meta!' : `Sem aportes, só rendendo, a meta chega em ${formatMonths(n)}. Preencha o aporte ou o prazo para simular.`); }
   lines.push(`Ao chegar, a meta rende cerca de ${money(passiveIncome(target, rate), hidden)} por mês a ${rate.toFixed(2).replace('.', ',')}% ao ano (${cdi == null ? 'CDI indisponível agora, usando 10%' : 'CDI de hoje'}, antes do IR).`);
   return <>{lines.map((l, i) => <Txt key={i} style={{ fontSize: 14 }}>{l}</Txt>)}</>;

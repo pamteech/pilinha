@@ -34,7 +34,7 @@ export default function Proventos() {
         {r.count > 0 && <><Eyebrow color={T.text}>Já recebido</Eyebrow><Txt style={{ fontSize: 24, lineHeight: 32, fontWeight: '700' }}>{money(r.total, hidden)}</Txt><Txt dim style={{ fontSize: 12 }}>{r.count} lançamento(s) no Cadastro</Txt></>}
         {nx && <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm, marginTop: r.count ? S.sm : 0 }}><MaterialCommunityIcons name="calendar-clock" size={18} color={T.lilacDeep} /><Txt style={{ flex: 1 }}>Próximo: {nx.ticker} em {toBR(nx.date)}</Txt><Txt style={{ fontWeight: '600' }}>{nx.total > 0 ? money(nx.total, hidden) : ''}</Txt></View>}
       </Card> : null; })()}
-      <Card><Eyebrow color={T.text}>Últimos 12 meses</Eyebrow><Txt dim style={{ fontSize: 13 }}>Estimativa com a quantidade atual</Txt><Txt style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>{money(s?.last12m ?? 0, hidden)}</Txt></Card>
+      <Card><Eyebrow color={T.text}>Últimos 12 meses</Eyebrow><Txt dim style={{ fontSize: 13 }}>{`Estimativa com a quantidade atual${monthly.usesYahoo ? ' · datas ex do Yahoo onde não há brapi' : ''}`}</Txt><Txt style={{ fontSize: 28, lineHeight: 36, fontWeight: '700' }}>{money(monthly.total, hidden)}</Txt></Card>
       {monthly.total > 0 ? <MonthlyChart m={monthly} hidden={hidden} /> : null}
       <Card style={{ gap: 0 }}>
         <SectionTitle first>Próximos anunciados</SectionTitle>
@@ -45,16 +45,16 @@ export default function Proventos() {
         <SectionTitle first>Últimos pagos (referência)</SectionTitle>
         {cal.recent.map((e, i) => <Row key={`r${i}`} e={e} hidden={hidden} last={i === cal.recent.length - 1} />)}
       </Card>}
-      {Object.keys(s?.byTicker ?? {}).length > 0 && <Card style={{ gap: 0 }}>
+      {monthly.byTicker.length > 0 && <Card style={{ gap: 0 }}>
         <SectionTitle first>Por ativo (12 meses)</SectionTitle>
-        {Object.entries(s!.byTicker).map(([t, v], i, arr) => (
-          <View key={t} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: T.line }}>
-            <View style={{ flex: 1 }}><Txt style={{ fontWeight: '700' }}>{t}</Txt><Txt dim style={{ fontSize: 12 }}>{s!.source[t] === 'manual' ? 'lançado à mão' : 'brapi'}</Txt></View>
-            <Txt style={{ fontWeight: '600', textAlign: 'right' }}>{money(v, hidden)}</Txt>
+        {monthly.byTicker.map((x, i, arr) => (
+          <View key={x.ticker} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: T.line }}>
+            <View style={{ flex: 1 }}><Txt style={{ fontWeight: '700' }}>{x.ticker}</Txt><Txt dim style={{ fontSize: 12 }}>{x.source === 'manual' ? 'lançado à mão' : x.source === 'yahoo' ? 'Yahoo (data ex, referência)' : 'brapi'}</Txt></View>
+            <Txt style={{ fontWeight: '600', textAlign: 'right' }}>{money(x.total, hidden)}</Txt>
           </View>))}
       </Card>}
       {!snap && <Txt dim>Carregando…</Txt>}
-      {snap && !Object.keys(s?.byTicker ?? {}).length && !cal.recent.length && <Card><Txt dim>Nenhum provento nos últimos 12 meses.</Txt></Card>}
+      {snap && !monthly.byTicker.length && !cal.recent.length && <Card><Txt dim>Nenhum provento nos últimos 12 meses.</Txt></Card>}
     </Screen>
   );
 }
@@ -75,6 +75,6 @@ function MonthlyChart({ m, hidden }: { m: MonthlyDividends; hidden: boolean }) {
           {m.months.map((x, i) => x.total > 0 ? <Path key={x.month} d={bar(i * (w + GAP), w, Math.max(3, (x.total / max) * (H - 6)))} fill={m.best?.month === x.month ? T.pink : T.lilac} /> : null)}
         </Svg>); }}</Measure>
       <View style={{ flexDirection: 'row' }}>{m.months.map(x => <Txt key={x.month} dim style={{ flex: 1, fontSize: 10, lineHeight: 14, textAlign: 'center' }}>{x.label}</Txt>)}</View>
-      <Txt dim style={{ fontSize: 12 }}>{`Total em 12 meses: ${money(m.total, hidden)}${m.best ? ` · melhor mês: ${m.best.label} (${money(m.best.total, hidden)})` : ''}. Pagamentos pela data em que caíram; lançamento à mão vale no lugar da internet.`}</Txt>
+      <Txt dim style={{ fontSize: 12 }}>{`${m.best ? `Melhor mês: ${m.best.label} (${money(m.best.total, hidden)}). ` : ''}Pela data em que caíram na conta; lançamento à mão vale no lugar da internet.`}</Txt>
     </Card>);
 }
