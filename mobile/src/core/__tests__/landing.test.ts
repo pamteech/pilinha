@@ -1,4 +1,4 @@
-import { allocation, sharePct, dividendsByMonth, monthsToGoal, monthlyForGoal, passiveIncome, formatMonths, monthlyRate, inRange, HISTORY_RANGES, ALLOC_COLORS, LineItem } from '..';
+import { allocation, sharePct, sortAllocation, dividendsByMonth, monthsToGoal, monthlyForGoal, passiveIncome, formatMonths, monthlyRate, inRange, HISTORY_RANGES, ALLOC_COLORS, LineItem } from '..';
 // Gráficos e simulador prometidos na landing (site/index.html). Dados fictícios.
 const li = (name: string, category: string, current: number): LineItem => ({ name, category, current, invested: null, dayChange: null, net: null });
 describe('Distribuição por tipo', () => {
@@ -16,6 +16,13 @@ describe('Distribuição por tipo', () => {
     const a = allocation([li('LCI', 'lci', 1), li('CDB', 'cdb', 1), li('Dólar', 'dolar', 2), li('ETH', 'cripto', 1), li('BTC', 'cripto', 1)]);
     expect(a.map(x => [x.key, x.title, x.total])).toEqual([['renda', 'Renda fixa', 2], ['bitcoin', 'Cripto', 2], ['dolar', 'Dólar', 2]]);
     expect(sharePct(45)).toBe('45%'); expect(sharePct(7.46)).toBe('7,5%'); expect(sharePct(0)).toBe('0%');
+  });
+  test('ordem: maior valor ou A–Z, sem mudar a cor de cada tipo', () => {
+    const a = allocation([li('MXRF11', 'fii', 120), li('Caixinha', 'caixinha', 450), li('Tesouro', 'tesouro', 200), li('PETR4', 'acao', 150), li('BTC', 'cripto', 80), li('Dólar', 'dolar', 300)]);
+    expect(sortAllocation(a, 'value').map(x => x.title)).toEqual(['Renda fixa', 'Dólar', 'Tesouro', 'Ações', 'FIIs', 'Bitcoin']);
+    expect(sortAllocation(a, 'alpha').map(x => x.title)).toEqual(['Ações', 'Bitcoin', 'Dólar', 'FIIs', 'Renda fixa', 'Tesouro']);
+    expect(sortAllocation(a, 'alpha').find(x => x.key === 'dolar')!.color).toBe(ALLOC_COLORS.dolar);
+    expect(a.map(x => x.key)).toEqual(['renda', 'tesouro', 'acoes', 'fiis', 'bitcoin', 'dolar']); // a original não muda
   });
 });
 describe('Dividendos por mês', () => {

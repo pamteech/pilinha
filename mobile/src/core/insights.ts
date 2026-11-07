@@ -71,15 +71,15 @@ export function weekSummary(points: { total: number; invested: number }[], hidde
 /**
  * Distribuição por tipo (landing: renda fixa, Tesouro, ações, FIIs, bitcoin; mais dólar). Ordem e cores fixas por
  * categoria, nunca pela posição: a cor segue o tipo mesmo quando algum deles não existe na carteira.
- * Paleta validada (OKLCH, daltonismo, contraste) pelo validador do skill de dataviz: a legenda com % e valor é o
- * canal de apoio para os tons claros (aqua, amarelo, magenta) sobre o card branco.
+ * Só tons do porquinho (roxos, lilases, magenta e o rosa do focinho), escolhidos para a maior diferença possível entre si
+ * (ΔE mínimo ≈ 16 em OKLab); a legenda com % e valor e a folga entre as fatias são o apoio para quem confunde cores.
  */
 export type AllocKey = 'renda' | 'tesouro' | 'acoes' | 'fiis' | 'bitcoin' | 'dolar';
 export interface AllocSlice { key: AllocKey; title: string; color: string; total: number; pct: number }
 export const ALLOC_ORDER: AllocKey[] = ['renda', 'tesouro', 'acoes', 'fiis', 'bitcoin', 'dolar'];
-export const ALLOC_COLORS: Record<AllocKey, string> = { renda: '#6250d6', tesouro: '#eb6834', acoes: '#1baf7a', fiis: '#eda100', bitcoin: '#2a78d6', dolar: '#e87ba4' };
-/** Mesmas cores em passos para fundo escuro (validadas sobre o card escuro). */
-export const ALLOC_COLORS_DARK: Record<AllocKey, string> = { renda: '#9085e9', tesouro: '#d95926', acoes: '#199e70', fiis: '#c98500', bitcoin: '#3987e5', dolar: '#d55181' };
+export const ALLOC_COLORS: Record<AllocKey, string> = { renda: '#2A1A3F', tesouro: '#4C1D95', acoes: '#7C3AED', fiis: '#B58BC7', bitcoin: '#D946EF', dolar: '#DB2777' };
+/** Mesma família em passos para o card escuro. */
+export const ALLOC_COLORS_DARK: Record<AllocKey, string> = { renda: '#D8C4FF', tesouro: '#B58BC7', acoes: '#7C3AED', fiis: '#7A5590', bitcoin: '#D946EF', dolar: '#DB2777' };
 const ALLOC_TITLES: Record<AllocKey, string> = { renda: 'Renda fixa', tesouro: 'Tesouro', acoes: 'Ações', fiis: 'FIIs', bitcoin: 'Bitcoin', dolar: 'Dólar' };
 const allocOf = (c: string): AllocKey => (c === 'tesouro' ? 'tesouro' : c === 'acao' ? 'acoes' : c === 'fii' ? 'fiis' : c === 'cripto' ? 'bitcoin' : c === 'dolar' ? 'dolar' : 'renda');
 export function allocation(items: LineItem[], dark = false): AllocSlice[] {
@@ -92,5 +92,10 @@ export function allocation(items: LineItem[], dark = false): AllocSlice[] {
     return [{ key, title, color: colors[key], total, pct: (total / sum) * 100 }];
   });
 }
+/** Ordem da distribuição: do maior valor para o menor, ou alfabética pelo nome do tipo. A cor segue o tipo, não a posição. */
+export type AllocOrder = 'value' | 'alpha';
+export const ALLOC_ORDERS: { key: AllocOrder; label: string }[] = [{ key: 'value', label: 'Maior valor' }, { key: 'alpha', label: 'A–Z' }];
+export const sortAllocation = (slices: AllocSlice[], order: AllocOrder): AllocSlice[] =>
+  [...slices].sort((a, b) => (order === 'alpha' ? a.title.localeCompare(b.title, 'pt-BR') : b.total - a.total || a.title.localeCompare(b.title, 'pt-BR')));
 /** "45%" ou "7,5%" (sem sinal; abaixo de 10% com uma casa). */
 export const sharePct = (p: number) => `${(p >= 10 || p === 0 ? p.toFixed(0) : p.toFixed(1)).replace('.', ',')}%`;
