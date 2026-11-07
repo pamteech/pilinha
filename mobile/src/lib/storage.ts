@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { AllocOrder, emptyPortfolio, HistoryPoint, Portfolio, UsdAlert, defaultUsdAlert } from '../core';
+import { AllocOrder, PigColor, emptyPortfolio, HistoryPoint, Portfolio, UsdAlert, defaultUsdAlert } from '../core';
 // Tudo fica só no aparelho: carteira e histórico no AsyncStorage, token da brapi no Keychain.
 const K = { portfolio: 'pilinha.portfolio.v1', history: 'pilinha.history.v1', token: 'pilinha.brapiToken', hidden: 'pilinha.hidden' };
 export async function loadPortfolio(): Promise<Portfolio> {
@@ -17,8 +17,8 @@ export const saveHidden = (b: boolean) => AsyncStorage.setItem(K.hidden, b ? '1'
 
 // Ajustes, alertas e registro de alertas disparados (também só no aparelho).
 import type { Appearance } from './theme';
-export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert; /** Automático segue o iPhone */ appearance: Appearance; /** ordem da distribuição por tipo */ allocOrder: AllocOrder; /** gráfico da distribuição: pizza (rosca) ou barra */ allocChart: 'donut' | 'bar' }
-export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert(), appearance: 'auto', allocOrder: 'value', allocChart: 'donut' });
+export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert; /** Automático segue o iPhone */ appearance: Appearance; /** ordem da distribuição por tipo */ allocOrder: AllocOrder; /** gráfico da distribuição: pizza (rosca) ou barra */ allocChart: 'donut' | 'bar'; /** cor do porquinho */ pigColor: PigColor }
+export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert(), appearance: 'auto', allocOrder: 'value', allocChart: 'donut', pigColor: 'roxo' });
 const K2 = { settings: 'pilinha.settings.v1', alerts: 'pilinha.alerts.v1', fired: 'pilinha.alertsFired.v1' };
 const loadJSON = async <T,>(k: string, def: T): Promise<T> => { try { const s = await AsyncStorage.getItem(k); return s ? { ...(def as any), ...JSON.parse(s) } : def; } catch { return def; } };
 const loadArr = async <T,>(k: string): Promise<T[]> => { try { const v = JSON.parse((await AsyncStorage.getItem(k)) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };

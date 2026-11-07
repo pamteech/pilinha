@@ -33,15 +33,17 @@ describe('CDI', () => {
 
 describe('Humor', () => {
   test('mood', () => {
-    expect(moodFrom(0.2, true, true)).toBe('dormindo'); expect(moodFrom(0.2, false, true)).toBe('erro');
+    expect(moodFrom(0.2, true, true)).toBe('pensando'); expect(moodFrom(0.2, false, true)).toBe('erro');
     expect(moodFrom(0.06, false, false)).toBe('feliz'); expect(moodFrom(0.05, false, false)).toBe('neutro');
     expect(moodFrom(-0.06, false, false)).toBe('triste'); expect(moodFrom(null, false, false)).toBe('neutro');
   });
   test('celebrate', () => { expect(shouldCelebrate(100, 101, 0.1)).toBe(true); expect(shouldCelebrate(null, 101, 0.1)).toBe(false); expect(shouldCelebrate(100, 101, -0.1)).toBe(false); });
-  test('sprite sheets match frame counts (256px/frame)', () => {
+  test('folhas em WebP: grade de 8 colunas, 384 px por quadro, linhas conforme os quadros', () => {
     for (const m of Object.keys(frameCount) as Mood[]) {
-      const b = fs.readFileSync(path.join(__dirname, `../../../assets/pig/porco2d_${m}.png`));
-      expect(b.readUInt32BE(16)).toBe(frameCount[m] * 256); expect(b.readUInt32BE(20)).toBe(256);
+      const b = fs.readFileSync(path.join(__dirname, `../../../assets/pig/porco2d_${m}.webp`));
+      expect(b.toString('ascii', 8, 16)).toBe('WEBPVP8X');
+      const w = b.readUIntLE(24, 3) + 1, h = b.readUIntLE(27, 3) + 1;
+      expect([m, w, h]).toEqual([m, 8 * 384, Math.ceil(frameCount[m] / 8) * 384]);
     }
   });
 });

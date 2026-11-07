@@ -25,6 +25,14 @@ e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, lim
 - **Evolução contra o CDI** com Semana, Mês, 6 meses, 1 ano e Tudo (`HISTORY_RANGES`).
 - **Simulador de metas** (Ajustes): prazo para um aporte mensal, aporte para um prazo, e a renda passiva projetada da meta pelo CDI de hoje (`monthsToGoal`, `monthlyForGoal`, `passiveIncome` em `src/core/goal.ts`). Testes em `landing.test.ts`.
 
+## Humores e cores do porquinho
+Doze humores (`src/core/mood.ts`): os seis originais (feliz, neutro, triste, dormindo, erro, ganhou) e seis novos, todos gerados por
+`personagem/opcao2d/gera_folhas.py` a partir da folha de arte ampliada 4x por IA (`superres.py`, Real-ESRGAN): **preocupado** (quadro que estava sem uso), **apaixonado**, **pensando**,
+**rico**, **surpreso** e **chorando** (símbolos por cima dos rostos, como o zzz e o "!" originais). Quando aparecem: carregando → pensando;
+cotações atrasadas → preocupado (sem nada → erro); meta batida → rico; provento hoje → apaixonado; ±2% no dia → surpreso / chorando;
+dia bom/ruim → feliz / triste; parado fora do pregão → dormindo. Widget e Ilha Dinâmica usam o mais parecido entre os seis originais (`baseMood`).
+Cores (Ajustes › Porquinho): o mesmo script gera rosa, azul, menta, dourado e cinza para todos os humores. As folhas são WebP em grade de 8 colunas com quadros de 384 px (nítido a 3x); loops lentos a 12 fps, rápidos a 24.
+
 ## Modo escuro
 Ajustes › Aparência: Automático (segue o iPhone), Claro ou Escuro. As paletas ficam em `src/lib/theme.ts` (`PALETTES`); `T` é um objeto mutável que o `_layout` troca com `applyTheme` e remonta a árvore ao mudar de esquema, por isso nenhuma cor de `T` pode ser guardada em constante de módulo. A distribuição por tipo usa uma paleta própria para o fundo escuro, validada para daltonismo.
 

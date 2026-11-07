@@ -164,11 +164,11 @@ Sources/
   notch-invest-cli/  CLI para conferir os cálculos
 Tests/NotchInvestCoreTests/   testes do núcleo (swift-testing)
 Support/             build-app.sh (gera o .app), make-icon.py + AppIcon.icns, entitlements (só para build com sandbox)
-personagem/opcao2d/  arte do porquinho: folha_ia.jpg + anima2d.py (gera frames, folhas e GIFs) + prévias
+personagem/opcao2d/  arte do porquinho: folha_ia.jpg, superres.py (amplia 4x com Real-ESRGAN → folha_hi.jpg) e gera_folhas.py (12 humores x 6 cores em WebP, stills, prévias)
 previews/            GIFs e mockups do README
 docs/                notas de arquitetura
 ```
-Para regenerar o porquinho: `cd personagem/opcao2d && python anima2d.py` (Pillow e NumPy), depois `pngquant` nas folhas.
+Para regenerar o porquinho: `python3 personagem/opcao2d/gera_folhas.py` (Pillow e NumPy; usa folha_hi.jpg, que vem de `superres.py` com os modelos do Real-ESRGAN).
 
 ## 🛣️ Roadmap
 - [ ] 🔔 Alertas (ativo subiu ou caiu X%, CDI mudou)

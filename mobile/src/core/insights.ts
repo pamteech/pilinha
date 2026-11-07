@@ -46,8 +46,14 @@ export function moodBadge(m: Mood): { icon: string; tone: MoodTone; text: string
   switch (m) {
     case 'feliz': case 'ganhou': return { icon: 'trending-up', tone: 'up', text: 'Dia positivo, oinc!' };
     case 'triste': return { icon: 'trending-down', tone: 'down', text: 'Dia no vermelho…' };
-    case 'dormindo': return { icon: 'sync', tone: 'neutral', text: 'Buscando cotações…' };
+    case 'dormindo': return { icon: 'weather-night', tone: 'neutral', text: 'Pregão fechado, soneca' };
+    case 'pensando': return { icon: 'sync', tone: 'neutral', text: 'Buscando cotações…' };
     case 'erro': return { icon: 'alert-circle-outline', tone: 'down', text: 'Algo deu errado' };
+    case 'preocupado': return { icon: 'clock-alert-outline', tone: 'neutral', text: 'Cotações atrasadas' };
+    case 'apaixonado': return { icon: 'heart', tone: 'up', text: 'Pingou provento!' };
+    case 'rico': return { icon: 'star', tone: 'up', text: 'Meta batida!' };
+    case 'surpreso': return { icon: 'trending-up', tone: 'up', text: 'Que dia, oinc!' };
+    case 'chorando': return { icon: 'trending-down', tone: 'down', text: 'Dia difícil…' };
     default: return { icon: 'trending-neutral', tone: 'neutral', text: 'Dia estável' };
   }
 }

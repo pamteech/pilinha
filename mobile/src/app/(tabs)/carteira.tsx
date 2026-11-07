@@ -1,5 +1,6 @@
 import { EyeToggle } from '../../components/EyeToggle';
-import { Pressable, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Rect } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { Card, Chip, SectionTitle, Screen, Txt, AssetRow, Measure, money } from '../../components/ui';
@@ -14,22 +15,47 @@ export default function Carteira() {
   const order: AllocOrder = settings.allocOrder ?? 'value'; const chart = settings.allocChart ?? 'donut';
   const add = () => router.push('/adicionar');
   if (!snap?.items.length && !snap?.watch?.length) return <Screen><Txt dim>{snap ? 'Nada cadastrado ainda.' : 'Carregando…'}</Txt>{snap ? <AddButton onPress={add} /> : null}</Screen>;
+  // Páginas: Distribuição, um bloco por grupo e os favoritos. Passa com o dedo ou toca no título; bolinhas embaixo.
+  const slices = sortAllocation(allocation(snap!.items, T.scheme === 'dark'), order);
+  const pages: { key: string; title: string; node: React.ReactNode }[] = [
+    ...(slices.length ? [{ key: 'dist', title: 'Distribuição', node: <Allocation slices={slices} hidden={hidden} order={order} setOrder={o => setSettings({ ...settings, allocOrder: o })} chart={chart} setChart={c => setSettings({ ...settings, allocChart: c })} /> }] : []),
+    ...groupItems(snap!.items).map(g => ({ key: g.key, title: g.title, node: (
+        <Card style={{ paddingBottom: S.xs, gap: 0 }}>
+          <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>
+          {g.items.map((i, n) => <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })}><AssetRow item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} /></Pressable>)}
+        </Card>) })),
+    ...(snap?.watch?.length ? [{ key: 'watch', title: 'Quero comprar', node: <Watch rows={snap.watch} hidden={hidden} /> }] : []),
+  ];
   return (
     <Screen>
       <EyeToggle />
       <AddButton onPress={add} />
-      <Allocation slices={sortAllocation(allocation(snap!.items, T.scheme === 'dark'), order)} hidden={hidden} order={order} setOrder={o => setSettings({ ...settings, allocOrder: o })} chart={chart} setChart={c => setSettings({ ...settings, allocChart: c })} />
-      {groupItems(snap!.items).map(g => (
-        <Card key={g.key} style={{ paddingBottom: S.xs, gap: 0 }}>
-          <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>
-          {g.items.map((i, n) => <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })}><AssetRow item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} /></Pressable>)}
-        </Card>
-      ))}
-      {snap?.watch?.length ? <Watch rows={snap.watch} hidden={hidden} /> : null}
+      <Pager pages={pages} />
     </Screen>
   );
 }
 
+/** Paginação da carteira: títulos (toque para pular), páginas largura cheia com altura da página atual, e bolinhas. */
+function Pager({ pages }: { pages: { key: string; title: string; node: React.ReactNode }[] }) {
+  const [i, setI] = useState(0); const [w, setW] = useState(0); const [hs, setHs] = useState<Record<string, number>>({}); const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const cur = Math.min(i, pages.length - 1);
+  const go = (n: number) => { ref.current?.scrollTo({ x: n * w, animated: true }); setI(n); };
+  const h = hs[pages[cur]?.key];
+  return (
+    <View onLayout={e => setW(Math.round(e.nativeEvent.layout.width))}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: S.sm, paddingBottom: S.md }}>
+        {pages.map((p, n) => <Chip key={p.key} label={p.title} on={n === cur} onPress={() => go(n)} />)}
+      </ScrollView>
+      {w > 0 && <ScrollView ref={ref} horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEventThrottle={16}
+        onMomentumScrollEnd={e => setI(Math.max(0, Math.min(pages.length - 1, Math.round(e.nativeEvent.contentOffset.x / w))))}
+        style={h ? { height: h } : undefined}>
+        {pages.map(p => <View key={p.key} style={{ width: w }} onLayout={e => { const v = Math.ceil(e.nativeEvent.layout.height); setHs(o => (o[p.key] === v ? o : { ...o, [p.key]: v })); }}>{p.node}</View>)}
+      </ScrollView>}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: S.md }} accessibilityLabel={`Página ${cur + 1} de ${pages.length}: ${pages[cur]?.title}`}>
+        {pages.map((p, n) => <View key={p.key} style={{ width: n === cur ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: n === cur ? T.pink : T.line }} />)}
+      </View>
+    </View>);
+}
 type AllocChart = 'donut' | 'bar';
 /** Distribuição por tipo: pizza (rosca) ou barra empilhada, à escolha; cor fixa por tipo, folga entre as fatias, legenda com % e valor (a "tabela" do gráfico). */
 function Allocation({ slices, hidden, order, setOrder, chart, setChart }: { slices: AllocSlice[]; hidden: boolean; order: AllocOrder; setOrder: (o: AllocOrder) => void; chart: AllocChart; setChart: (c: AllocChart) => void }) {

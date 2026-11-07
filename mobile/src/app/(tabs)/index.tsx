@@ -9,14 +9,17 @@ import { goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange,
 import type { UsdNewsState } from '../../lib/store';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
-import { isTradingHours, staleInfo } from '../../core';
+import { dividendToday, isTradingHours, staleInfo, toISO } from '../../core';
 import { Alert } from 'react-native';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
   const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews, alerts } = usePilinha();
   const router = useRouter();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
-  const base = moodFrom(d, loading && !snap, !!snap?.errors.length);
+  const base = moodFrom(d, loading && !snap, !!snap?.errors.length, {
+    hasData: !!snap?.items.length, goalReached: !!(settings.goal && snap && tot >= settings.goal),
+    dividendToday: dividendToday(snap?.cash, portfolio.manualDividends, portfolio.stocks.map(x => x.ticker), toISO(new Date())), marketOpen: isTradingHours(),
+  });
   const [mood, setMood] = useState<Mood>(base); const prev = useRef<number | null>(null);
   useEffect(() => {
     if (snap && shouldCelebrate(prev.current, tot, d)) { setMood('ganhou'); const t = setTimeout(() => setMood(base), 37 / 24 * 1000); prev.current = tot; return () => clearTimeout(t); }
@@ -34,7 +37,7 @@ export default function Home() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
-      <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge /></View>
+      <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge color={settings.pigColor} /></View>
       <Pressable onPress={toggleHidden}>
         <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
