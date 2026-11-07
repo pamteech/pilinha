@@ -37,7 +37,7 @@ export default function Home() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
-      <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge color={settings.pigColor} /></View>
+      <View style={{ alignItems: 'center' }}><Pig mood={mood} size={170} badge /></View>
       <Pressable onPress={toggleHidden}>
         <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

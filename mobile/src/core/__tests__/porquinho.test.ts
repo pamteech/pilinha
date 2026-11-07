@@ -1,17 +1,11 @@
 import * as fs from 'fs'; import * as path from 'path';
-import { MOODS, PIG_COLORS, baseMood, dividendToday, frameCount, moodBadge, moodFrom, validPigColor } from '..';
-// As folhas de cada cor (personagem/opcao2d/variantes.py) precisam existir para todos os humores, com o mesmo número de quadros da roxa.
+import { MOODS, baseMood, dividendToday, frameCount, moodBadge, moodFrom } from '..';
+// As folhas (personagem/opcao2d/gera_folhas.py) precisam existir para todos os humores, com a grade esperada.
 const dir = path.join(__dirname, '../../../assets/pig');
 const widthOf = (f: string) => { const b = fs.readFileSync(f); return `${b.readUIntLE(24, 3) + 1}x${b.readUIntLE(27, 3) + 1}`; }; // WebP VP8X: largura x altura
-test('todas as cores têm os 12 humores com a mesma grade da folha roxa', () => {
-  for (const m of MOODS) {
-    const base = widthOf(path.join(dir, `porco2d_${m}.webp`)); expect([m, base]).toEqual([m, `${8 * 384}x${Math.ceil(frameCount[m] / 8) * 384}`]);
-    for (const c of PIG_COLORS.filter(x => x.key !== 'roxo')) expect([c.key, m, widthOf(path.join(dir, c.key, `porco2d_${m}.webp`))]).toEqual([c.key, m, base]);
-    for (const c of PIG_COLORS) expect(fs.existsSync(path.join(dir, `still_${c.key}.png`))).toBe(true);
-  }
-  expect(validPigColor('rosa')).toBe(true); expect(validPigColor('verde')).toBe(false);
+test('as 12 folhas existem na grade de 8 colunas com quadros de 384 px', () => {
+  for (const m of MOODS) expect([m, widthOf(path.join(dir, `porco2d_${m}.webp`))]).toEqual([m, `${8 * 384}x${Math.ceil(frameCount[m] / 8) * 384}`]);
 });
-
 test('humores novos: quando cada um aparece', () => {
   const ctx = { hasData: true, marketOpen: true };
   expect(moodFrom(0.5, true, false, ctx)).toBe('pensando');

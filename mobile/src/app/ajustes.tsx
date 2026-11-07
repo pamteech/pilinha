@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { Button, Card, Chip, Field, Screen, SectionTitle, ToggleRow, Txt, money } from '../components/ui';
-import { Pressable, View } from 'react-native';
-import { S, T } from '../lib/theme';
-import { PigStill } from '../components/Pig';
-import { PIG_COLORS, parseNumberBR, isPositive, formatMonths, monthlyForGoal, monthsToGoal, passiveIncome, total } from '../core';
+import { View } from 'react-native';
+import { S } from '../lib/theme';
+import { parseNumberBR, isPositive, formatMonths, monthlyForGoal, monthsToGoal, passiveIncome, total } from '../core';
 import { usePilinha } from '../lib/store';
 import { DadosAvancados } from '../components/DadosAvancados';
 import { authenticate, faceIdAvailable } from '../lib/auth';
@@ -39,17 +38,6 @@ export default function Ajustes() {
           <Field placeholder="Ou prazo em anos (ex. 5)" keyboardType="decimal-pad" value={sim.years} onChangeText={years => setSim({ ...sim, years })} />
           <GoalSim target={settings.goal} current={snap ? total(snap) : 0} cdi={snap?.cdiAnnual ?? null} monthly={parseNumberBR(sim.monthly)} years={parseNumberBR(sim.years)} hidden={hidden} />
         </>}
-      </Card>
-      <Card>
-        <SectionTitle first>Porquinho</SectionTitle>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-          {PIG_COLORS.map(c => { const on = (settings.pigColor ?? 'roxo') === c.key; return (
-            <Pressable key={c.key} onPress={() => setSettings({ ...settings, pigColor: c.key })} accessibilityRole="button" accessibilityLabel={`Porquinho ${c.label.toLowerCase()}`} accessibilityState={{ selected: on }} style={{ alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: T.champLight, borderWidth: 2, borderColor: on ? T.pink : 'transparent', alignItems: 'center', justifyContent: 'center' }}><PigStill color={c.key} size={56} /></View>
-              <Txt style={{ fontSize: 12, fontWeight: on ? '700' : '400', color: on ? T.text : T.dim }}>{c.label}</Txt>
-            </Pressable>); })}
-        </View>
-        <Txt dim style={{ fontSize: 13 }}>A cor vale no Início. Widget e Ilha Dinâmica continuam com o porquinho roxo.</Txt>
       </Card>
       <Card>
         <SectionTitle first>Aparência</SectionTitle>

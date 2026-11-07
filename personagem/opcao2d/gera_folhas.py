@@ -1,5 +1,5 @@
 # Gera TODAS as folhas de animação do porquinho a partir da folha de arte (folha_hi.jpg, ampliada por superres.py; senão folha_ia.jpg):
-# 12 humores x 6 cores em WebP (quadros de 384 px), miniaturas para o seletor de cor, stills do widget e prévias em GIF.
+# 12 humores em WebP (quadros de 384 px), stills do widget e prévias em GIF.
 # Uso: python3 personagem/opcao2d/gera_folhas.py
 from PIL import Image, ImageFilter, ImageDraw, ImageFont
 import numpy as np, math, os
@@ -10,7 +10,6 @@ S, PIG, COLS = 384, 315, 8  # quadro, maior lado do porquinho (mesma proporção
 # Loops lentos (respirar, balançar) têm 24 quadros a 12 fps (2 s); os rápidos (pulo, susto) 24 quadros a 24 fps. Tem que bater com core/mood.ts.
 # As folhas são grades de COLS quadros por linha (o WebP não aceita mais de 16383 px de largura); o app lê a grade (SHEET_COLS em core/mood.ts).
 K = S / 256; P = lambda v: int(round(v * K))   # coordenadas dos símbolos pensadas em 256 px
-CORES = {'rosa': (335, 1.05, False), 'azul': (212, 1.0, False), 'menta': (150, 0.85, False), 'dourado': (42, 1.15, False), 'cinza': (None, 1.0, True)}
 BASE = ['feliz', 'neutro', 'triste', 'dormindo', 'erro', 'ganhou']
 hi = os.path.join(HERE, 'folha_hi.jpg'); src = Image.open(hi if os.path.exists(hi) else os.path.join(HERE, 'folha_ia.jpg')).convert('RGB')
 print('fonte:', 'folha_hi.jpg (4x)' if os.path.exists(hi) else 'folha_ia.jpg', src.size)
@@ -91,31 +90,13 @@ ANIM = {
     'surpreso': (24, lambda t, i: dict(dy=-10*math.sin(math.pi*min(1, t/0.3)) if t < 0.3 else 0, sx=1.06 if t < 0.3 else 1, sy=1.06 if t < 0.3 else 1)),
     'chorando': (24, lambda t, i: dict(dx=3*math.sin(6*math.pi*t), rot=1.5*math.sin(6*math.pi*t), sy=0.98)),
 }
-def recolor(im, target_h, sat_mul, desat):
-    a = np.asarray(im).astype(np.float32) / 255; out = a.copy(); r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    mx, mn = a[..., :3].max(-1), a[..., :3].min(-1); v = mx; s = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0); d = np.maximum(mx - mn, 1e-6)
-    h = np.where(mx == r, ((g - b) / d) % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) / 6
-    purple = (h > 0.62) & (h < 0.90) & (s > 0.035) & (a[..., 3] > 0)
-    if desat: s2 = np.where(purple, s * 0.12, s); h2 = h
-    else: h2 = np.where(purple, (target_h / 360) % 1, h); s2 = np.where(purple, np.clip(s * sat_mul, 0, 1), s)
-    i = np.floor(h2 * 6) % 6; f = h2 * 6 - np.floor(h2 * 6); p = v * (1 - s2); q = v * (1 - s2 * f); t = v * (1 - s2 * (1 - f))
-    sel = lambda vals: np.select([i == k for k in range(6)], vals); R, G, B = sel([v, q, p, p, t, v]), sel([t, v, v, q, p, p]), sel([p, p, t, v, v, q])
-    out[..., 0] = np.where(purple, R, r); out[..., 1] = np.where(purple, G, g); out[..., 2] = np.where(purple, B, b)
-    return Image.fromarray((out * 255).round().astype(np.uint8), 'RGBA')
 def save_webp(sheet, path): sheet.save(path, 'WEBP', quality=78, method=6)
 os.makedirs(os.path.join(HERE, 'previews'), exist_ok=True)
-for cor in CORES: os.makedirs(os.path.join(OUT, cor), exist_ok=True)
 for name, (L, fn) in ANIM.items():
     frames = [frame(ART[name], **fn(i / L, i)) for i in range(L)]
     rows = -(-L // COLS); pos = lambda i: ((i % COLS) * S, (i // COLS) * S)
     sheet = Image.new('RGBA', (S * COLS, S * rows)); [sheet.paste(f, pos(i)) for i, f in enumerate(frames)]
     save_webp(sheet, os.path.join(OUT, f'porco2d_{name}.webp'))
-    for cor, (hue, sm, ds) in CORES.items():
-        sh = Image.new('RGBA', (S * COLS, S * rows)); [sh.paste(recolor(f, hue, sm, ds), pos(i)) for i, f in enumerate(frames)]
-        save_webp(sh, os.path.join(OUT, cor, f'porco2d_{name}.webp'))
-    if name == 'neutro':
-        frames[0].resize((128, 128), Image.LANCZOS).save(os.path.join(OUT, 'still_roxo.png'), optimize=True)
-        for cor, (hue, sm, ds) in CORES.items(): recolor(frames[0], hue, sm, ds).resize((128, 128), Image.LANCZOS).save(os.path.join(OUT, f'still_{cor}.png'), optimize=True)
     if name in BASE:  # widget e Ilha Dinâmica: still do humor
         frames[0].save(os.path.join(WIDGET, f'pig_{name}.imageset', 'pig.png'), optimize=True)
     g = [Image.alpha_composite(Image.new('RGBA', (S, S), (27, 27, 31, 255)), f).convert('RGB').resize((256, 256), Image.LANCZOS) for f in frames]
