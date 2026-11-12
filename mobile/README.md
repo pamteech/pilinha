@@ -68,6 +68,11 @@ Coloque o Team ID da conta Apple (developer.apple.com → Membership, 10 letras/
 
 Perfis em `eas.json`: `development` (dev client), `preview` (instalação interna por link), `production` (TestFlight/App Store).
 
+## Build no Mac (quando o limite do Expo acabar)
+O plano gratuito do Expo dá um número limitado de builds de iPhone por mês. Build local não conta nesse limite:
+`./mobile/scripts/testflight-local.sh` compila neste Mac e envia ao TestFlight. Precisa do Xcode completo (App Store),
+`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` e `brew install cocoapods fastlane`.
+
 ## Submit para o TestFlight
 
 `eas.json` já tem `submit.production.ios.ascAppId = 6826469667` (app com.pamtech.pilinha no App Store Connect), então `eas submit -p ios --latest` não pergunta mais o app.
