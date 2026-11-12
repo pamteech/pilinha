@@ -12,7 +12,8 @@ if (native) {
   // Tocar no aviso do dólar abre a notícia (só https). Vale para o app aberto, em segundo plano e fechado (última resposta).
   const opened = new Set<string>();
   const open = (r: Notifications.NotificationResponse | null | undefined) => {
-    const id = r?.notification?.request?.identifier, url = safeNewsLink(r?.notification?.request?.content?.data?.url);
+    const data = r?.notification?.request?.content?.data;
+    const id = r?.notification?.request?.identifier, url = safeNewsLink(data?.url) ?? (data?.route === '/plano' ? 'pilinha://plano' : null);
     if (!url || !id || opened.has(id)) return; opened.add(id);
     Linking.openURL(url).catch(() => {});
   };
@@ -110,5 +111,16 @@ export async function syncBackgroundTask(enabled: boolean) {
     const on = await TaskManager.isTaskRegisteredAsync(ALERT_TASK);
     if (enabled && !on) await BackgroundTask.registerTaskAsync(ALERT_TASK, { minimumInterval: 15 });
     if (!enabled && on) await BackgroundTask.unregisterTaskAsync(ALERT_TASK);
+  } catch {}
+}
+/** Lembrete mensal de aporte (dia escolhido no plano, 9h), agendado no próprio iPhone: chega com o app fechado. Sem valores no texto (tela bloqueada). */
+const APORTE_ID = 'aporte-mensal';
+export async function scheduleAporteReminder(day: number | null | undefined) {
+  if (!native) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(APORTE_ID).catch(() => {});
+    if (!day || !(await permissionGranted())) return;
+    await Notifications.scheduleNotificationAsync({ identifier: APORTE_ID, content: { title: 'Dia de aportar no seu plano', body: 'Toque para ver quanto falta neste mês.', data: { route: '/plano' } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, day, hour: 9, minute: 0, repeats: true } });
   } catch {}
 }

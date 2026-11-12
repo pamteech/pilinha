@@ -8,7 +8,7 @@ import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, 
 import * as S from './storage';
 import { syncExtensions } from './widget';
 import { PriceAlert, hiddenOnOpen, shouldRehide, watchAlerts } from '../core';
-import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
+import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleAporteReminder, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
 import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
@@ -59,7 +59,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); scheduleUsdCloseReminders(usdAlertOf(st0).enabled); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); scheduleUsdCloseReminders(usdAlertOf(st0).enabled); scheduleAporteReminder(st0.plan?.reminderDay); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
   // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
   useEffect(() => {
     let prev: string = AppState.currentState ?? 'active';
@@ -117,6 +117,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     await syncBackgroundTask(needsBackground(pRef.current, alerts, x));
     if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdClose({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
     await scheduleUsdCloseReminders(usdAlertOf(x).enabled);
+    await scheduleAporteReminder(x.plan?.reminderDay);
   };
   const setAlerts = async (a: PriceAlert[]) => { setAlertsState(a); alRef.current = a; await S.saveAlerts(a); await syncBackgroundTask(needsBackground(pRef.current, a, setRef.current)); if (snapRef.current) { try { await checkAndNotify(await quotesForAlerts([...a, ...watchAlerts(pRef.current.watchlist)], snapRef.current, await S.loadToken()), a); } catch {} } };
   // Revelar valores pode exigir Face ID (com senha do aparelho como alternativa).

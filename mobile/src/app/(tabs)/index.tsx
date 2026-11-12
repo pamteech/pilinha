@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pig } from '../../components/Pig';
 import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
-import { goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, totalNet, usdNewsTitle } from '../../core';
+import { Plan, ageLabel, brl, compactBRL, planSummary, planTracking, goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, totalNet, usdNewsTitle } from '../../core';
 import type { UsdNewsState } from '../../lib/store';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
@@ -86,7 +86,13 @@ export default function Home() {
           <MaterialCommunityIcons name="chevron-right" size={20} color={T.dim} />
         </View></Card>
       </Pressable>}
-      {settings.goal ? <Goal total={tot} target={settings.goal} hidden={hidden} /> : null}
+      {settings.goal ? <Pressable accessibilityRole="button" accessibilityHint="Abre o plano" onPress={() => router.navigate('/plano')}><Goal total={tot} target={settings.goal} hidden={hidden} plan={settings.plan} history={history} /></Pressable>
+        : !empty ? <Pressable accessibilityRole="button" onPress={() => router.navigate('/plano')}>
+          <Card><View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+            <MaterialCommunityIcons name="flag-checkered" size={22} color={T.pink} />
+            <View style={{ flex: 1 }}><Txt style={{ fontWeight: '600' }}>Monte seu plano</Txt><Txt dim style={{ fontSize: 13 }}>Quanto quer ter e com que idade. O Pilinvest diz quanto investir por mês e acompanha.</Txt></View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={T.dim} />
+          </View></Card></Pressable> : null}
       <Week points={lastDays(history, 7)} hidden={hidden} />
       {snap && <Movers m={topMovers(snap.items, 3)} />}
       <Txt dim style={{ textAlign: 'center', fontSize: 11 }}>Valores estimados para acompanhamento. Não é recomendação de investimento.</Txt>
@@ -141,15 +147,19 @@ function Movers({ m }: { m: { up: Mover[]; down: Mover[] } }) {
   );
 }
 
-function Goal({ total, target, hidden }: { total: number; target: number; hidden: boolean }) {
+function Goal({ total, target, hidden, plan, history }: { total: number; target: number; hidden: boolean; plan: Plan | null; history: import('../../core').HistoryPoint[] }) {
   const g = goalProgress(total, target); if (!g) return null;
+  const sum = plan ? planSummary(plan, target, total) : null, tr = plan && plan.monthly > 0 ? planTracking(plan, total, history) : null;
+  const R$ = (v: number) => brl(Math.round(v)).replace(/,00$/, '');
   return (
     <Card>
-      <SectionTitle first right={<Txt style={{ fontWeight: '700', color: g.done ? T.up : T.text }}>{g.pct.toFixed(0)}%</Txt>}>Meta do cofrinho</SectionTitle>
+      <SectionTitle first right={<Txt style={{ fontWeight: '700', color: g.done ? T.up : T.text }}>{g.pct < 1 && g.pct > 0 ? '<1' : g.pct.toFixed(0)}%</Txt>}>{plan?.targetAge ? `Meta: ${hidden ? 'R$ ••••' : compactBRL(target)} aos ${plan.targetAge}` : 'Meta'}</SectionTitle>
       <View style={{ height: 10, borderRadius: 999, backgroundColor: T.champLight, overflow: 'hidden' }}>
-        <View style={{ width: `${g.pct}%`, height: '100%', backgroundColor: g.done ? T.up : T.bar, borderRadius: 999 }} />
+        <View style={{ width: `${Math.max(g.pct, g.pct > 0 ? 1 : 0)}%`, height: '100%', backgroundColor: g.done ? T.up : T.bar, borderRadius: 999 }} />
       </View>
-      <Txt dim style={{ fontSize: 13 }}>{g.done ? `Meta de ${money(target, hidden)} alcançada!` : hidden ? 'Valores escondidos' : `${money(total, false)} de ${money(target, false)} · faltam ${money(g.remaining, false)}`}</Txt>
+      <Txt dim style={{ fontSize: 13 }}>{g.done ? `Meta de ${money(target, hidden)} alcançada!` : hidden ? 'Valores escondidos' : `${money(total, false)} de ${compactBRL(target)} · faltam ${compactBRL(g.remaining)}`}</Txt>
+      {sum && plan && plan.monthly > 0 && !g.done ? <Txt style={{ fontSize: 13 }}>{sum.reachAge == null ? 'No ritmo de hoje, a meta não chega antes dos 100.' : `No ritmo de hoje, chega aos ${ageLabel(sum.reachAge)}${plan.targetAge ? (sum.reachAge <= plan.targetAge ? ', dentro do prazo' : `, depois dos ${plan.targetAge}`) : ''}.`}</Txt> : null}
+      {tr && tr.monthAporte != null ? <Txt dim style={{ fontSize: 13 }}>{hidden ? `Este mês: ${Math.min(999, Math.round((tr.monthAporte / Math.max(1, tr.monthPlanned)) * 100))}% do aporte` : `Este mês: ${R$(tr.monthAporte)} de ${R$(tr.monthPlanned)}`}</Txt> : null}
     </Card>
   );
 }

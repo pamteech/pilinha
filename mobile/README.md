@@ -25,6 +25,13 @@ e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, lim
 - **Evolução contra o CDI** com Semana, Mês, 6 meses, 1 ano e Tudo (`HISTORY_RANGES`).
 - **Simulador de metas** (Ajustes): prazo para um aporte mensal, aporte para um prazo, e a renda passiva projetada da meta pelo CDI de hoje (`monthsToGoal`, `monthlyForGoal`, `passiveIncome` em `src/core/goal.ts`). Testes em `landing.test.ts`.
 
+## Meu plano (meta por idade)
+Tela `src/app/plano.tsx` (cartão da meta no Início, ou Ajustes › Meta e plano): quanto quer ter, a idade, com que idade quer chegar (opcional),
+quanto pode investir por mês, o cenário de rendimento acima da inflação (4%, 6% ou 8%) e o dia do lembrete. A conta é em dinheiro de hoje
+(`src/core/plan.ts`): aporte mensal necessário, idade em que chega no ritmo atual, caminho ano a ano, os três cenários, o valor nominal
+estimado da meta (IPCA de 4,5%) e a renda mensal que ela gera. Acompanhamento: aporte do mês pelo histórico do valor investido e posição
+contra o caminho desde o início do plano. Lembrete mensal agendado no próprio iPhone (9h, sem valores no texto). Testes em `plano.test.ts`.
+
 ## Humores do porquinho
 Doze humores (`src/core/mood.ts`): os seis originais (feliz, neutro, triste, dormindo, erro, ganhou) e seis novos, todos gerados por
 `personagem/opcao2d/gera_folhas.py` a partir da folha de arte ampliada 4x por IA (`superres.py`, Real-ESRGAN): **preocupado** (quadro que estava sem uso), **apaixonado**, **pensando**,
