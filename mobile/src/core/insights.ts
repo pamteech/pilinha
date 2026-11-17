@@ -86,7 +86,7 @@ export const ALLOC_ORDER: AllocKey[] = ['renda', 'tesouro', 'acoes', 'fiis', 'bi
 export const ALLOC_COLORS: Record<AllocKey, string> = { renda: '#2A1A3F', tesouro: '#4C1D95', acoes: '#7C3AED', fiis: '#B58BC7', bitcoin: '#D946EF', dolar: '#DB2777' };
 /** Mesma família em passos para o card escuro. */
 export const ALLOC_COLORS_DARK: Record<AllocKey, string> = { renda: '#D8C4FF', tesouro: '#B58BC7', acoes: '#7C3AED', fiis: '#7A5590', bitcoin: '#D946EF', dolar: '#DB2777' };
-const ALLOC_TITLES: Record<AllocKey, string> = { renda: 'Renda fixa', tesouro: 'Tesouro', acoes: 'Ações', fiis: 'FIIs', bitcoin: 'Bitcoin', dolar: 'Dólar' };
+export const ALLOC_TITLES: Record<AllocKey, string> = { renda: 'Renda fixa', tesouro: 'Tesouro', acoes: 'Ações', fiis: 'FIIs', bitcoin: 'Bitcoin', dolar: 'Dólar' };
 const allocOf = (c: string): AllocKey => (c === 'tesouro' ? 'tesouro' : c === 'acao' ? 'acoes' : c === 'fii' ? 'fiis' : c === 'cripto' ? 'bitcoin' : c === 'dolar' ? 'dolar' : 'renda');
 export function allocation(items: LineItem[], dark = false): AllocSlice[] {
   const colors = dark ? ALLOC_COLORS_DARK : ALLOC_COLORS;

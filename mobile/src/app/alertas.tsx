@@ -7,6 +7,7 @@ import { usePilinha } from '../lib/store';
 import { permissionGranted, requestPermission, usdAlertOf } from '../lib/alerts';
 import * as St from '../lib/storage';
 import { T, S } from '../lib/theme';
+import { maturityLabel, parseISO, toBR, upcomingMaturities } from '../core';
 // Alertas valem para qualquer ação ou FII (busca por nome ou código, mesmo sem ter na carteira), dólar e bitcoin.
 const kinds: { k: AlertKind; label: string; ph: string }[] = [
   { k: 'below', label: 'Abaixo de', ph: 'Preço em R$ (ex. 30,00)' }, { k: 'above', label: 'Acima de', ph: 'Preço em R$ (ex. 40,00)' }, { k: 'dropPct', label: 'Cair % no dia', ph: 'Queda em % (ex. 3)' }, { k: 'risePct', label: 'Subir % no dia', ph: 'Alta em % (ex. 3)' }];
@@ -16,6 +17,10 @@ export default function Alertas() {
   useEffect(() => { permissionGranted().then(setPerm); }, []);
   const usd = usdAlertOf(settings);
   const setUsd = async (x: Partial<typeof usd>) => { const nx = { ...usd, ...x }; if (nx.enabled && !perm) setPerm(await requestPermission()); await setSettings({ ...settings, usdAlert: nx }); };
+  // Vencimento da renda fixa: próximos títulos a vencer (só nome e data, sem valores).
+  const venc = upcomingMaturities(p.fixedIncome);
+  const setVenc = async (v: boolean) => { if (v && !perm) setPerm(await requestPermission()); await setSettings({ ...settings, maturityAlert: v }); };
+  const setFech = async (v: boolean) => { if (v && !perm) setPerm(await requestPermission()); await setSettings({ ...settings, monthCloseAlert: v }); };
   // Atalhos: dólar, bitcoin, o que está na carteira e os favoritos; o resto pela busca.
   const quick = useMemo(() => [USD_TICKER, BTC_TICKER, ...new Set([...p.stocks.map(s => s.ticker.toUpperCase()), ...(p.watchlist ?? []).map(w => w.ticker.toUpperCase())])], [p]);
   const [t, setT] = useState<string>(quick[2] ?? USD_TICKER); const [kind, setKind] = useState<AlertKind>('below'); const [val, setVal] = useState('');
@@ -100,6 +105,16 @@ export default function Alertas() {
           {snap?.usdBRL != null ? <Txt dim style={{ fontSize: 13 }}>Dólar agora: R$ {snap.usdBRL.toFixed(2).replace('.', ',')}{snap.usdChangePct != null ? ` (${(snap.usdChangePct >= 0 ? '+' : '') + snap.usdChangePct.toFixed(2).replace('.', ',')}% hoje)` : ''}</Txt> : null}
           <Txt dim style={{ fontSize: 12 }}>Com o app fechado, o iPhone entrega às 17h10 um aviso curto ("Dólar fechou hoje"); tocando nele o app abre com a cotação e o motivo. Quando o app consegue buscar o fechamento antes, o aviso já vem completo. A manchete vem do Google Notícias (busca fixa; nada da sua carteira é enviado).</Txt>
         </> : null}
+      </Card>
+      <Card>
+        <SectionTitle first>Vencimento da renda fixa</SectionTitle>
+        <ToggleRow label="Avisar vencimento da renda fixa" hint="7 dias antes e no dia, às 9h" value={settings.maturityAlert} onChange={setVenc} />
+        {venc.slice(0, 5).map((m, i) => <Txt key={`${m.name}|${m.date}|${i}`}>{`${m.name} · ${maturityLabel(m.daysLeft)} (${toBR(parseISO(m.date)!)})`}</Txt>)}
+        {!venc.length && <Txt dim>Nenhum título com vencimento cadastrado.</Txt>}
+      </Card>
+      <Card>
+        <SectionTitle first>Fechamento do mês</SectionTitle>
+        <ToggleRow label="Resumo do mês no dia 1º" hint="Aviso às 9h quando o fechamento do mês anterior está pronto" value={settings.monthCloseAlert} onChange={setFech} />
       </Card>
     </Screen>
   );

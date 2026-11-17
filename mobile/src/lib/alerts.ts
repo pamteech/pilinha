@@ -124,3 +124,14 @@ export async function scheduleAporteReminder(day: number | null | undefined) {
       trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, day, hour: 9, minute: 0, repeats: true } });
   } catch {}
 }
+/** Fechamento do mês: aviso todo dia 1º às 9h, agendado no próprio iPhone (o card do mês anterior fica no Início na primeira semana). Sem valores no texto (tela bloqueada). */
+const MONTH_CLOSE_ID = 'fechamento-mensal';
+export async function scheduleMonthCloseReminder(enabled: boolean) {
+  if (!native) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(MONTH_CLOSE_ID).catch(() => {});
+    if (!enabled || !(await permissionGranted())) return;
+    await Notifications.scheduleNotificationAsync({ identifier: MONTH_CLOSE_ID, content: { title: 'Fechamento do mês pronto', body: 'Abra o Pilinvest para ver como foi o mês.' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, day: 1, hour: 9, minute: 0, repeats: true } });
+  } catch {}
+}

@@ -60,7 +60,7 @@ describe('Outros', () => {
   test('total recebido', () => { expect(receivedTotal([{ ticker: 'A', date: '2026-01-01', amount: 1.5 }, { ticker: 'B', date: '2026-02-01', amount: 2 }])).toEqual({ total: 3.5, count: 2 }); expect(receivedTotal(undefined).count).toBe(0); });
 });
 
-import { hiddenOnOpen, shouldRehide, hideOnOpenDefault } from '..';
+import { hiddenOnOpen, shouldRehide, hideOnOpenDefault, HIDE_AFTER_MS } from '..';
 describe('Abrir com valores escondidos', () => {
   test('ligado por padrão e sempre começa oculto', () => {
     expect(hideOnOpenDefault).toBe(true);
@@ -72,5 +72,22 @@ describe('Abrir com valores escondidos', () => {
     expect(shouldRehide(undefined, 'background', 'active')).toBe(true);
     expect(shouldRehide(true, 'inactive', 'active')).toBe(false);
     expect(shouldRehide(false, 'background', 'active')).toBe(false);
+  });
+  test('saída rápida do app mantém o último estado; só esconde depois de HIDE_AFTER_MS fora', () => {
+    expect(HIDE_AFTER_MS).toBe(5 * 60_000);
+    expect(shouldRehide(true, 'background', 'active', 60_000)).toBe(false);
+    expect(shouldRehide(true, 'background', 'active', HIDE_AFTER_MS)).toBe(false);
+    expect(shouldRehide(true, 'background', 'active', HIDE_AFTER_MS + 1)).toBe(true);
+    expect(hiddenOnOpen(true, false, 60_000)).toBe(false); // estava visível: continua visível
+    expect(hiddenOnOpen(true, true, 60_000)).toBe(true);
+    expect(hiddenOnOpen(true, false, HIDE_AFTER_MS + 1)).toBe(true);
+    expect(hiddenOnOpen(false, false, HIDE_AFTER_MS + 1)).toBe(false); // opção desligada: segue o estado salvo
+  });
+  test('sem registro de saída ou com relógio estranho, esconde por segurança', () => {
+    expect(hiddenOnOpen(true, false, undefined)).toBe(true);
+    expect(hiddenOnOpen(true, false, -5)).toBe(true);
+    expect(hiddenOnOpen(true, false, NaN)).toBe(true);
+    expect(shouldRehide(true, 'background', 'active', -5)).toBe(true);
+    expect(shouldRehide(true, 'inactive', 'active', HIDE_AFTER_MS + 1)).toBe(false);
   });
 });

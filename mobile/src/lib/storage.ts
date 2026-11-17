@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { AllocOrder, Plan, emptyPortfolio, HistoryPoint, Portfolio, UsdAlert, defaultUsdAlert } from '../core';
 // Tudo fica só no aparelho: carteira e histórico no AsyncStorage, token da brapi no Keychain.
-const K = { portfolio: 'pilinha.portfolio.v1', history: 'pilinha.history.v1', token: 'pilinha.brapiToken', hidden: 'pilinha.hidden' };
+const K = { portfolio: 'pilinha.portfolio.v1', history: 'pilinha.history.v1', token: 'pilinha.brapiToken', hidden: 'pilinha.hidden', leftAt: 'pilinha.leftAt' };
 export async function loadPortfolio(): Promise<Portfolio> {
   try { const s = await AsyncStorage.getItem(K.portfolio); return s ? { ...emptyPortfolio(), ...JSON.parse(s) } : emptyPortfolio(); } catch { return emptyPortfolio(); }
 }
@@ -14,11 +14,14 @@ export const loadToken = async () => { try { return await SecureStore.getItemAsy
 export const saveToken = (t: string) => (t ? SecureStore.setItemAsync(K.token, t) : SecureStore.deleteItemAsync(K.token));
 export const loadHidden = async () => (await AsyncStorage.getItem(K.hidden)) === '1';
 export const saveHidden = (b: boolean) => AsyncStorage.setItem(K.hidden, b ? '1' : '0');
+// Quando o app foi para o segundo plano pela última vez: decide se os valores voltam escondidos ao reabrir.
+export const loadLeftAt = async () => { try { const n = Number(await AsyncStorage.getItem(K.leftAt)); return Number.isFinite(n) && n > 0 ? n : null; } catch { return null; } };
+export const saveLeftAt = (t: number) => AsyncStorage.setItem(K.leftAt, String(t)).catch(() => {});
 
 // Ajustes, alertas e registro de alertas disparados (também só no aparelho).
 import type { Appearance } from './theme';
-export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert; /** Automático segue o iPhone */ appearance: Appearance; /** ordem da distribuição por tipo */ allocOrder: AllocOrder; /** gráfico da distribuição: pizza (rosca) ou barra */ allocChart: 'donut' | 'bar'; /** plano de longo prazo (meta por idade); a meta em R$ é `goal` */ plan: Plan | null }
-export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert(), appearance: 'auto', allocOrder: 'value', allocChart: 'donut', plan: null });
+export interface Settings { goal: number | null; faceOnOpen: boolean; faceOnReveal: boolean; hideOnOpen: boolean; usdAlert: UsdAlert; /** aviso de vencimento da renda fixa (7 dias antes e no dia) */ maturityAlert: boolean; /** aviso no dia 1º de que o fechamento do mês anterior está pronto */ monthCloseAlert: boolean; /** Automático segue o iPhone */ appearance: Appearance; /** ordem da distribuição por tipo */ allocOrder: AllocOrder; /** gráfico da distribuição: pizza (rosca) ou barra */ allocChart: 'donut' | 'bar'; /** distribuição ideal por tipo, em % (null = não definida) */ allocTargets: import('../core').AllocTargets | null; /** plano de longo prazo (meta por idade); a meta em R$ é `goal` */ plan: Plan | null; /** marcos já comemorados (null = primeira abertura depois da atualização: os já alcançados entram sem comemorar) */ milestonesSeen: string[] | null }
+export const defaultSettings = (): Settings => ({ goal: null, faceOnOpen: false, faceOnReveal: false, hideOnOpen: true, usdAlert: defaultUsdAlert(), maturityAlert: true, monthCloseAlert: true, appearance: 'auto', allocOrder: 'value', allocChart: 'donut', allocTargets: null, plan: null, milestonesSeen: null });
 const K2 = { settings: 'pilinha.settings.v1', alerts: 'pilinha.alerts.v1', fired: 'pilinha.alertsFired.v1' };
 const loadJSON = async <T,>(k: string, def: T): Promise<T> => { try { const s = await AsyncStorage.getItem(k); return s ? { ...(def as any), ...JSON.parse(s) } : def; } catch { return def; } };
 const loadArr = async <T,>(k: string): Promise<T[]> => { try { const v = JSON.parse((await AsyncStorage.getItem(k)) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };

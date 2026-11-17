@@ -24,6 +24,11 @@ export default function Ajustes() {
         <Button title={settings.goal ? 'Abrir meu plano' : 'Montar meu plano'} onPress={() => router.push('/plano')} />
       </Card>
       <Card>
+        <SectionTitle first>Retrospectiva</SectionTitle>
+        <Txt dim style={{ fontSize: 13 }}>Quanto a carteira rendeu no ano, em quantos meses você aportou e qual foi o melhor mês.</Txt>
+        <Button title="Retrospectiva do ano" onPress={() => router.push('/retrospectiva')} />
+      </Card>
+      <Card>
         <SectionTitle first>Aparência</SectionTitle>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
           {([['auto', 'Automático'], ['light', 'Claro'], ['dark', 'Escuro']] as const).map(([k, l]) => <Chip key={k} label={l} on={(settings.appearance ?? 'auto') === k} onPress={() => setSettings({ ...settings, appearance: k })} />)}
@@ -32,7 +37,7 @@ export default function Ajustes() {
       </Card>
       <Card>
         <SectionTitle first>Privacidade</SectionTitle>
-        <ToggleRow label="Abrir com valores escondidos" hint="Ao abrir ou voltar para o app, toque no patrimônio para mostrar" value={settings.hideOnOpen !== false} onChange={v => setSettings({ ...settings, hideOnOpen: v })} />
+        <ToggleRow label="Abrir com valores escondidos" hint="Esconde ao abrir o app ou voltar depois de uns 5 min fora. Toque no patrimônio para mostrar" value={settings.hideOnOpen !== false} onChange={v => setSettings({ ...settings, hideOnOpen: v })} />
       </Card>
       <Card>
         <SectionTitle first>Face ID</SectionTitle>

@@ -8,9 +8,10 @@ import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, 
 import * as S from './storage';
 import { syncExtensions } from './widget';
 import { PriceAlert, hiddenOnOpen, shouldRehide, watchAlerts } from '../core';
-import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleAporteReminder, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
+import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleAporteReminder, scheduleMonthCloseReminder, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
 import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
+import { scheduleMaturityReminders } from './maturity';
 interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoint[]; loading: boolean; hasToken: boolean; hidden: boolean;
   setHidden: (b: boolean) => void; refresh: () => Promise<void>; update: (p: Portfolio) => Promise<void>; setToken: (t: string) => Promise<void>;
   settings: S.Settings; setSettings: (s: S.Settings) => Promise<void>; alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => Promise<void>; toggleHidden: () => Promise<void>; ready: boolean;
@@ -59,11 +60,25 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
     } catch { /* sem internet etc.: mantém o último snapshot */ } finally { if (gate.isLatest(my)) setL(false); }
   }, []);
-  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden()); hRef.current = h; setHiddenState(h); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); scheduleUsdCloseReminders(usdAlertOf(st0).enabled); scheduleAporteReminder(st0.plan?.reminderDay); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
-  // Abrir com valores escondidos: ao voltar do segundo plano esconde de novo (só na tela; o widget segue o último estado escolhido).
+  useEffect(() => { (async () => { const st0 = await S.loadSettings(); setSettingsState(st0); setRef.current = st0; setReady(true); const al = await S.loadAlerts(); setAlertsState(al); const left = await S.loadLeftAt(); const h = hiddenOnOpen(st0.hideOnOpen, await S.loadHidden(), left == null ? undefined : Date.now() - left); hRef.current = h; setHiddenState(h); if (h) S.saveHidden(true); const [p, last, base] = await Promise.all([S.loadPortfolio(), S.loadLastSnapshot(), S.loadMacBase()]); setP(p); pRef.current = p; setMacBase(base); syncBackgroundTask(needsBackground(p, al, st0)); scheduleUsdCloseReminders(usdAlertOf(st0).enabled); scheduleAporteReminder(st0.plan?.reminderDay); if (last && !snapRef.current) { setSnap(last); snapRef.current = last; setH(await S.loadHistory()); } setLoaded(true); await run(p); })(); }, [run]);
+  // Vencimento da renda fixa: reagenda os avisos ao abrir, quando a carteira muda (edição ou sync do Mac) e ao ligar/desligar nos Alertas.
+  useEffect(() => { if (loaded) scheduleMaturityReminders(settings.maturityAlert, portfolio.fixedIncome); }, [loaded, portfolio.fixedIncome, settings.maturityAlert]);
+  // Fechamento do mês: agenda o aviso do dia 1º ao abrir e ao ligar/desligar nos Alertas.
+  useEffect(() => { if (loaded) scheduleMonthCloseReminder(settings.monthCloseAlert); }, [loaded, settings.monthCloseAlert]);
+  // Permissão de notificação dada no meio da sessão (no app ou nos Ajustes do iOS) não muda nada acima: ao voltar para o app, reagenda os dois avisos.
   useEffect(() => {
-    let prev: string = AppState.currentState ?? 'active';
-    const sub = AppState.addEventListener('change', st => { if (shouldRehide(setRef.current.hideOnOpen, prev, st)) { hRef.current = true; setHiddenState(true); } prev = st; });
+    if (!loaded) return;
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') { scheduleMaturityReminders(setRef.current.maturityAlert, pRef.current.fixedIncome); scheduleMonthCloseReminder(setRef.current.monthCloseAlert); } });
+    return () => sub.remove();
+  }, [loaded]);
+  // Abrir com valores escondidos: ao voltar depois de um tempo fora esconde de novo. O estado escondido é salvo: se o app for encerrado e reaberto logo em seguida, continua escondido.
+  useEffect(() => {
+    let prev: string = AppState.currentState ?? 'active'; let leftAt: number | undefined;
+    const sub = AppState.addEventListener('change', st => {
+      if (st === 'background') { leftAt = Date.now(); S.saveLeftAt(leftAt); }
+      if (shouldRehide(setRef.current.hideOnOpen, prev, st, leftAt == null ? undefined : Date.now() - leftAt)) { hRef.current = true; setHiddenState(true); S.saveHidden(true); }
+      prev = st;
+    });
     return () => sub.remove();
   }, []);
   useEffect(() => { const t = setInterval(() => run(pRef.current), 5 * 60_000); return () => clearInterval(t); }, [run]);

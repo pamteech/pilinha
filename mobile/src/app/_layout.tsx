@@ -53,6 +53,8 @@ function AppStack() {
       <Stack.Screen name="adicionar" options={{ presentation: 'modal', headerShown: true, header: () => <Header title="Cadastro" back /> }} />
       <Stack.Screen name="ajustes" options={{ headerShown: true, header: () => <Header title="Ajustes" back /> }} />
       <Stack.Screen name="plano" options={{ headerShown: true, header: () => <Header title="Meu plano" back /> }} />
+      <Stack.Screen name="retrospectiva" options={{ headerShown: true, header: () => <Header title="Retrospectiva" back /> }} />
+      <Stack.Screen name="alocacao" options={{ headerShown: true, header: () => <Header title="Distribuição ideal" back /> }} />
     </Stack>);
 }
 // Garante que abrir o app (ou um link) sempre tenha as abas por baixo.

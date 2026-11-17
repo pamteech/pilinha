@@ -8,10 +8,10 @@ import { SHEET_COLS, sheetRows } from '../core';
 // Folhas de animação em WebP (grade de 8 quadros de 384 px por linha), geradas por personagem/opcao2d/gera_folhas.py.
 const sheets: Record<Mood, any> = { feliz: require('../../assets/pig/porco2d_feliz.webp'), neutro: require('../../assets/pig/porco2d_neutro.webp'), triste: require('../../assets/pig/porco2d_triste.webp'), dormindo: require('../../assets/pig/porco2d_dormindo.webp'), erro: require('../../assets/pig/porco2d_erro.webp'), ganhou: require('../../assets/pig/porco2d_ganhou.webp'), preocupado: require('../../assets/pig/porco2d_preocupado.webp'), apaixonado: require('../../assets/pig/porco2d_apaixonado.webp'), pensando: require('../../assets/pig/porco2d_pensando.webp'), rico: require('../../assets/pig/porco2d_rico.webp'), surpreso: require('../../assets/pig/porco2d_surpreso.webp'), chorando: require('../../assets/pig/porco2d_chorando.webp') };
 const halo = (m: Mood) => (m === 'feliz' || m === 'ganhou' || m === 'rico' || m === 'apaixonado' || m === 'surpreso' ? T.upLight : m === 'triste' || m === 'erro' || m === 'chorando' ? T.downLight : T.champLight);
-export function Pig({ mood, size = 160, badge = false }: { mood: Mood; size?: number; badge?: boolean }) {
+export function Pig({ mood, size = 160, badge = false, note }: { mood: Mood; size?: number; badge?: boolean; /** frase do selo no lugar da do humor (comemoração de marco não é "dia positivo") */ note?: string }) {
   const [f, setF] = useState(0); const n = frameCount[mood];
   useEffect(() => { setF(0); const t = setInterval(() => setF(x => (x + 1) % n), 1000 / moodFps(mood)); return () => clearInterval(t); }, [mood, n]);
-  const b = moodBadge(mood);
+  const b = note ? { ...moodBadge(mood), text: note } : moodBadge(mood);
   return (
     <View style={{ alignItems: 'center' }}>
       <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: halo(mood) }}>

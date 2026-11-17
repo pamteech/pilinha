@@ -54,8 +54,8 @@ import { Pressable as RNPressable, TextInput as RNTextInput, Switch as RNSwitch 
 export const Field = (p: React.ComponentProps<typeof RNTextInput>) => (
   <RNTextInput placeholderTextColor={T.dim} maxFontSizeMultiplier={1.3} keyboardAppearance={T.scheme} {...p}
     style={{ color: T.text, fontFamily: 'Manrope_400Regular', fontSize: 15, lineHeight: 20, backgroundColor: T.bg, borderRadius: R.inner, paddingHorizontal: S.md, paddingVertical: S.md, borderWidth: 1, borderColor: T.line }} />);
-export const Button = ({ title, onPress, kind = 'primary' }: { title: string; onPress: () => void; kind?: 'primary' | 'secondary' }) => (
-  <RNPressable onPress={onPress} accessibilityRole="button" style={{ backgroundColor: kind === 'primary' ? T.pink : T.card, borderWidth: 1, borderColor: kind === 'primary' ? T.pink : T.line, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs }}>
+export const Button = ({ title, onPress, kind = 'primary', disabled }: { title: string; onPress: () => void; kind?: 'primary' | 'secondary'; disabled?: boolean }) => (
+  <RNPressable onPress={onPress} disabled={disabled} accessibilityRole="button" style={{ backgroundColor: kind === 'primary' ? T.pink : T.card, borderWidth: 1, borderColor: kind === 'primary' ? T.pink : T.line, paddingVertical: S.md + 2, borderRadius: R.pill, alignItems: 'center', marginTop: S.xs, opacity: disabled ? 0.5 : 1 }}>
     <Text style={{ color: kind === 'primary' ? T.onPrimary : T.pink, fontWeight: '700' }}>{title}</Text>
   </RNPressable>);
 export const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (

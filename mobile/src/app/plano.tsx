@@ -3,7 +3,7 @@ import { Alert, View } from 'react-native';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import { Button, Card, Chip, Eyebrow, Field, Measure, Screen, SectionTitle, Txt } from '../components/ui';
 import { EyeToggle } from '../components/EyeToggle';
-import { PLAN_PROFILES, Plan, PlanProfile, REMINDER_DAYS, ageLabel, ageNow, brl, compactBRL, isPositive, parseNumberBR, planPath, planSummary, planTracking, toISO, total, validatePlan } from '../core';
+import { PLAN_PROFILES, Plan, PlanProfile, REMINDER_DAYS, ageLabel, ageNow, brl, compactBRL, isPositive, parseNumberBR, planPath, planSummary, planTracking, reseedGoalMilestones, toISO, total, validatePlan } from '../core';
 import { usePilinha } from '../lib/store';
 import { permissionGranted, requestPermission } from '../lib/alerts';
 import { T, S, R } from '../lib/theme';
@@ -37,11 +37,12 @@ export default function PlanoScreen() {
     const sameAge = saved && Math.floor(ageNow(saved, now)) === vals.age;
     const plan: Plan = { age: sameAge ? saved!.age : vals.age, ageAsOf: sameAge ? saved!.ageAsOf : toISO(now).slice(0, 7), targetAge: vals.targetAge, monthly: vals.monthly, profile: f.profile,
       startDate: changed ? toISO(now) : saved!.startDate, startAmount: changed ? current : saved!.startAmount, reminderDay: f.reminderDay };
-    await setSettings({ ...settings, goal: vals.target, plan });
+    // Meta nova ou alterada: os marcos de meta já alcançados entram como vistos, para o Início não comemorar algo que ela não acabou de conquistar. Sem cotação na tela, fica como está.
+    await setSettings({ ...settings, goal: vals.target, plan, milestonesSeen: snap && settings.goal !== vals.target ? reseedGoalMilestones(settings.milestonesSeen, current, vals.target) : settings.milestonesSeen });
     Alert.alert('Plano salvo', f.reminderDay ? `Você recebe um lembrete todo dia ${f.reminderDay}, às 9h.` : 'O acompanhamento aparece no Início.');
   };
   const remove = () => Alert.alert('Remover plano', 'A meta e o plano saem do Início. Seus investimentos não mudam.', [{ text: 'Cancelar', style: 'cancel' },
-    { text: 'Remover', style: 'destructive', onPress: () => { setSettings({ ...settings, goal: null, plan: null }); setF({ target: '', age: '', targetAge: '', monthly: '', profile: 'moderado', reminderDay: null }); } }]);
+    { text: 'Remover', style: 'destructive', onPress: () => { setSettings({ ...settings, goal: null, plan: null, milestonesSeen: reseedGoalMilestones(settings.milestonesSeen, current, null) }); setF({ target: '', age: '', targetAge: '', monthly: '', profile: 'moderado', reminderDay: null }); } }]);
   const reachTxt = (a: number | null) => (a == null ? 'não chega antes dos 100 anos' : `chega aos ${ageLabel(a)}`);
   const form = (
       <Card>

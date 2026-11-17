@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Card, Eyebrow, Measure, Screen, SectionTitle, Txt, money } from '../../components/ui';
-import { CashDividend, DividendSource, MonthlyDividends, defaultFetcher, dividendCalendar, dividendsByMonth, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA } from '../../core';
+import { CashDividend, DividendSource, MonthlyDividends, defaultFetcher, dividendCalendar, dividendsByMonth, incomeSummary, parseYahooDividends, toBR, yahooDivURL, BROWSER_UA } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
 import { T, S } from '../../lib/theme';
@@ -11,6 +11,7 @@ import { T, S } from '../../lib/theme';
 // Fontes (brapi, Yahoo, lançamento manual) viram só "estimado" ou "lançado por você".
 const srcLabel = (s: DividendSource) => (s === 'manual' ? 'lançado por você' : 'estimado');
 const dateBR = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const pc = (v: number) => v.toFixed(2).replace('.', ',');
 const Row = ({ date, title, sub, value, last }: { date: string; title: string; sub: string; value: string; last: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderBottomWidth: last ? 0 : 1, borderBottomColor: T.line }}>
     <View style={{ width: 64 }}><Txt style={{ fontWeight: '600', fontSize: 14 }}>{date.slice(0, 5)}</Txt><Txt dim style={{ fontSize: 11 }}>{date.slice(6)}</Txt></View>
@@ -31,6 +32,8 @@ export default function Proventos() {
   }, [qty, snap?.cash]);
   const cash = useMemo(() => [...(snap?.cash ?? []), ...yahoo], [snap?.cash, yahoo]);
   const m = useMemo(() => dividendsByMonth(portfolio.stocks, cash, portfolio.manualDividends ?? []), [portfolio, cash]);
+  // Renda passiva: o que as ações e FIIs de hoje pagaram em 12 meses, contra o valor de hoje e contra o que foi pago.
+  const inc = useMemo(() => incomeSummary(snap?.items ?? [], m.byTicker), [snap?.items, m.byTicker]);
   const upcoming = dividendCalendar(cash, qty).upcoming;
   const nx = upcoming[0];
   if (!snap) return <Screen><Txt dim>Carregando…</Txt></Screen>;
@@ -45,6 +48,17 @@ export default function Proventos() {
         {nx ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm, marginTop: S.xs }}><MaterialCommunityIcons name="calendar-clock" size={18} color={T.lilacDeep} /><Txt style={{ flex: 1 }}>Próximo: {nx.ticker} em {toBR(nx.date)}</Txt><Txt style={{ fontWeight: '600' }}>{nx.total > 0 ? money(nx.total, hidden) : ''}</Txt></View> : null}
         <Txt dim style={{ fontSize: 12 }}>Dividendos e rendimentos de ações e FIIs, pela data em que caíram na conta.</Txt>
       </Card>
+      {inc.annual > 0 && <Card style={{ gap: 0 }}>
+        <SectionTitle first>Renda passiva</SectionTitle>
+        <Txt style={{ fontSize: 22, lineHeight: 28, fontWeight: '700' }}>≈ {money(inc.monthly, hidden)} por mês</Txt>
+        {inc.yieldPct != null ? <Txt dim style={{ fontSize: 13, marginBottom: S.xs }}>Rendimento da carteira de ações e FIIs: {pc(inc.yieldPct)}% ao ano</Txt> : null}
+        {inc.rows.map((r, i, arr) => (
+          <View key={r.ticker} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: T.line }}>
+            <View style={{ flex: 1 }}><Txt style={{ fontWeight: '700' }}>{r.ticker}</Txt>{r.yocPct != null ? <Txt dim style={{ fontSize: 12 }}>{pc(r.yocPct)}% sobre o que você pagou</Txt> : null}</View>
+            <Txt style={{ fontWeight: '600', textAlign: 'right' }}>{r.dyPct != null ? `${pc(r.dyPct)}% a.a.` : '—'}</Txt>
+          </View>))}
+        <Txt dim style={{ fontSize: 12, marginTop: S.sm }}>Estimativa pelos proventos dos últimos 12 meses. Não garante o que vem pela frente.</Txt>
+      </Card>}
       {m.byTicker.length > 0 && <Card style={{ gap: 0 }}>
         <SectionTitle first>De qual ativo</SectionTitle>
         {m.byTicker.map((x, i, arr) => (

@@ -3,8 +3,8 @@ import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Rect } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { Card, Chip, SectionTitle, Screen, Txt, AssetRow, Measure, money } from '../../components/ui';
-import { ALLOC_ORDERS, AllocOrder, AllocSlice, allocation, groupItems, pct, brl, sharePct, sortAllocation, WatchRow } from '../../core';
+import { Button, Card, Chip, Field, SectionTitle, Screen, Txt, AssetRow, Measure, money } from '../../components/ui';
+import { ALLOC_ORDERS, ALLOC_TITLES, AllocOrder, AllocSlice, AllocTargets, allocation, aporteSuggestion, groupItems, parseNumberBR, pct, brl, sharePct, sortAllocation, WatchRow } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
 import { S, T } from '../../lib/theme';
@@ -18,7 +18,10 @@ export default function Carteira() {
   // Páginas: Distribuição, um bloco por grupo e os favoritos. Passa com o dedo ou toca no título; bolinhas embaixo.
   const slices = sortAllocation(allocation(snap!.items, T.scheme === 'dark'), order);
   const pages: { key: string; title: string; node: React.ReactNode }[] = [
-    ...(slices.length ? [{ key: 'dist', title: 'Distribuição', node: <Allocation slices={slices} hidden={hidden} order={order} setOrder={o => setSettings({ ...settings, allocOrder: o })} chart={chart} setChart={c => setSettings({ ...settings, allocChart: c })} /> }] : []),
+    ...(slices.length ? [{ key: 'dist', title: 'Distribuição', node: <View style={{ gap: S.lg }}>
+        <Allocation slices={slices} hidden={hidden} order={order} setOrder={o => setSettings({ ...settings, allocOrder: o })} chart={chart} setChart={c => setSettings({ ...settings, allocChart: c })} />
+        <Aporte key={settings.plan?.monthly ?? 0} slices={slices} targets={settings.allocTargets} monthly={settings.plan?.monthly} hidden={hidden} open={() => router.push('/alocacao')} />
+      </View> }] : []),
     ...groupItems(snap!.items).map(g => ({ key: g.key, title: g.title, node: (
         <Card style={{ paddingBottom: S.xs, gap: 0 }}>
           <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>
@@ -103,6 +106,38 @@ function Allocation({ slices, hidden, order, setOrder, chart, setChart }: { slic
             <Txt style={{ fontWeight: '700', width: 52, textAlign: 'right' }}>{sharePct(sl.pct)}</Txt>
           </View>))}
       </View>
+    </Card>);
+}
+/** Onde aportar este mês: com a distribuição ideal definida, divide o aporte só com compras. O valor digitado não é salvo (a key remonta se o aporte do plano mudar). */
+function Aporte({ slices, targets, monthly, hidden, open }: { slices: AllocSlice[]; targets: AllocTargets | null; monthly?: number; hidden: boolean; open: () => void }) {
+  const [amount, setAmount] = useState(monthly != null && monthly > 0 ? monthly.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '');
+  if (!targets) return (
+    <Card>
+      <SectionTitle first>Onde aportar este mês</SectionTitle>
+      <Txt dim style={{ fontSize: 13 }}>Diga quanto quer ter em cada tipo e o Pilinvest mostra onde colocar o aporte do mês para chegar lá, sem vender nada.</Txt>
+      <Button title="Definir distribuição ideal" onPress={open} />
+    </Card>);
+  const rows = aporteSuggestion(slices, targets, parseNumberBR(amount)), sum = rows.reduce((a, r) => a + r.suggest, 0);
+  return (
+    <Card>
+      <SectionTitle first>Onde aportar este mês</SectionTitle>
+      <Txt dim style={{ fontSize: 13 }}>Quanto vai aportar</Txt>
+      {/* escondido: o campo vira senha, como os outros valores em R$ */}
+      <Field placeholder="R$ 1.000" keyboardType="decimal-pad" secureTextEntry={hidden} value={amount} onChangeText={setAmount} accessibilityLabel="Quanto vai aportar" />
+      <View>
+        {rows.map((r, i) => {
+          const title = slices.find(s => s.key === r.key)?.title ?? ALLOC_TITLES[r.key], pcts = `hoje ${sharePct(r.currentPct)} → ideal ${sharePct(r.targetPct)}`;
+          const value = !(sum > 0) ? '—' : hidden ? `${sharePct((r.suggest / sum) * 100)} do aporte` : money(r.suggest, hidden);
+          return (
+            <View key={r.key} accessible accessibilityLabel={`${title}: ${pcts.replace(' →', ',')}${sum > 0 ? `, aportar ${value}` : ''}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.sm, borderTopWidth: i ? 1 : 0, borderTopColor: T.line }}>
+              <View style={{ flex: 1 }}><Txt style={{ fontWeight: '600' }}>{title}</Txt><Txt dim style={{ fontSize: 12 }}>{pcts}</Txt></View>
+              <Txt style={{ fontWeight: '700' }}>{value}</Txt>
+            </View>);
+        })}
+      </View>
+      <Pressable onPress={open} hitSlop={12} accessibilityRole="link" accessibilityHint="Abre a distribuição ideal" style={{ alignSelf: 'flex-start' }}><Txt style={{ color: T.pink, fontWeight: '700' }}>Editar distribuição</Txt></Pressable>
+      <Txt dim style={{ fontSize: 12 }}>Sugestão só com compras, sem vender nada. Não é recomendação de investimento.</Txt>
     </Card>);
 }
 function Watch({ rows, hidden }: { rows: WatchRow[]; hidden: boolean }) {
