@@ -99,11 +99,11 @@ export default function Alertas() {
       </Card>
       <Card>
         <SectionTitle first>Fechamento do dólar</SectionTitle>
-        <ToggleRow label="Avisar o fechamento todo dia útil" hint="Às 17h10 chega o aviso com a variação do dia e a manchete do motivo, mesmo com o app fechado. Toque no aviso para ler a notícia." value={usd.enabled} onChange={v => setUsd({ enabled: v })} />
+        <ToggleRow label="Avisar o fechamento todo dia útil" hint="O dólar comercial fecha às 17h (Brasília). Às 17h05 dos dias úteis chega o aviso com a variação do fechamento e a manchete do motivo, mesmo com o app fechado. Fim de semana e feriado não têm aviso." value={usd.enabled} onChange={v => setUsd({ enabled: v })} />
         {usd.enabled ? <>
           <ToggleRow label="Só quando cair" hint="Desligado: avisa também quando subir" value={!!usd.onlyDrops} onChange={v => setUsd({ onlyDrops: v })} />
           {snap?.usdBRL != null ? <Txt dim style={{ fontSize: 13 }}>Dólar agora: R$ {snap.usdBRL.toFixed(2).replace('.', ',')}{snap.usdChangePct != null ? ` (${(snap.usdChangePct >= 0 ? '+' : '') + snap.usdChangePct.toFixed(2).replace('.', ',')}% hoje)` : ''}</Txt> : null}
-          <Txt dim style={{ fontSize: 12 }}>Com o app fechado, o iPhone entrega às 17h10 um aviso curto ("Dólar fechou hoje"); tocando nele o app abre com a cotação e o motivo. Quando o app consegue buscar o fechamento antes, o aviso já vem completo. A manchete vem do Google Notícias (busca fixa; nada da sua carteira é enviado).</Txt>
+          <Txt dim style={{ fontSize: 12 }}>Com o app fechado, o iPhone entrega às 17h05 (Brasília) um aviso curto ("Dólar fechou hoje"); tocando nele o app abre com a cotação e o motivo. A variação é a do fechamento das 17h contra o fechamento do dia útil anterior, não a do momento; se a cotação das 17h ainda não saiu, o app espera e tenta de novo. Quando o app consegue buscar o fechamento antes, o aviso já vem completo. A manchete vem do Google Notícias (busca fixa; nada da sua carteira é enviado).</Txt>
         </> : null}
       </Card>
       <Card>

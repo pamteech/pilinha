@@ -33,39 +33,54 @@ test('escolhe a manchete que explica a queda (não a da alta, nem turismo, nem a
   expect(pickUsdNews([], 'down', NOW)).toBeNull();
   expect(pickUsdNews([{ title: 'Ibovespa fecha em alta', link: 'https://x.y/z', source: null, publishedAt: null }], 'down', NOW)).toBeNull();
 });
-test('janela do fechamento: 17h–23h59 vale hoje; 0h–8h59 vale ontem; pregão aberto e fim de semana não', () => {
+test('janela do fechamento: 17h–23h59 vale hoje; 0h–8h59 vale ontem; pregão aberto, fim de semana e feriado não', () => {
   expect(usdSessionDay(new Date('2026-11-05T20:30:00Z'))).toBe('2026-11-05'); // qui 17h30
+  expect(usdSessionDay(new Date('2026-11-05T20:00:00Z'))).toBe('2026-11-05'); // qui 17h00 em ponto
+  expect(usdSessionDay(new Date('2026-11-05T19:59:59Z'))).toBeNull(); // qui 16h59:59, ainda aberto
   expect(usdSessionDay(new Date('2026-11-06T02:59:00Z'))).toBe('2026-11-05'); // qui 23h59
   expect(usdSessionDay(new Date('2026-11-06T10:00:00Z'))).toBe('2026-11-05'); // sex 7h → fechamento de quinta
   expect(usdSessionDay(new Date('2026-11-05T15:00:00Z'))).toBeNull(); // qui 12h, aberto
   expect(usdSessionDay(new Date('2026-11-07T13:00:00Z'))).toBeNull(); // sáb 10h
+  expect(usdSessionDay(new Date('2026-11-07T21:00:00Z'))).toBeNull(); // sáb 18h
   expect(usdSessionDay(new Date('2026-11-07T05:00:00Z'))).toBe('2026-11-06'); // sáb 2h → fechamento de sexta
   expect(usdSessionDay(new Date('2026-11-09T05:00:00Z'))).toBeNull(); // seg 2h → "ontem" é domingo
+  expect(usdSessionDay(new Date('2026-11-20T21:00:00Z'))).toBeNull(); // sex 20/11 18h: Consciência Negra, sem sessão
+  expect(usdSessionDay(new Date('2026-11-21T05:00:00Z'))).toBeNull(); // sáb 2h, "ontem" foi feriado
+  expect(usdSessionDay(new Date('2026-11-03T05:00:00Z'))).toBeNull(); // ter 2h, "ontem" foi Finados
 });
-test('usdCloseDue: ligado, depois do fechamento, uma vez por sessão, alta ou queda; "só quedas" opcional', () => {
+test('usdCloseDue: ligado, depois das 17h, uma vez por sessão, só com o fechamento DO DIA; "só quedas" opcional', () => {
   const cfg = defaultUsdAlert(); expect(cfg).toEqual({ enabled: true, onlyDrops: false });
-  expect(usdCloseDue({ changePct: -0.8 }, cfg, null, NOW)).toBe('2026-11-05');
-  expect(usdCloseDue({ changePct: 0.3 }, cfg, null, NOW)).toBe('2026-11-05'); // subiu: avisa também
-  expect(usdCloseDue({ changePct: 0 }, cfg, null, NOW)).toBe('2026-11-05'); // estável: avisa
-  expect(usdCloseDue({ changePct: -0.8 }, cfg, '2026-11-05', NOW)).toBeNull(); // já avisou
-  expect(usdCloseDue({ changePct: -0.8 }, cfg, '2026-11-04', NOW)).toBe('2026-11-05');
-  expect(usdCloseDue({ changePct: null }, cfg, null, NOW)).toBeNull();
-  expect(usdCloseDue({ changePct: -0.8 }, { enabled: false }, null, NOW)).toBeNull();
-  expect(usdCloseDue({ changePct: 0.3 }, { enabled: true, onlyDrops: true }, null, NOW)).toBeNull(); // só quedas
-  expect(usdCloseDue({ changePct: -0.3 }, { enabled: true, onlyDrops: true }, null, NOW)).toBe('2026-11-05');
-  expect(usdCloseDue({ changePct: -0.8 }, cfg, null, new Date('2026-11-05T15:00:00Z'))).toBeNull(); // meio-dia
+  const c = (changePct: number | null, day = '2026-11-05') => ({ day, changePct: changePct as number });
+  expect(usdCloseDue(c(-0.8), cfg, null, NOW)).toBe('2026-11-05');
+  expect(usdCloseDue(c(0.3), cfg, null, NOW)).toBe('2026-11-05'); // subiu: avisa também
+  expect(usdCloseDue(c(0), cfg, null, NOW)).toBe('2026-11-05'); // estável: avisa
+  expect(usdCloseDue(c(-0.8), cfg, '2026-11-05', NOW)).toBeNull(); // já avisou
+  expect(usdCloseDue(c(-0.8), cfg, '2026-11-04', NOW)).toBe('2026-11-05');
+  expect(usdCloseDue(c(null), cfg, null, NOW)).toBeNull();
+  expect(usdCloseDue(null, cfg, null, NOW)).toBeNull(); // fechamento ainda não saiu: espera
+  expect(usdCloseDue(c(-0.8, '2026-11-04'), cfg, null, NOW)).toBeNull(); // fechamento de ontem não vale como o de hoje
+  expect(usdCloseDue(c(-0.8), { enabled: false }, null, NOW)).toBeNull();
+  expect(usdCloseDue(c(0.3), { enabled: true, onlyDrops: true }, null, NOW)).toBeNull(); // só quedas
+  expect(usdCloseDue(c(-0.3), { enabled: true, onlyDrops: true }, null, NOW)).toBe('2026-11-05');
+  expect(usdCloseDue(c(-0.8), cfg, null, new Date('2026-11-05T15:00:00Z'))).toBeNull(); // meio-dia
   // ajuste antigo (build 23/24) ainda abre
-  expect(usdCloseDue({ changePct: 0.5 }, { enabled: true, minDropPct: 1 } as any, null, NOW)).toBe('2026-11-05');
+  expect(usdCloseDue(c(0.5), { enabled: true, minDropPct: 1 } as any, null, NOW)).toBe('2026-11-05');
   expect(usdDirection(-0.5)).toBe('down'); expect(usdDirection(0.004)).toBe('flat'); expect(usdDirection(0.2)).toBe('up');
 });
-test('lembretes locais: 17h10 de Brasília nos próximos dias úteis, hoje só se ainda não passou', () => {
+test('lembretes locais: 17h05 de Brasília nos próximos dias úteis de câmbio, hoje só se ainda não passou', () => {
   const s = usdCloseSchedule(new Date('2026-11-05T15:00:00Z'), 3); // qui 12h
   expect(s.map(x => x.day)).toEqual(['2026-11-05', '2026-11-06', '2026-11-09']); // qui, sex, seg
-  expect(s[0].date.toISOString()).toBe('2026-11-05T20:10:00.000Z');
+  expect(s[0].date.toISOString()).toBe('2026-11-05T20:05:00.000Z');
   expect(usdCloseSchedule(new Date('2026-11-05T20:30:00Z'), 2).map(x => x.day)).toEqual(['2026-11-06', '2026-11-09']); // qui 17h30: hoje já passou
+  expect(usdCloseSchedule(new Date('2026-11-05T20:04:00Z'), 1).map(x => x.day)).toEqual(['2026-11-05']); // 17h04: ainda dá
   expect(usdCloseSchedule(new Date('2026-11-07T13:00:00Z'), 10)).toHaveLength(10); // sábado: 10 dias úteis à frente
+  // semana do feriado: 20/11 (sexta, Consciência Negra) fica de fora
+  expect(usdCloseSchedule(new Date('2026-11-18T12:00:00Z'), 3).map(x => x.day)).toEqual(['2026-11-18', '2026-11-19', '2026-11-23']);
+  // fim de ano: 25/12 e 31/12 sem sessão; 1/1 também
+  expect(usdCloseSchedule(new Date('2026-12-24T12:00:00Z'), 4).map(x => x.day)).toEqual(['2026-12-24', '2026-12-28', '2026-12-29', '2026-12-30']);
+  expect(usdCloseSchedule(new Date('2026-12-31T12:00:00Z'), 1).map(x => x.day)).toEqual(['2027-01-04']);
   expect(usdReminder('2026-11-06')).toEqual({ id: 'usd-close-2026-11-06', title: 'Dólar fechou hoje', body: 'Toque para ver a cotação de fechamento e o motivo.' });
-  expect(usdReminderTime('2026-11-06').toISOString()).toBe('2026-11-06T20:10:00.000Z');
+  expect(usdReminderTime('2026-11-06').toISOString()).toBe('2026-11-06T20:05:00.000Z');
 });
 test('texto do aviso com e sem notícia; só https vai para o navegador', () => {
   const n = usdNotification({ bid: 5.3212, changePct: -0.82 }, parseRSS(xml)[0]);

@@ -7,6 +7,7 @@ export * from './treasury'; export * from './watchlist';
 export * from './privacy';
 export * from './cache';
 export * from './cadastro';
+export * from './usdclose';
 export * from './news';
 export * from './plan';
 export * from './maturity';

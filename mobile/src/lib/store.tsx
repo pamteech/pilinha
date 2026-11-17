@@ -49,12 +49,16 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
       // Alertas: ativos fora da carteira (ação que ela ainda não tem, dólar, bitcoin) têm a cotação buscada à parte.
       quotesForAlerts([...alRef.current, ...watchAlerts(p.watchlist)], s, token).then(q => checkAndNotify(q)).catch(() => {});
       // Dólar: aviso do fechamento (alta ou queda) e, no Início, a manchete do motivo (só com o aviso ligado nos Alertas).
-      const fx = { bid: s.usdBRL, changePct: s.usdChangePct };
-      checkUsdClose(fx, setRef.current).then(() => scheduleUsdCloseReminders(usdAlertOf(setRef.current).enabled)).catch(() => {});
-      if (usdAlertOf(setRef.current).enabled && fx.changePct != null && Math.abs(fx.changePct) >= 0.01) {
-        const dir: UsdDirection = fx.changePct < 0 ? 'down' : 'up', pctNow = fx.changePct;
-        fetchUsdNews(dir).then(item => { if (gate.isLatest(my)) setUsdNews(item ? { dir, pct: pctNow, item } : null); }).catch(() => {});
-      } else setUsdNews(null);
+      // Depois das 17h (Brasília) o card usa a variação do fechamento, a mesma do aviso; antes, a do momento.
+      const usdOn = usdAlertOf(setRef.current).enabled;
+      const showUsdNews = (pc: number | null | undefined) => {
+        if (usdOn && pc != null && Math.abs(pc) >= 0.01) {
+          const dir: UsdDirection = pc < 0 ? 'down' : 'up';
+          fetchUsdNews(dir).then(item => { if (gate.isLatest(my)) setUsdNews(item ? { dir, pct: pc, item } : null); }).catch(() => {});
+        } else if (gate.isLatest(my)) setUsdNews(null);
+      };
+      checkUsdClose(setRef.current).then(r => { scheduleUsdCloseReminders(usdAlertOf(setRef.current).enabled); showUsdNews(r.close?.changePct ?? s.usdChangePct); })
+        .catch(() => showUsdNews(s.usdChangePct));
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
       const old = await S.loadHistory();
       if (s.errors.length) setH(old); else { const h = record(old, total(s), totalInvested(s), totalNet(s)); setH(h); await S.saveHistory(h); }
@@ -130,7 +134,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const setSettings = async (x: S.Settings) => {
     setSettingsState(x); setRef.current = x; await S.saveSettings(x);
     await syncBackgroundTask(needsBackground(pRef.current, alerts, x));
-    if (!usdAlertOf(x).enabled) setUsdNews(null); else if (snapRef.current) checkUsdClose({ bid: snapRef.current.usdBRL, changePct: snapRef.current.usdChangePct }, x).catch(() => {});
+    if (!usdAlertOf(x).enabled) setUsdNews(null); else checkUsdClose(x).catch(() => {});
     await scheduleUsdCloseReminders(usdAlertOf(x).enabled);
     await scheduleAporteReminder(x.plan?.reminderDay);
   };

@@ -1,5 +1,6 @@
 import { parseISO, toISO } from './dates';
 import { brl, pct } from './format';
+import { USD_REMINDER_HOUR, USD_REMINDER_MINUTE, UsdClose, isFxBusinessDay, usdCloseTime } from './usdclose';
 /**
  * Dólar fechou em queda → aviso com a notícia do porquê (ex. "Dólar fecha em queda com derrota de Trump no Senado").
  * As manchetes vêm do RSS público do Google Notícias com uma busca FIXA ("dólar hoje"): nada da carteira sai do aparelho.
@@ -16,8 +17,6 @@ export type UsdDirection = 'down' | 'up';
 /** Aviso do fechamento do dólar (Alertas): todo dia útil, caiu ou subiu; `onlyDrops` limita às quedas. */
 export interface UsdAlert { enabled: boolean; onlyDrops?: boolean; /** antigo (build 23/24): queda mínima em %; ignorado */ minDropPct?: number }
 export const defaultUsdAlert = (): UsdAlert => ({ enabled: true, onlyDrops: false });
-/** Hora do lembrete local (Brasília): o dólar comercial fecha às 17h. */
-export const USD_CLOSE_HOUR = 17, USD_CLOSE_MINUTE = 10;
 
 const ENT: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 export const decodeEntities = (s: string) =>
@@ -73,30 +72,38 @@ export function pickUsdNews(items: NewsItem[], dir: UsdDirection, now = new Date
   return best?.n ?? null;
 }
 
-// Fechamento do dólar comercial: ~17h de Brasília, dias úteis (sem feriados: dia sem pregão a cotação não muda e não há queda).
-const bsb = (now: Date) => new Date(now.getTime() - 3 * 3600_000);
-const weekday = (d: Date) => { const w = d.getUTCDay(); return w >= 1 && w <= 5; };
+// Fechamento do dólar comercial: 17h de Brasília, só em dia útil de câmbio (fim de semana e feriado nacional: sem aviso). Ver usdclose.ts.
 /**
- * Dia (AAAA-MM-DD) da sessão cujo fechamento esta cotação representa, ou null fora da janela:
- * das 17h às 23h59 é o dia de hoje; da 0h às 8h59 ainda vale o fechamento de ontem (a cotação não muda de noite).
+ * Dia (AAAA-MM-DD) da sessão cujo fechamento vale agora, ou null fora da janela:
+ * das 17h às 23h59 é o dia de hoje; da 0h às 8h59 ainda vale o fechamento de ontem (se ontem teve sessão).
+ * Sempre no horário de Brasília, qualquer que seja o fuso do aparelho.
  */
 export function usdSessionDay(now: Date): string | null {
-  const b = bsb(now), h = b.getUTCHours();
-  if (h >= 17 && weekday(b)) return toISO(now);
-  if (h < 9) { const y = new Date(b.getTime() - 86400_000); if (weekday(y)) return toISO(new Date(now.getTime() - 86400_000)); }
+  const today = toISO(now);
+  if (now.getTime() >= usdCloseTime(today).getTime()) return isFxBusinessDay(today) ? today : null;
+  if (now.getTime() < parseISO(today)!.getTime() + 9 * 3600_000) { const y = toISO(new Date(parseISO(today)!.getTime() - 12 * 3600_000)); return isFxBusinessDay(y) ? y : null; }
   return null;
 }
 /** Direção do dia: abaixo de 0,01% em módulo conta como estável. */
 export const usdDirection = (changePct: number): UsdDirection | 'flat' => (changePct <= -0.01 ? 'down' : changePct >= 0.01 ? 'up' : 'flat');
 /**
- * Dia da sessão a avisar, ou null: aviso ligado, cotação com variação do dia, depois do fechamento e ainda não avisado.
- * Com `onlyDrops`, só quando caiu.
+ * Dia da sessão a avisar, ou null: aviso ligado, já passou das 17h de um dia útil, ainda não avisado
+ * e o fechamento (`close`) é DESSE dia — preço das 17h, nunca um preço do meio do pregão. Com `onlyDrops`, só quando caiu.
  */
-export function usdCloseDue(q: { changePct: number | null | undefined }, cfg: UsdAlert, firedDay: string | null | undefined, now = new Date()): string | null {
-  if (!cfg?.enabled || q.changePct == null || !Number.isFinite(q.changePct)) return null;
-  if (cfg.onlyDrops && usdDirection(q.changePct) !== 'down') return null;
-  const day = usdSessionDay(now); if (!day || firedDay === day) return null;
+export function usdCloseDue(close: Pick<UsdClose, 'day' | 'changePct'> | null | undefined, cfg: UsdAlert, firedDay: string | null | undefined, now = new Date()): string | null {
+  if (!cfg?.enabled || !close || close.changePct == null || !Number.isFinite(close.changePct)) return null;
+  const day = usdSessionDay(now); if (!day || firedDay === day || close.day !== day) return null;
+  if (cfg.onlyDrops && usdDirection(close.changePct) !== 'down') return null;
   return day;
+}
+/**
+ * Fechamento da sessão que vale agora (preço das 17h de Brasília), ou null: fora da janela (antes das 17h, fim de semana, feriado)
+ * ou a fonte ainda não publicou o preço das 17h. Quem chama tenta de novo depois; nunca cai para a cotação do momento.
+ */
+export async function sessionUsdClose(now: Date, fetchClose: (day: string) => Promise<UsdClose | null>): Promise<UsdClose | null> {
+  const day = usdSessionDay(now); if (!day) return null;
+  const c = await fetchClose(day).catch(() => null);
+  return c && c.day === day && Number.isFinite(c.close) && c.close > 0 ? c : null;
 }
 export interface UsdNotification { title: string; body: string; url: string }
 /** Texto do aviso. Ex.: "Dólar fechou em queda (−0,82%)" / "R$ 5,32 · Possível motivo: Dólar cai com derrota de Trump no Senado (InfoMoney). Toque para ler." */
@@ -111,15 +118,15 @@ export function usdNotification(q: { bid: number | null | undefined; changePct: 
 /** Lembrete genérico agendado no iPhone (vale mesmo com o app fechado); o app troca pelo completo quando consegue buscar o fechamento antes. */
 export const USD_REMINDER_PREFIX = 'usd-close-';
 export const usdReminder = (day: string) => ({ id: `${USD_REMINDER_PREFIX}${day}`, title: 'Dólar fechou hoje', body: 'Toque para ver a cotação de fechamento e o motivo.' });
-/** Instante do lembrete do dia (17h10 de Brasília), para um AAAA-MM-DD. */
-export const usdReminderTime = (day: string) => new Date(parseISO(day)!.getTime() + (USD_CLOSE_HOUR * 60 + USD_CLOSE_MINUTE) * 60_000);
-/** Próximos `count` dias úteis cujo lembrete ainda está no futuro (hoje incluído se ainda não deu 17h10). */
+/** Instante do lembrete do dia (17h05 de Brasília, logo depois do fechamento das 17h), para um AAAA-MM-DD. */
+export const usdReminderTime = (day: string) => new Date(parseISO(day)!.getTime() + (USD_REMINDER_HOUR * 60 + USD_REMINDER_MINUTE) * 60_000);
+/** Próximos `count` dias úteis de câmbio (sem fim de semana nem feriado) cujo lembrete ainda está no futuro (hoje incluído se ainda não deu 17h05). */
 export function usdCloseSchedule(now: Date, count = 10): { day: string; date: Date }[] {
   const out: { day: string; date: Date }[] = [];
-  for (let i = 0; out.length < count && i < count * 2 + 7; i++) {
-    const d = new Date(now.getTime() + i * 86400_000), b = bsb(d);
-    if (!weekday(b)) continue;
-    const day = toISO(d), date = usdReminderTime(day);
+  for (let i = 0; out.length < count && i < count * 2 + 14; i++) {
+    const day = toISO(new Date(now.getTime() + i * 86400_000));
+    if (!isFxBusinessDay(day)) continue;
+    const date = usdReminderTime(day);
     if (date.getTime() > now.getTime()) out.push({ day, date });
   }
   return out;

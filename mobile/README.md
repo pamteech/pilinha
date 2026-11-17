@@ -15,7 +15,7 @@ O Mac manda a carteira cifrada; o iPhone junta com a dele por um merge de três 
 guardada no aparelho). O Mac só substitui um item que mudou **lá**; o que foi editado no iPhone (quantidade, dólar, remoção) fica. Testes em `macmerge.test.ts`.
 
 ## Aviso do dólar
-Depois das 17h, em dia útil, se o dólar fechou em queda: notificação com a manchete do motivo (RSS público do Google Notícias, busca fixa "dólar hoje")
+Depois das 17h de Brasília (fechamento do dólar à vista), em dia útil de câmbio (sem fim de semana nem feriado nacional), com a variação do fechamento das 17h (Yahoo BRL=X, 5 min) contra as 17h do dia útil anterior: notificação com a manchete do motivo (RSS público do Google Notícias, busca fixa "dólar hoje")
 e link para a matéria; o mesmo card aparece no Início. Ligado por padrão, limiar e desligar em Alertas. Código em `src/core/news.ts` (testes em `usdnews.test.ts`),
 `src/lib/news.ts` e `src/lib/alerts.ts`.
 
