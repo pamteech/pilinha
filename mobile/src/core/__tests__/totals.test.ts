@@ -113,7 +113,9 @@ describe('separação dos totais (investimentos × dólar)', () => {
     expect(home).toMatch(/EyeToggle/);
     expect(home).toMatch(/onOpenCarteira=\{\(\) => router\.navigate\('\/carteira'\)\}/);
     expect(carteira).toMatch(/cdiAnnual=\{snap\.cdiAnnual\}/);
-    expect(ui).toMatch(/borderTopWidth: 1, borderTopColor: T\.line/);
+    expect(ui).toMatch(/borderTopWidth: StyleSheet\.hairlineWidth/);
+    expect(ui).toMatch(/\btabular\b/);
+    expect(theme).toMatch(/tabular-nums/);
     expect(theme).toMatch(/card: '#1F1F23'/);
     expect(theme).not.toMatch(/card: '#241A33'/);
     expect(src + ui + home + carteira).not.toMatch(/nubank|Nubank|820AD1/i);

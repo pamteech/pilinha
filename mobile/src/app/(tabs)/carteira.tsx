@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Rect } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { Button, Card, Chip, Field, SectionTitle, Screen, Txt, AssetRow, AssetCard, Measure, money } from '../../components/ui';
-import { TotalsSplit } from '../../components/TotalsSplit';
+import { TotalsSkeleton, TotalsSplit } from '../../components/TotalsSplit';
 import { ALLOC_ORDERS, ALLOC_TITLES, AllocOrder, AllocSlice, AllocTargets, allocation, aporteSuggestion, groupItems, parseNumberBR, pct, brl, sharePct, sortAllocation, WatchRow, LineItem } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
@@ -15,7 +15,17 @@ export default function Carteira() {
   const router = useRouter();
   const order: AllocOrder = settings.allocOrder ?? 'value'; const chart = settings.allocChart ?? 'donut';
   const add = () => router.push('/adicionar');
-  if (!snap?.items.length && !snap?.watch?.length) return <Screen><Txt dim>{snap ? 'Nada cadastrado ainda.' : 'Carregando…'}</Txt>{snap ? <AddButton onPress={add} /> : null}</Screen>;
+  if (!snap) return <Screen><EyeToggle /><TotalsSkeleton /></Screen>;
+  if (!snap.items.length && !snap.watch?.length) return (
+    <Screen>
+      <EyeToggle />
+      <Card style={{ padding: S.xl, alignItems: 'center', gap: S.md }}>
+        <MaterialCommunityIcons name="wallet-outline" size={32} color={T.pink} />
+        <Txt style={{ fontWeight: '700', textAlign: 'center' }}>Nada cadastrado ainda</Txt>
+        <Txt dim style={{ textAlign: 'center', fontSize: 13, lineHeight: 18 }}>Cadastre renda fixa, ações, FIIs ou dólar para ver sua carteira aqui.</Txt>
+      </Card>
+      <AddButton onPress={add} />
+    </Screen>);
   // Páginas: Distribuição, um bloco por grupo e os favoritos. Passa com o dedo ou toca no título; bolinhas embaixo.
   const slices = sortAllocation(allocation(snap!.items, T.scheme === 'dark'), order);
   const pages: { key: string; title: string; node: React.ReactNode }[] = [

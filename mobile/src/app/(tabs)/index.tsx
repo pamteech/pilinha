@@ -5,9 +5,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { EyeToggle } from '../../components/EyeToggle';
 import { Pig } from '../../components/Pig';
-import { Card, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
-import { TotalsSplit } from '../../components/TotalsSplit';
-import { Plan, ageLabel, brl, compactBRL, planSummary, planTracking, goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, usdNewsTitle } from '../../core';
+import { QuickActions } from '../../components/QuickActions';
+import { Card, Measure, SectionTitle, Text, Txt, colorFor, money, screenPad } from '../../components/ui';
+import { TotalsSkeleton, TotalsSplit } from '../../components/TotalsSplit';
+import { Plan, ageLabel, brl, compactBRL, greetingAt, planSummary, planTracking, goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, usdNewsTitle } from '../../core';
 import type { UsdNewsState } from '../../lib/store';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
@@ -17,7 +18,7 @@ import { aporteStreak, aportesKnown, milestoneLabel, newMilestones, nextMileston
 import { Alert } from 'react-native';
 import { Button } from '../../components/ui';
 import { reviewYear, showYearReview, yearReview } from '../../core';
-import { T, S, R } from '../../lib/theme';
+import { T, S, R, TY } from '../../lib/theme';
 export default function Home() {
   const { snap, loading, refresh, hidden, portfolio, history, settings, usdNews, usdClose, alerts, setSettings, ready } = usePilinha();
   const router = useRouter();
@@ -60,9 +61,15 @@ export default function Home() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.lg }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ color: T.text, ...TY.greeting }}>{greetingAt()}</Text>
+        </View>
+        <Pig mood={party ? 'ganhou' : mood} size={112} badge note={party ? 'Novo marco, oinc!' : undefined} />
+      </View>
       <EyeToggle />
-      <View style={{ alignItems: 'center' }}><Pig mood={party ? 'ganhou' : mood} size={170} badge note={party ? 'Novo marco, oinc!' : undefined} /></View>
-      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="hero" cdiAnnual={snap.cdiAnnual} onOpenCarteira={() => router.navigate('/carteira')} /> : null}
+      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="hero" cdiAnnual={snap.cdiAnnual} onOpenCarteira={() => router.navigate('/carteira')} /> : <TotalsSkeleton />}
+      <QuickActions />
       {liveActivityAvailable() && snap && (
         <Pressable onPress={toggleLive} style={{ backgroundColor: live ? T.card : T.pink, padding: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: live ? T.line : T.navy }}>
           <Txt style={{ color: live ? T.text : T.onPrimary, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>

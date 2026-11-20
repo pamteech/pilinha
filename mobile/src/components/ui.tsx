@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text as RNText, TextProps, TextStyle, View, Vie
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SvgXml } from 'react-native-svg';
-import { T, S, R, fontFor, lineHeightFor } from '../lib/theme';
+import { T, S, R, TY, tabular, fontFor, lineHeightFor } from '../lib/theme';
 // Text com Manrope (a família muda conforme o peso).
 export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText maxFontSizeMultiplier={1.3} {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
 export const Eyebrow = ({ children, color = T.champ }: { children: React.ReactNode; color?: string }) => (
@@ -27,16 +27,29 @@ export const cardSurface = (extra?: ViewStyle): ViewStyle => ({
   backgroundColor: T.card,
   borderRadius: R.card,
   padding: S.lg,
-  borderWidth: 1,
+  borderWidth: StyleSheet.hairlineWidth,
   borderColor: T.line,
-  ...(T.scheme === 'light' ? { shadowColor: '#241B2E', shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 3 } : null),
+  ...(T.scheme === 'light' ? { shadowColor: '#241B2E', shadowOpacity: 0.05, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 2 } : null),
   ...extra,
 });
 export const Card = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
   <View style={[cardSurface(), { gap: S.sm }, style]}>{children}</View>);
 /** Texto que cabe numa linha só, reduzindo a fonte se preciso (iPhone estreito ou valor grande). */
 export function Fit({ children, style, minScale = 0.55 }: { children: string; style?: TextStyle; minScale?: number }) {
-  return <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={minScale} style={[{ width: '100%' }, style]}>{children}</Text>;
+  return <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={minScale} style={[{ width: '100%' }, tabular, style]}>{children}</Text>;
+}
+/** Barra arredondada de carregamento (sem dado real). */
+export function Skeleton({ width, height, style }: { width?: number | `${number}%`; height: number; style?: ViewStyle }) {
+  return <View accessibilityLabel="Carregando" style={[{ width: width ?? '100%', height, borderRadius: R.inner, backgroundColor: T.skeleton }, style]} />;
+}
+/** Linha rotulada com divisória fina e valor à direita, na grade de 8 pt. */
+export function CardRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.sm, paddingTop: S.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.line }}>
+      <Text numberOfLines={1} style={{ color: T.dim, ...TY.label, flex: 1, minWidth: 0 }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: S.sm, flexShrink: 1, minWidth: 0, maxWidth: '60%' }}>{children}</View>
+    </View>
+  );
 }
 export const Txt = ({ children, style, dim }: { children: React.ReactNode; style?: TextStyle; dim?: boolean }) => (
   <Text style={[{ color: dim ? T.dim : T.text, fontSize: 15 }, (StyleSheet.flatten(style)?.fontSize ?? 15) <= 16 ? { lineHeight: 22 } : null, style]}>{children}</Text>);
@@ -81,7 +94,7 @@ export function AssetLogo({ ticker, icon }: { ticker: string; icon: string }) {
     return () => { live = false; };
   }, [ticker]);
   return (
-    <View style={{ width: LOGO_SIZE, height: LOGO_SIZE, borderRadius: LOGO_SIZE / 2, overflow: 'hidden', backgroundColor: T.champLight, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: LOGO_SIZE, height: LOGO_SIZE, borderRadius: LOGO_SIZE / 2, overflow: 'hidden', backgroundColor: T.champLight, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: T.line }}>
       {xml
         ? <SvgXml xml={xml} width={LOGO_SIZE} height={LOGO_SIZE} />
         : <MaterialCommunityIcons name={icon as any} size={26} color={T.pink} />}
@@ -93,26 +106,23 @@ export function AssetCard({ item, hidden }: { item: import('../core').LineItem; 
   const v = require('../core').assetCardView(item, hidden);
   const tone = (t?: 'up' | 'down' | 'neutral') => (t === 'up' ? T.up : t === 'down' ? T.down : T.text);
   return (
-    <Card style={{ gap: S.md, padding: S.xl }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+    <Card style={{ gap: S.sm, padding: S.xl }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.lg }}>
         <AssetLogo ticker={item.name} icon={v.icon} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: T.text, fontSize: 15, fontWeight: '700' }}>{v.title}</Text>
-          <Text style={{ color: T.dim, fontSize: 12, marginTop: 2 }}>{v.subtitle}</Text>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ color: T.text, fontSize: 15, lineHeight: 20, fontWeight: '700' }}>{v.title}</Text>
+          <Text numberOfLines={1} style={{ color: T.dim, ...TY.label, marginTop: 2 }}>{v.subtitle}</Text>
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={T.dim} />
       </View>
-      <Fit style={{ color: T.text, fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.4 }}>{v.total}</Fit>
+      <Fit style={{ color: T.text, ...TY.valueHero, fontSize: 24, lineHeight: 32, marginTop: S.sm }}>{v.total}</Fit>
       <View>
-        {v.rows.map((r: import('../core').AssetCardRow, i: number) => (
-          <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.md, paddingVertical: S.sm, borderTopWidth: 1, borderTopColor: T.line, marginTop: i === 0 ? S.xs : 0 }}>
-            <Text numberOfLines={1} style={{ color: T.dim, fontSize: 13, lineHeight: 18, flex: 1, minWidth: 0 }}>{r.label}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0, maxWidth: '62%' }}>
-              {r.arrow ? <MaterialCommunityIcons name={r.arrow === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'} size={14} color={tone(r.tone)} /> : null}
-              <Text numberOfLines={1} style={{ color: r.arrow ? tone(r.tone) : T.text, fontSize: 15, lineHeight: 20, fontWeight: '600' }}>{r.value}</Text>
-              {r.hint ? <Text numberOfLines={1} style={{ color: tone(r.tone), fontSize: 13, lineHeight: 18, fontWeight: '600' }}>{r.hint}</Text> : null}
-            </View>
-          </View>))}
+        {v.rows.map((r: import('../core').AssetCardRow) => (
+          <CardRow key={r.label} label={r.label}>
+            {r.arrow ? <MaterialCommunityIcons name={r.arrow === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={tone(r.tone)} /> : null}
+            <Text numberOfLines={1} style={{ color: r.arrow ? tone(r.tone) : T.text, ...TY.value, ...tabular }}>{r.value}</Text>
+            {r.hint ? <Text numberOfLines={1} style={{ color: tone(r.tone), ...TY.pct, ...tabular }}>{r.hint}</Text> : null}
+          </CardRow>))}
       </View>
     </Card>
   );
