@@ -8,7 +8,7 @@ import { latestGate, HistoryPoint, Portfolio, Snapshot, emptyPortfolio, record, 
 import * as S from './storage';
 import { syncExtensions } from './widget';
 import { PriceAlert, hiddenOnOpen, shouldRehide, watchAlerts } from '../core';
-import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleAporteReminder, scheduleMonthCloseReminder, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf } from './alerts';
+import { checkAndNotify, checkUsdClose, quotesForAlerts, scheduleAporteReminder, scheduleMonthCloseReminder, scheduleUsdCloseReminders, syncBackgroundTask, usdAlertOf, usdCloseNow } from './alerts';
 import { fetchUsdNews } from './news';
 import { authenticate } from './auth';
 import { scheduleMaturityReminders } from './maturity';
@@ -17,7 +17,8 @@ interface Ctx { portfolio: Portfolio; snap: Snapshot | null; history: HistoryPoi
   settings: S.Settings; setSettings: (s: S.Settings) => Promise<void>; alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => Promise<void>; toggleHidden: () => Promise<void>; ready: boolean;
   sync: SyncState; connectMac: (code: string) => Promise<SyncState>; disconnectMac: () => Promise<void>; syncNow: () => Promise<SyncState>;
   /** Última carteira recebida do Mac (para saber se um item também existe lá). */ macBase: Portfolio | null;
-  /** Manchete que explica a variação do dólar hoje (card do Início). */ usdNews: UsdNewsState | null }
+  /** Manchete que explica a variação do dólar hoje (card do Início). */ usdNews: UsdNewsState | null;
+  /** Fechamento das 17h (Brasília), quando já existe; o cartão Em dólar usa essa variação. */ usdClose: UsdClose | null }
 export interface UsdNewsState { dir: UsdDirection; pct: number; item: NewsItem }
 export interface SyncState { connected: boolean; status: 'off' | 'syncing' | 'ok' | 'waiting' | 'error'; message?: string; lastSync?: number; macUpdatedAt?: number | null }
 const C = createContext<Ctx>(null as any);
@@ -35,6 +36,7 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
   const pRef = useRef(portfolio); pRef.current = portfolio;
   const [macBase, setMacBase] = useState<Portfolio | null>(null);
   const [usdNews, setUsdNews] = useState<UsdNewsState | null>(null);
+  const [usdClose, setUsdClose] = useState<UsdClose | null>(null);
   const needsBackground = (p: Portfolio, al: PriceAlert[], st: S.Settings) => al.some(a => a.enabled) || !!p.watchlist?.length || usdAlertOf(st).enabled;
   // Só o refresh mais recente vale: um mais lento (ex. do timer) não sobrescreve a carteira recém-editada.
   const gate = useRef(latestGate()).current;
@@ -57,7 +59,9 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
           fetchUsdNews(dir).then(item => { if (gate.isLatest(my)) setUsdNews(item ? { dir, pct: pc, item } : null); }).catch(() => {});
         } else if (gate.isLatest(my)) setUsdNews(null);
       };
-      checkUsdClose(setRef.current).then(r => { scheduleUsdCloseReminders(usdAlertOf(setRef.current).enabled); showUsdNews(r.close?.changePct ?? s.usdChangePct); })
+      // O cartão Em dólar precisa do fechamento mesmo com o aviso desligado.
+      usdCloseNow().then(c => { if (gate.isLatest(my)) setUsdClose(c); }).catch(() => {});
+      checkUsdClose(setRef.current).then(r => { if (gate.isLatest(my) && r.close) setUsdClose(r.close); scheduleUsdCloseReminders(usdAlertOf(setRef.current).enabled); showUsdNews(r.close?.changePct ?? s.usdChangePct); })
         .catch(() => showUsdNews(s.usdChangePct));
       // Com cotação falhando o total sai menor: não grava esse ponto para não estragar o histórico.
       const old = await S.loadHistory();
@@ -144,5 +148,5 @@ export function PilinhaProvider({ children }: { children: React.ReactNode }) {
     if (hRef.current && setRef.current.faceOnReveal && !(await authenticate('Mostrar os valores do Pilinvest'))) return;
     setHidden(!hRef.current);
   };
-  return <C.Provider value={{ settings, setSettings, alerts, setAlerts, toggleHidden, ready,  portfolio, snap, history, loading, hasToken, hidden, setHidden, refresh: () => run(pRef.current), update, setToken, sync, connectMac, disconnectMac, syncNow: doSync, macBase, usdNews }}>{children}</C.Provider>;
+  return <C.Provider value={{ settings, setSettings, alerts, setAlerts, toggleHidden, ready,  portfolio, snap, history, loading, hasToken, hidden, setHidden, refresh: () => run(pRef.current), update, setToken, sync, connectMac, disconnectMac, syncNow: doSync, macBase, usdNews, usdClose }}>{children}</C.Provider>;
 }

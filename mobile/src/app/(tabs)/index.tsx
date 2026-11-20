@@ -4,8 +4,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Pig } from '../../components/Pig';
-import { Card, Eyebrow, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
-import { Plan, ageLabel, brl, compactBRL, planSummary, planTracking, goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChange, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, totalNet, usdNewsTitle } from '../../core';
+import { Card, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
+import { TotalsSplit } from '../../components/TotalsSplit';
+import { Plan, ageLabel, brl, compactBRL, planSummary, planTracking, goalProgress, Mood, lastDays, weekSummary, topMovers, Mover, dayChangePct, moodFrom, pct, safeNewsLink, shouldCelebrate, total, usdNewsTitle } from '../../core';
 import type { UsdNewsState } from '../../lib/store';
 import { usePilinha } from '../../lib/store';
 import { liveActivityAvailable, liveActivityRunning, startLiveActivity, stopLiveActivity } from '../../lib/widget';
@@ -17,7 +18,7 @@ import { Button } from '../../components/ui';
 import { reviewYear, showYearReview, yearReview } from '../../core';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
-  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews, alerts, setSettings, ready } = usePilinha();
+  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews, usdClose, alerts, setSettings, ready } = usePilinha();
   const router = useRouter();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
   const base = moodFrom(d, loading && !snap, !!snap?.errors.length, {
@@ -54,37 +55,12 @@ export default function Home() {
   // O spinner só aparece no puxar-para-atualizar: com refreshing=true na abertura o iOS deixa a lista deslocada para cima.
   const [pulling, setPulling] = useState(false);
   const onPull = async () => { setPulling(true); try { await refresh(); } finally { setPulling(false); } };
-  const empty = !portfolio.fixedIncome.length && !portfolio.stocks.length && !portfolio.crypto.length;
+  const empty = !portfolio.fixedIncome.length && !portfolio.stocks.length && !portfolio.crypto.length && !(portfolio.usd && portfolio.usd.amount > 0);
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
       <View style={{ alignItems: 'center' }}><Pig mood={party ? 'ganhou' : mood} size={170} badge note={party ? 'Novo marco, oinc!' : undefined} /></View>
-      <Pressable onPress={toggleHidden}>
-        <View style={{ backgroundColor: T.navy, borderRadius: R.card, padding: S.xl, gap: S.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Eyebrow>Seu patrimônio {hidden ? '· toque para mostrar' : ''}</Eyebrow>
-            <MaterialCommunityIcons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={18} color={T.onDarkDim} accessibilityLabel={hidden ? 'Mostrar valores' : 'Esconder valores'} />
-          </View>
-          <Txt style={{ color: T.onDark, fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -0.5, marginTop: S.xs }}>{money(tot, hidden)}</Txt>
-          {snap && <Txt style={{ color: T.onDarkDim, fontSize: 13 }}>Líquido se resgatar hoje: {money(totalNet(snap), hidden)}</Txt>}
-          <View style={{ flexDirection: 'row', gap: S.md, marginTop: S.md }}>
-            <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
-              <Eyebrow color={T.onDarkDim}>Hoje</Eyebrow>
-              <Txt style={{ color: d == null ? T.onDark : d >= 0 ? T.upOnDark : T.downOnDark, fontWeight: '700' }}>{pct(d)}</Txt>
-              {snap && !hidden && <Txt style={{ color: T.onDarkDim, fontSize: 12, lineHeight: 16 }}>{money(dayChange(snap), false)}</Txt>}
-            </View>
-            {snap?.cdiAnnual != null && <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
-              <Eyebrow color={T.onDarkDim}>CDI</Eyebrow>
-              <Txt style={{ color: T.onDark, fontWeight: '700' }}>{snap.cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Txt>
-            </View>}
-            {snap?.usdBRL != null && <View style={{ flex: 1, backgroundColor: T.navy2, borderRadius: 12, padding: 10, gap: 2 }}>
-              <Eyebrow color={T.onDarkDim}>Dólar</Eyebrow>
-              <Txt style={{ color: T.onDark, fontWeight: '700' }}>R$ {snap.usdBRL.toFixed(2).replace('.', ',')}</Txt>
-              {snap.usdChangePct != null && <Txt style={{ color: snap.usdChangePct >= 0 ? T.upOnDark : T.downOnDark, fontSize: 12, lineHeight: 16 }}>{(snap.usdChangePct >= 0 ? '+' : '') + snap.usdChangePct.toFixed(2).replace('.', ',')}%</Txt>}
-            </View>}
-          </View>
-        </View>
-      </Pressable>
+      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="hero" cdiAnnual={snap.cdiAnnual} onToggleHidden={toggleHidden} /> : null}
       {liveActivityAvailable() && snap && (
         <Pressable onPress={toggleLive} style={{ backgroundColor: live ? T.card : T.pink, padding: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: live ? T.line : T.navy }}>
           <Txt style={{ color: live ? T.text : T.onPrimary, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>

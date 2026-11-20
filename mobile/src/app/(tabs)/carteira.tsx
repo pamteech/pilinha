@@ -4,13 +4,14 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Rect } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { Button, Card, Chip, Field, SectionTitle, Screen, Txt, AssetRow, AssetCard, Measure, money } from '../../components/ui';
+import { TotalsSplit } from '../../components/TotalsSplit';
 import { ALLOC_ORDERS, ALLOC_TITLES, AllocOrder, AllocSlice, AllocTargets, allocation, aporteSuggestion, groupItems, parseNumberBR, pct, brl, sharePct, sortAllocation, WatchRow, LineItem } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
 import { S, T } from '../../lib/theme';
 const cat: Record<string, string> = { caixinha: 'Caixinha', cdb: 'CDB', tesouro: 'Tesouro', lci: 'LCI', lca: 'LCA', acao: 'Ação', fii: 'FII', cripto: 'Cripto', dolar: 'Dólar' };
 export default function Carteira() {
-  const { snap, hidden, settings, setSettings } = usePilinha();
+  const { snap, hidden, settings, setSettings, usdClose } = usePilinha();
   const router = useRouter();
   const order: AllocOrder = settings.allocOrder ?? 'value'; const chart = settings.allocChart ?? 'donut';
   const add = () => router.push('/adicionar');
@@ -34,6 +35,7 @@ export default function Carteira() {
   return (
     <Screen>
       <EyeToggle />
+      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="page" /> : null}
       <AddButton onPress={add} />
       <Pager pages={pages} />
     </Screen>
