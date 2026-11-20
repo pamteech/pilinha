@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { LineItem, Snapshot, HIDDEN_MONEY, HIDDEN_USD, investmentsDayPct, investmentsTotal, splitTotals, total, usd, usdCardChangePct } from '..';
+import { LineItem, Snapshot, HIDDEN_MONEY, HIDDEN_USD, investmentsDayPct, investmentsTotal, oneLineMoney, splitTotals, total, usd, usdCardChangePct } from '..';
 
 const it = (name: string, category: string, current: number, extra: Partial<LineItem> = {}): LineItem =>
   ({ name, category, invested: extra.invested === undefined ? current : extra.invested, current, dayChange: extra.dayChange ?? null, net: extra.net ?? null, ...extra });
@@ -23,27 +23,27 @@ describe('separação dos totais (investimentos × dólar)', () => {
     const v = splitTotals(snap([acao, renda, dolar], { usdBRL: 5.4, usdChangePct: 0.5 }), false);
     expect(v.investments.show).toBe(true);
     expect(v.investments.title).toBe('Meus investimentos');
-    expect(v.investments.total).toBe('R$ 15.000,00');
+    expect(v.investments.total).toBe(oneLineMoney('R$ 15.000,00'));
     expect(v.investments.dayPct).toMatch(/^\+/);
-    expect(v.investments.dayChange).toBe('R$ 102,00');
-    expect(v.investments.net).toBe('Líquido se resgatar hoje: R$ 14.900,00');
+    expect(v.investments.dayChange).toBe(oneLineMoney('R$ 102,00'));
+    expect(v.investments.net).toBe(oneLineMoney('Líquido se resgatar hoje: R$ 14.900,00'));
     expect(v.usd?.show).toBe(true);
     expect(v.usd?.title).toBe('Em dólar');
-    expect(v.usd?.usd).toBe('US$ 500,00');
-    expect(v.usd?.brl).toBe('R$ 2.700,00');
+    expect(v.usd?.usd).toBe(oneLineMoney('US$ 500,00'));
+    expect(v.usd?.brl).toBe(oneLineMoney('R$ 2.700,00'));
     expect(v.usd?.dayPct).toBe('+0,75%'); // 20 / (2700-20)
-    expect(v.combined).toEqual({ label: 'Total com dólar', value: 'R$ 17.700,00' });
+    expect(v.combined).toEqual({ label: 'Total com dólar', value: oneLineMoney('R$ 17.700,00') });
   });
   test('olho mascara os dois cartões e a linha do total; porcentagens do dia ficam', () => {
     const v = splitTotals(snap([acao, dolar], { usdBRL: 5.4, usdChangePct: 0.5 }), true);
-    expect(v.investments.total).toBe(HIDDEN_MONEY);
+    expect(v.investments.total).toBe(oneLineMoney(HIDDEN_MONEY));
     expect(v.investments.dayChange).toBeNull();
     expect(v.investments.gain).toBeNull();
     expect(v.investments.dayPct).not.toBeNull();
-    expect(v.usd?.usd).toBe(HIDDEN_USD);
-    expect(v.usd?.brl).toBe(HIDDEN_MONEY);
+    expect(v.usd?.usd).toBe(oneLineMoney(HIDDEN_USD));
+    expect(v.usd?.brl).toBe(oneLineMoney(HIDDEN_MONEY));
     expect(v.usd?.dayPct).not.toBeNull();
-    expect(v.combined?.value).toBe(HIDDEN_MONEY);
+    expect(v.combined?.value).toBe(oneLineMoney(HIDDEN_MONEY));
     expect(JSON.stringify(v)).not.toMatch(/10\.000|2\.700|500,00/);
   });
   test('sem posição em dólar (ou zerada) o cartão some e não há total combinado', () => {
@@ -54,7 +54,7 @@ describe('separação dos totais (investimentos × dólar)', () => {
   test('só dólar: some Meus investimentos e não inventa total combinado', () => {
     const v = splitTotals(snap([dolar], { usdBRL: 5.4 }), false);
     expect(v.investments.show).toBe(false);
-    expect(v.usd?.usd).toBe('US$ 500,00');
+    expect(v.usd?.usd).toBe(oneLineMoney('US$ 500,00'));
     expect(v.combined).toBeNull();
   });
   test('variação do dólar usa o fechamento das 17h quando existe; senão a do momento', () => {
@@ -77,5 +77,22 @@ describe('separação dos totais (investimentos × dólar)', () => {
     expect(carteira).toMatch(/TotalsSplit/);
     expect(engine).toMatch(/export const total = \(s: Snapshot\) => s\.items\.reduce/);
     expect(home + carteira).not.toMatch(/Comprar|Vender|Saldo disponível/);
+  });
+  test('oneLineMoney impede a quebra entre R$/US$ e o número, inclusive em valor grande', () => {
+    expect(oneLineMoney('R$ 1.234.567,89')).toBe('R$\u00A01.234.567,89');
+    expect(oneLineMoney('US$ 12.345,67')).toBe('US$\u00A012.345,67');
+    const v = splitTotals(snap([it('FAKE4', 'acao', 1_234_567.89), it('Dólar', 'dolar', 12_345.67, { quantity: 2000, unitPrice: 6.172835 })]), false);
+    expect(v.investments.total).toBe(oneLineMoney('R$ 1.234.567,89'));
+    expect(v.usd?.usd).toBe(oneLineMoney('US$ 2.000,00'));
+    expect(v.investments.total).toContain('\u00A0');
+    expect(v.investments.total).not.toMatch(/R\$ /);
+  });
+  test('os cartões forçam uma linha só, reduzem a fonte se precisar e ficam com a mesma altura', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../components/TotalsSplit.tsx'), 'utf8');
+    expect(src).toMatch(/numberOfLines=\{1\}/);
+    expect(src).toMatch(/adjustsFontSizeToFit/);
+    expect(src).toMatch(/minimumFontScale/);
+    expect(src).toMatch(/alignItems: 'stretch'/);
+    expect(src).toMatch(/minWidth: 0/);
   });
 });

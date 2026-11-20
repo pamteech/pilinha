@@ -1,9 +1,16 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, TextStyle, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Eyebrow, Text, Txt } from './ui';
+import { Text } from './ui';
 import { Snapshot, UsdClose, splitTotals } from '../core';
 import { S, T, R } from '../lib/theme';
+
+/** Texto que cabe numa linha só, reduzindo a fonte se preciso (iPhone estreito ou valor grande). */
+function Fit({ children, style, minScale = 0.55 }: { children: string; style?: TextStyle; minScale?: number }) {
+  return (
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={minScale} style={[{ width: '100%' }, style]}>{children}</Text>
+  );
+}
 
 /** Dois cartões no topo: Meus investimentos (sem o dólar) e Em dólar. Variante hero no Início, page na Carteira. */
 export function TotalsSplit({ snap, hidden, close, variant, cdiAnnual, onToggleHidden }: {
@@ -14,7 +21,7 @@ export function TotalsSplit({ snap, hidden, close, variant, cdiAnnual, onToggleH
   if (!v.investments.show && !v.usd) return null;
   const hero = variant === 'hero';
   const both = v.investments.show && !!v.usd;
-  const wrap = both ? { flex: 1 as const, minWidth: 148 } : { flex: 1 as const };
+  const wrap = both ? { flex: 1 as const, minWidth: 0 } : { flex: 1 as const };
   const bg = hero ? T.navy : T.card;
   const titleColor = hero ? T.onDarkDim : T.dim;
   const text = hero ? T.onDark : T.text;
@@ -25,9 +32,12 @@ export function TotalsSplit({ snap, hidden, close, variant, cdiAnnual, onToggleH
   const valueSize = both ? 22 : hero ? 32 : 24;
   const valueLh = both ? 28 : hero ? 40 : 30;
   const box = (children: React.ReactNode, key: string) => (
-    <View key={key} style={{ ...wrap, backgroundColor: bg, borderRadius: R.card, padding: both ? S.lg : S.xl, gap: S.xs, borderWidth: hero ? 0 : 1, borderColor: T.line }}>
+    <View key={key} style={{ ...wrap, backgroundColor: bg, borderRadius: R.card, padding: both ? S.lg : S.xl, justifyContent: 'flex-start', borderWidth: hero ? 0 : 1, borderColor: T.line }}>
       {children}
     </View>
+  );
+  const title = (label: string) => (
+    <Fit minScale={0.7} style={{ color: titleColor, fontSize: 11, lineHeight: 14, letterSpacing: both ? 0.6 : 1.6, textTransform: 'uppercase', fontWeight: '600' }}>{label}</Fit>
   );
   const body = (
     <View style={{ gap: S.sm }}>
@@ -36,22 +46,22 @@ export function TotalsSplit({ snap, hidden, close, variant, cdiAnnual, onToggleH
           <MaterialCommunityIcons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={18} color={T.onDarkDim} accessibilityLabel={hidden ? 'Mostrar valores' : 'Esconder valores'} />
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: S.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: S.md }}>
         {v.investments.show ? box(<>
-          <Eyebrow color={titleColor}>{v.investments.title}{hero && hidden && !both ? ' · toque para mostrar' : ''}</Eyebrow>
-          <Text style={{ color: text, fontSize: valueSize, lineHeight: valueLh, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 }}>{v.investments.total}</Text>
-          {v.investments.dayPct ? <Text style={{ color: tone(v.investments.tone), fontWeight: '700', fontSize: 15, lineHeight: 20 }}>{v.investments.dayPct}{v.investments.dayChange ? `  ${v.investments.dayChange}` : ''}</Text> : null}
-          {v.investments.net ? <Text style={{ color: dim, fontSize: 12, lineHeight: 16 }}>{v.investments.net}</Text> : null}
-          {cdiAnnual != null ? <Text style={{ color: dim, fontSize: 12, lineHeight: 16 }}>CDI {cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Text> : null}
+          {title(v.investments.title + (hero && hidden && !both ? ' · toque para mostrar' : ''))}
+          <Fit style={{ color: text, fontSize: valueSize, lineHeight: valueLh, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 }}>{v.investments.total}</Fit>
+          {v.investments.dayPct ? <Fit minScale={0.65} style={{ color: tone(v.investments.tone), fontWeight: '700', fontSize: 15, lineHeight: 20, marginTop: 4 }}>{v.investments.dayPct}{v.investments.dayChange ? `  ${v.investments.dayChange}` : ''}</Fit> : null}
+          {v.investments.net ? <Fit minScale={0.7} style={{ color: dim, fontSize: 12, lineHeight: 16, marginTop: 4 }}>{v.investments.net}</Fit> : null}
+          {cdiAnnual != null ? <Fit minScale={0.7} style={{ color: dim, fontSize: 12, lineHeight: 16, marginTop: 2 }}>CDI {cdiAnnual.toFixed(2).replace('.', ',')}% a.a.</Fit> : null}
         </>, 'inv') : null}
         {v.usd ? box(<>
-          <Eyebrow color={titleColor}>{v.usd.title}</Eyebrow>
-          <Text style={{ color: text, fontSize: valueSize, lineHeight: valueLh, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 }}>{v.usd.usd}</Text>
-          <Text style={{ color: dim, fontSize: 13, lineHeight: 18 }}>{v.usd.brl}</Text>
-          {v.usd.dayPct ? <Text style={{ color: tone(v.usd.tone), fontWeight: '700', fontSize: 15, lineHeight: 20 }}>{v.usd.dayPct}</Text> : null}
+          {title(v.usd.title)}
+          <Fit style={{ color: text, fontSize: valueSize, lineHeight: valueLh, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 }}>{v.usd.usd}</Fit>
+          <Fit minScale={0.7} style={{ color: dim, fontSize: 13, lineHeight: 18, marginTop: 4 }}>{v.usd.brl}</Fit>
+          {v.usd.dayPct ? <Fit minScale={0.7} style={{ color: tone(v.usd.tone), fontWeight: '700', fontSize: 15, lineHeight: 20, marginTop: 4 }}>{v.usd.dayPct}</Fit> : null}
         </>, 'usd') : null}
       </View>
-      {v.combined ? <Txt style={{ color: T.dim, fontSize: 12, textAlign: 'center' }}>{v.combined.label}  {v.combined.value}</Txt> : null}
+      {v.combined ? <Fit minScale={0.7} style={{ color: T.dim, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>{`${v.combined.label}  ${v.combined.value}`}</Fit> : null}
     </View>
   );
   if (!onToggleHidden) return body;
