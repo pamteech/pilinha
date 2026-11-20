@@ -25,7 +25,7 @@ describe('separação dos totais (investimentos × dólar)', () => {
     expect(v.investments.title).toBe('Meus investimentos');
     expect(v.investments.total).toBe(oneLineMoney('R$ 15.000,00'));
     expect(v.investments.dayPct).toMatch(/^\+/);
-    expect(v.investments.dayChange).toBe(oneLineMoney('R$ 102,00'));
+    expect(v.investments.dayChange).toBe(oneLineMoney('+R$ 102,00'));
     expect(v.investments.net).toBe(oneLineMoney('Líquido se resgatar hoje: R$ 14.900,00'));
     expect(v.usd?.show).toBe(true);
     expect(v.usd?.title).toBe('Em dólar');
@@ -87,12 +87,36 @@ describe('separação dos totais (investimentos × dólar)', () => {
     expect(v.investments.total).toContain('\u00A0');
     expect(v.investments.total).not.toMatch(/R\$ /);
   });
-  test('os cartões forçam uma linha só, reduzem a fonte se precisar e ficam com a mesma altura', () => {
+  test('os cartões forçam uma linha só e reduzem a fonte se precisar', () => {
     const src = fs.readFileSync(path.join(__dirname, '../../components/TotalsSplit.tsx'), 'utf8');
-    expect(src).toMatch(/numberOfLines=\{1\}/);
-    expect(src).toMatch(/adjustsFontSizeToFit/);
-    expect(src).toMatch(/minimumFontScale/);
-    expect(src).toMatch(/alignItems: 'stretch'/);
-    expect(src).toMatch(/minWidth: 0/);
+    const ui = fs.readFileSync(path.join(__dirname, '../../components/ui.tsx'), 'utf8');
+    expect(src).toMatch(/<Fit /);
+    expect(ui).toMatch(/numberOfLines=\{1\}/);
+    expect(ui).toMatch(/adjustsFontSizeToFit/);
+    expect(ui).toMatch(/minimumFontScale/);
+  });
+  test('cartões empilhados no estilo limpo: linhas rotuladas, chevron, ícone de dólar, sem bloco roxo chapado e sem Nubank', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../components/TotalsSplit.tsx'), 'utf8');
+    const ui = fs.readFileSync(path.join(__dirname, '../../components/ui.tsx'), 'utf8');
+    const home = fs.readFileSync(path.join(__dirname, '../../app/(tabs)/index.tsx'), 'utf8');
+    const carteira = fs.readFileSync(path.join(__dirname, '../../app/(tabs)/carteira.tsx'), 'utf8');
+    const theme = fs.readFileSync(path.join(__dirname, '../../lib/theme.ts'), 'utf8');
+    expect(src).toMatch(/Rendimento do dia/);
+    expect(src).toMatch(/CDI hoje/);
+    expect(src).toMatch(/Em reais/);
+    expect(src).toMatch(/Variação do dólar hoje/);
+    expect(src).toMatch(/chevron-right/);
+    expect(src).toMatch(/currency-usd/);
+    expect(src).toMatch(/onOpenCarteira/);
+    expect(src).toMatch(/cardSurface/);
+    expect(src).not.toMatch(/T\.navy/);
+    expect(home).toMatch(/EyeToggle/);
+    expect(home).toMatch(/onOpenCarteira=\{\(\) => router\.navigate\('\/carteira'\)\}/);
+    expect(carteira).toMatch(/cdiAnnual=\{snap\.cdiAnnual\}/);
+    expect(ui).toMatch(/borderTopWidth: 1, borderTopColor: T\.line/);
+    expect(theme).toMatch(/card: '#1F1F23'/);
+    expect(theme).not.toMatch(/card: '#241A33'/);
+    expect(src + ui + home + carteira).not.toMatch(/nubank|Nubank|820AD1/i);
+    expect(src + home + carteira).not.toMatch(/Comprar|Vender|Saldo disponível/);
   });
 });

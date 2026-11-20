@@ -35,7 +35,7 @@ export default function Carteira() {
   return (
     <Screen>
       <EyeToggle />
-      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="page" /> : null}
+      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="page" cdiAnnual={snap.cdiAnnual} /> : null}
       <AddButton onPress={add} />
       <Pager pages={pages} />
     </Screen>

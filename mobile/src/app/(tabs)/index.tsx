@@ -3,6 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { EyeToggle } from '../../components/EyeToggle';
 import { Pig } from '../../components/Pig';
 import { Card, Measure, SectionTitle, Txt, colorFor, money, screenPad } from '../../components/ui';
 import { TotalsSplit } from '../../components/TotalsSplit';
@@ -18,7 +19,7 @@ import { Button } from '../../components/ui';
 import { reviewYear, showYearReview, yearReview } from '../../core';
 import { T, S, R } from '../../lib/theme';
 export default function Home() {
-  const { snap, loading, refresh, hidden, toggleHidden, portfolio, history, settings, usdNews, usdClose, alerts, setSettings, ready } = usePilinha();
+  const { snap, loading, refresh, hidden, portfolio, history, settings, usdNews, usdClose, alerts, setSettings, ready } = usePilinha();
   const router = useRouter();
   const d = snap ? dayChangePct(snap) : null, tot = snap ? total(snap) : 0;
   const base = moodFrom(d, loading && !snap, !!snap?.errors.length, {
@@ -59,8 +60,9 @@ export default function Home() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={screenPad} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
       refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={T.pink} />}>
+      <EyeToggle />
       <View style={{ alignItems: 'center' }}><Pig mood={party ? 'ganhou' : mood} size={170} badge note={party ? 'Novo marco, oinc!' : undefined} /></View>
-      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="hero" cdiAnnual={snap.cdiAnnual} onToggleHidden={toggleHidden} /> : null}
+      {snap ? <TotalsSplit snap={snap} hidden={hidden} close={usdClose} variant="hero" cdiAnnual={snap.cdiAnnual} onOpenCarteira={() => router.navigate('/carteira')} /> : null}
       {liveActivityAvailable() && snap && (
         <Pressable onPress={toggleLive} style={{ backgroundColor: live ? T.card : T.pink, padding: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: live ? T.line : T.navy }}>
           <Txt style={{ color: live ? T.text : T.onPrimary, fontWeight: '700' }}>{live ? 'Tirar o Pilinvest da Ilha Dinâmica' : 'Acompanhar na Ilha Dinâmica'}</Txt>

@@ -22,8 +22,22 @@ export function Measure({ height, children }: { height: number; children: (w: nu
   const [w, setW] = React.useState(0);
   return <View style={{ height, width: '100%' }} onLayout={e => setW(Math.floor(e.nativeEvent.layout.width))}>{w > 0 ? children(w) : null}</View>;
 }
+/** Superfície de cartão: fundo neutro, cantos arredondados, borda/sombra sutis. Roxo só como acento, nunca chapado. */
+export const cardSurface = (extra?: ViewStyle): ViewStyle => ({
+  backgroundColor: T.card,
+  borderRadius: R.card,
+  padding: S.lg,
+  borderWidth: 1,
+  borderColor: T.line,
+  ...(T.scheme === 'light' ? { shadowColor: '#241B2E', shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 3 } : null),
+  ...extra,
+});
 export const Card = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
-  <View style={[{ backgroundColor: T.card, borderRadius: R.card, padding: S.lg, gap: S.sm, borderWidth: 1, borderColor: T.line }, style]}>{children}</View>);
+  <View style={[cardSurface(), { gap: S.sm }, style]}>{children}</View>);
+/** Texto que cabe numa linha só, reduzindo a fonte se preciso (iPhone estreito ou valor grande). */
+export function Fit({ children, style, minScale = 0.55 }: { children: string; style?: TextStyle; minScale?: number }) {
+  return <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={minScale} style={[{ width: '100%' }, style]}>{children}</Text>;
+}
 export const Txt = ({ children, style, dim }: { children: React.ReactNode; style?: TextStyle; dim?: boolean }) => (
   <Text style={[{ color: dim ? T.dim : T.text, fontSize: 15 }, (StyleSheet.flatten(style)?.fontSize ?? 15) <= 16 ? { lineHeight: 22 } : null, style]}>{children}</Text>);
 export const money = (v: number, hidden: boolean) => (hidden ? 'R$ ••••' : require('../core').brl(v));
@@ -79,7 +93,7 @@ export function AssetCard({ item, hidden }: { item: import('../core').LineItem; 
   const v = require('../core').assetCardView(item, hidden);
   const tone = (t?: 'up' | 'down' | 'neutral') => (t === 'up' ? T.up : t === 'down' ? T.down : T.text);
   return (
-    <Card style={{ gap: S.md }}>
+    <Card style={{ gap: S.md, padding: S.xl }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
         <AssetLogo ticker={item.name} icon={v.icon} />
         <View style={{ flex: 1 }}>
@@ -88,15 +102,15 @@ export function AssetCard({ item, hidden }: { item: import('../core').LineItem; 
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={T.dim} />
       </View>
-      <Text style={{ color: T.text, fontSize: 22, fontWeight: '800', lineHeight: 28 }}>{v.total}</Text>
-      <View style={{ gap: S.sm }}>
-        {v.rows.map((r: import('../core').AssetCardRow) => (
-          <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.md }}>
-            <Text style={{ color: T.dim, fontSize: 13 }}>{r.label}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Fit style={{ color: T.text, fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.4 }}>{v.total}</Fit>
+      <View>
+        {v.rows.map((r: import('../core').AssetCardRow, i: number) => (
+          <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.md, paddingVertical: S.sm, borderTopWidth: 1, borderTopColor: T.line, marginTop: i === 0 ? S.xs : 0 }}>
+            <Text numberOfLines={1} style={{ color: T.dim, fontSize: 13, lineHeight: 18, flex: 1, minWidth: 0 }}>{r.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0, maxWidth: '62%' }}>
               {r.arrow ? <MaterialCommunityIcons name={r.arrow === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'} size={14} color={tone(r.tone)} /> : null}
-              <Text style={{ color: r.arrow ? tone(r.tone) : T.text, fontSize: 15, fontWeight: '600' }}>{r.value}</Text>
-              {r.hint ? <Text style={{ color: tone(r.tone), fontSize: 13, fontWeight: '600' }}>{r.hint}</Text> : null}
+              <Text numberOfLines={1} style={{ color: r.arrow ? tone(r.tone) : T.text, fontSize: 15, lineHeight: 20, fontWeight: '600' }}>{r.value}</Text>
+              {r.hint ? <Text numberOfLines={1} style={{ color: tone(r.tone), fontSize: 13, lineHeight: 18, fontWeight: '600' }}>{r.hint}</Text> : null}
             </View>
           </View>))}
       </View>

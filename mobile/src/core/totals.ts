@@ -1,6 +1,6 @@
 import { HIDDEN_MONEY } from './assetCard';
 import { LineItem, Snapshot, total } from './engine';
-import { brl, oneLineMoney, pct } from './format';
+import { brl, oneLineMoney, pct, signedBrl } from './format';
 import { itemDayPct } from './insights';
 
 /** Posição em dólar: não entra em "Meus investimentos", mas continua no total geral, na distribuição e no plano. */
@@ -86,7 +86,7 @@ export function splitTotals(s: Pick<Snapshot, 'items' | 'usdChangePct' | 'usdBRL
     total: money(tot, hidden),
     net: invItems.some(i => i.net != null) && Math.abs(net - tot) >= 0.005 ? `Líquido se resgatar hoje: ${money(net, hidden)}` : null,
     dayPct: dayPct == null ? null : pct(dayPct),
-    dayChange: dayPct == null || hidden ? null : money(investmentsDayChange(s), false),
+    dayChange: dayPct == null || hidden ? null : signedBrl(investmentsDayChange(s)),
     gain: gain == null ? null : (hidden ? null : oneLineMoney(`${gain >= 0 ? '+' : '−'}${brl(Math.abs(gain))}`)),
     tone: toneOf(dayPct ?? gain),
     show: invItems.length > 0,
