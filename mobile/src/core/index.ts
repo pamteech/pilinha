@@ -17,3 +17,4 @@ export * from './monthClose';
 export * from './milestones';
 export * from './yearReview';
 export * from './assetCard';
+export * from './logo';

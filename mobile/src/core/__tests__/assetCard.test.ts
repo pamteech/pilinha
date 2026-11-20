@@ -14,12 +14,12 @@ describe('tipo → ícone e rótulo', () => {
   });
   test('FII termina em 11, salvo ETF e unit', () => {
     expect(marketKind('MXRF11')).toBe('fii'); expect(marketKind('HGLG11')).toBe('fii'); expect(marketKind('ABCD11')).toBe('fii');
-    expect(MARKET_KIND_LABEL.fii).toBe('Fundo imobiliário'); expect(MARKET_KIND_ICON.fii).toBe('home-city-outline');
+    expect(MARKET_KIND_LABEL.fii).toBe('Fundo imobiliário'); expect(MARKET_KIND_ICON.fii).toBe('home-city');
     expect(assetTitle('MXRF11')).toBe('MXRF11 · Maxi Renda FII');
   });
   test('ETF conhecido não vira FII', () => {
     expect(marketKind('BOVA11')).toBe('etf'); expect(marketKind('IVVB11')).toBe('etf'); expect(marketKind('HASH11')).toBe('etf');
-    expect(MARKET_KIND_LABEL.etf).toBe('Fundo de índice (ETF)'); expect(MARKET_KIND_ICON.etf).toBe('chart-box-outline');
+    expect(MARKET_KIND_LABEL.etf).toBe('Fundo de índice (ETF)'); expect(MARKET_KIND_ICON.etf).toBe('chart-box');
     expect(assetTitle('IVVB11')).toBe('IVVB11 · S&P 500');
   });
   test('BDR pelos sufixos 32–35 e 39', () => {
@@ -71,7 +71,7 @@ describe('ficha do cartão e mascaramento', () => {
   });
   test('FII, ETF e BDR entram com o subtítulo certo', () => {
     expect(assetCardView(item('MXRF11', { category: 'fii' }), false).subtitle).toBe('Fundo imobiliário');
-    expect(assetCardView(item('IVVB11', { category: 'fii' }), false)).toMatchObject({ kind: 'etf', subtitle: 'Fundo de índice (ETF)', icon: 'chart-box-outline' });
+    expect(assetCardView(item('IVVB11', { category: 'fii' }), false)).toMatchObject({ kind: 'etf', subtitle: 'Fundo de índice (ETF)', icon: 'chart-box' });
     expect(assetCardView(item('AAPL34'), false)).toMatchObject({ kind: 'bdr', subtitle: 'BDR', icon: 'earth', title: 'AAPL34' });
   });
 });

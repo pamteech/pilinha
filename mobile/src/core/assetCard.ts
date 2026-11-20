@@ -2,6 +2,7 @@ import { POPULAR } from './cadastro';
 import { LineItem, itemGain } from './engine';
 import { brl, pct } from './format';
 import { itemDayPct } from './insights';
+import { logoUrl } from './logo';
 import { normTicker } from './numbers';
 
 /** Tipo de papel da B3 para ícone e rótulo na Carteira (não altera a categoria do item). */
@@ -17,8 +18,8 @@ export const MARKET_KIND_LABEL: Record<MarketKind, string> = {
 /** Ícones do MaterialCommunityIcons já usados no app (nada de marca de terceiros). */
 export const MARKET_KIND_ICON: Record<MarketKind, string> = {
   acao: 'trending-up',
-  fii: 'home-city-outline',
-  etf: 'chart-box-outline',
+  fii: 'home-city',
+  etf: 'chart-box',
   bdr: 'earth',
 };
 
@@ -90,6 +91,7 @@ export interface AssetCardView {
   subtitle: string;
   icon: string;
   kind: MarketKind;
+  logoUrl: string | null;
   total: string;
   rows: AssetCardRow[];
 }
@@ -115,5 +117,5 @@ export function assetCardView(item: LineItem, hidden: boolean): AssetCardView {
       arrow: gain == null ? undefined : gain >= 0 ? 'up' : 'down',
     },
   ];
-  return { title: assetTitle(item.name), subtitle: MARKET_KIND_LABEL[kind], icon: MARKET_KIND_ICON[kind], kind, total: hidden ? HIDDEN_MONEY : brl(item.current), rows };
+  return { title: assetTitle(item.name), subtitle: MARKET_KIND_LABEL[kind], icon: MARKET_KIND_ICON[kind], kind, logoUrl: logoUrl(item.name), total: hidden ? HIDDEN_MONEY : brl(item.current), rows };
 }

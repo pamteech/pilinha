@@ -1,6 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text as RNText, TextProps, TextStyle, View, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SvgXml } from 'react-native-svg';
 import { T, S, R, fontFor, lineHeightFor } from '../lib/theme';
 // Text com Manrope (a família muda conforme o peso).
 export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText maxFontSizeMultiplier={1.3} {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
@@ -50,6 +52,28 @@ export function AssetRow({ item, hidden, label, last }: { item: import('../core'
     </View>
   );
 }
+
+const LOGO_SIZE = 52;
+const logoKV = { get: (k: string) => AsyncStorage.getItem(k), set: (k: string, v: string) => AsyncStorage.setItem(k, v) };
+/** Círculo do cartão: logo da empresa, ou o ícone roxo do tipo enquanto carrega / se faltar. */
+export function AssetLogo({ ticker, icon }: { ticker: string; icon: string }) {
+  const C = require('../core');
+  const peek = C.peekLogo(ticker);
+  const [xml, setXml] = React.useState<string | null>(typeof peek === 'string' ? peek : null);
+  React.useEffect(() => {
+    if (peek === 'miss' || typeof peek === 'string') return;
+    let live = true;
+    C.loadLogo(ticker, C.defaultLogoFetch, logoKV).then((r: import('../core').LogoResult) => { if (live && r.ok) setXml(r.xml); });
+    return () => { live = false; };
+  }, [ticker]);
+  return (
+    <View style={{ width: LOGO_SIZE, height: LOGO_SIZE, borderRadius: LOGO_SIZE / 2, overflow: 'hidden', backgroundColor: T.champLight, alignItems: 'center', justifyContent: 'center' }}>
+      {xml
+        ? <SvgXml xml={xml} width={LOGO_SIZE} height={LOGO_SIZE} />
+        : <MaterialCommunityIcons name={icon as any} size={26} color={T.pink} />}
+    </View>
+  );
+}
 // Cartão de um papel na aba Ações e FIIs: ícone do tipo, valor em destaque e linhas rotuladas.
 export function AssetCard({ item, hidden }: { item: import('../core').LineItem; hidden: boolean }) {
   const v = require('../core').assetCardView(item, hidden);
@@ -57,9 +81,7 @@ export function AssetCard({ item, hidden }: { item: import('../core').LineItem; 
   return (
     <Card style={{ gap: S.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.champLight, alignItems: 'center', justifyContent: 'center' }}>
-          <MaterialCommunityIcons name={v.icon as any} size={22} color={T.lilacDeep} />
-        </View>
+        <AssetLogo ticker={item.name} icon={v.icon} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: T.text, fontSize: 15, fontWeight: '700' }}>{v.title}</Text>
           <Text style={{ color: T.dim, fontSize: 12, marginTop: 2 }}>{v.subtitle}</Text>
