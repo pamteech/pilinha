@@ -121,4 +121,20 @@ describe('separação dos totais (investimentos × dólar)', () => {
     expect(src + ui + home + carteira).not.toMatch(/nubank|Nubank|820AD1/i);
     expect(src + home + carteira).not.toMatch(/Comprar|Vender|Saldo disponível/);
   });
+  test('porcentagem numa coluna fixa à esquerda do dinheiro, alinhada entre as linhas', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../components/TotalsSplit.tsx'), 'utf8');
+    const ui = fs.readFileSync(path.join(__dirname, '../../components/ui.tsx'), 'utf8');
+    expect(ui).toMatch(/export const COL/);
+    expect(ui).toMatch(/width: COL\.pct/);
+    expect(ui).toMatch(/width: COL\.money/);
+    expect(ui).toMatch(/function CardRow\(\{ label, pct, amount/);
+    expect(ui).toMatch(/pct=\{r\.hint\}/);
+    expect(ui).toMatch(/amount=\{r\.value\}/);
+    expect(ui.indexOf('width: COL.pct')).toBeLessThan(ui.indexOf('width: COL.money'));
+    expect(src).toMatch(/label="Rendimento do dia" pct=\{v\.investments\.dayPct\} amount=\{v\.investments\.dayChange\}/);
+    expect(src).toMatch(/label="Variação do dólar hoje" pct=\{v\.usd\.dayPct\}/);
+    expect(src).toMatch(/label="Em reais" amount=\{v\.usd\.brl\}/);
+    expect(src).toMatch(/label="CDI hoje" amount=\{/);
+    expect(src).toMatch(/label="Líquido se resgatar hoje" amount=\{netValue\}/);
+  });
 });

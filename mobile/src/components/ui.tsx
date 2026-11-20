@@ -42,12 +42,25 @@ export function Fit({ children, style, minScale = 0.55 }: { children: string; st
 export function Skeleton({ width, height, style }: { width?: number | `${number}%`; height: number; style?: ViewStyle }) {
   return <View accessibilityLabel="Carregando" style={[{ width: width ?? '100%', height, borderRadius: R.inner, backgroundColor: T.skeleton }, style]} />;
 }
-/** Linha rotulada com divisória fina e valor à direita, na grade de 8 pt. */
-export function CardRow({ label, children }: { label: string; children: React.ReactNode }) {
+/** Larguras fixas para empilhar porcentagem à esquerda e dinheiro à direita, na mesma grade em todos os cartões. */
+export const COL = { pct: 80, money: 108, arrow: 14 } as const;
+/** Linha rotulada: coluna de % (largura fixa, à esquerda do dinheiro) e coluna de dinheiro alinhada à direita. */
+export function CardRow({ label, pct, amount, tone, arrow }: {
+  label: string; pct?: string | null; amount?: string | null; tone?: 'up' | 'down' | 'neutral'; arrow?: 'up' | 'down';
+}) {
+  const c = tone === 'up' ? T.up : tone === 'down' ? T.down : T.text;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.sm, paddingTop: S.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.line }}>
-      <Text numberOfLines={1} style={{ color: T.dim, ...TY.label, flex: 1, minWidth: 0 }}>{label}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: S.sm, flexShrink: 1, minWidth: 0, maxWidth: '60%' }}>{children}</View>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingTop: S.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.line }}>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: T.dim, ...TY.label, flex: 1, minWidth: 0 }}>{label}</Text>
+      <View style={{ width: COL.pct, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+        <View style={{ width: COL.arrow, alignItems: 'center', justifyContent: 'center' }}>
+          {arrow ? <MaterialCommunityIcons name={arrow === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={c} /> : null}
+        </View>
+        {pct ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: c, ...TY.pct, ...tabular, flex: 1, textAlign: 'right' }}>{pct}</Text> : <View style={{ flex: 1 }} />}
+      </View>
+      <View style={{ width: COL.money, alignItems: 'flex-end', justifyContent: 'center' }}>
+        {amount ? <Fit minScale={0.6} style={{ color: T.text, ...TY.value, textAlign: 'right' }}>{amount}</Fit> : null}
+      </View>
     </View>
   );
 }
@@ -104,7 +117,6 @@ export function AssetLogo({ ticker, icon }: { ticker: string; icon: string }) {
 // Cartão de um papel na aba Ações e FIIs: ícone do tipo, valor em destaque e linhas rotuladas.
 export function AssetCard({ item, hidden }: { item: import('../core').LineItem; hidden: boolean }) {
   const v = require('../core').assetCardView(item, hidden);
-  const tone = (t?: 'up' | 'down' | 'neutral') => (t === 'up' ? T.up : t === 'down' ? T.down : T.text);
   return (
     <Card style={{ gap: S.sm, padding: S.xl }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.lg }}>
@@ -118,11 +130,7 @@ export function AssetCard({ item, hidden }: { item: import('../core').LineItem; 
       <Fit style={{ color: T.text, ...TY.valueHero, fontSize: 24, lineHeight: 32, marginTop: S.sm }}>{v.total}</Fit>
       <View>
         {v.rows.map((r: import('../core').AssetCardRow) => (
-          <CardRow key={r.label} label={r.label}>
-            {r.arrow ? <MaterialCommunityIcons name={r.arrow === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={tone(r.tone)} /> : null}
-            <Text numberOfLines={1} style={{ color: r.arrow ? tone(r.tone) : T.text, ...TY.value, ...tabular }}>{r.value}</Text>
-            {r.hint ? <Text numberOfLines={1} style={{ color: tone(r.tone), ...TY.pct, ...tabular }}>{r.hint}</Text> : null}
-          </CardRow>))}
+          <CardRow key={r.label} label={r.label} pct={r.hint} amount={r.value} tone={r.tone} arrow={r.arrow} />))}
       </View>
     </Card>
   );

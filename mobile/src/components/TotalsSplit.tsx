@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CardRow, Fit, Skeleton, Text, cardSurface } from './ui';
 import { Snapshot, UsdClose, splitTotals } from '../core';
-import { S, T, TY, tabular } from '../lib/theme';
+import { S, T, TY } from '../lib/theme';
 
 /** Cartões empilhados em largura total: Meus investimentos (sem o dólar) e Em dólar. variant mantido por compatibilidade (Início e Carteira usam o mesmo acabamento). */
 export function TotalsSplit({ snap, hidden, close, variant: _variant, cdiAnnual, onOpenCarteira }: {
@@ -12,7 +12,6 @@ export function TotalsSplit({ snap, hidden, close, variant: _variant, cdiAnnual,
 }) {
   const v = splitTotals(snap, hidden, close);
   if (!v.investments.show && !v.usd) return null;
-  const tone = (t: 'up' | 'down' | 'neutral') => (t === 'up' ? T.up : t === 'down' ? T.down : T.text);
   const netValue = v.investments.net ? v.investments.net.replace(/^Líquido se resgatar hoje:\s*/, '') : null;
   const box = (children: React.ReactNode, key: string, onPress?: () => void) => {
     const inner = <View style={cardSurface({ padding: S.xl, gap: 0 })}>{children}</View>;
@@ -28,20 +27,13 @@ export function TotalsSplit({ snap, hidden, close, variant: _variant, cdiAnnual,
         </View>
         <Fit style={{ color: T.text, ...TY.valueHero, marginTop: S.sm, marginBottom: S.sm }}>{v.investments.total}</Fit>
         {v.investments.dayPct || v.investments.dayChange ? (
-          <CardRow label="Rendimento do dia">
-            {v.investments.dayChange ? <Fit minScale={0.65} style={{ color: tone(v.investments.tone), ...TY.value, textAlign: 'right' }}>{v.investments.dayChange}</Fit> : null}
-            {v.investments.dayPct ? <Text numberOfLines={1} style={{ color: tone(v.investments.tone), ...TY.pct, ...tabular }}>{v.investments.dayPct}</Text> : null}
-          </CardRow>
+          <CardRow label="Rendimento do dia" pct={v.investments.dayPct} amount={v.investments.dayChange} tone={v.investments.tone} />
         ) : null}
         {cdiAnnual != null ? (
-          <CardRow label="CDI hoje">
-            <Fit minScale={0.7} style={{ color: T.text, ...TY.value, textAlign: 'right' }}>{`${cdiAnnual.toFixed(2).replace('.', ',')}% a.a.`}</Fit>
-          </CardRow>
+          <CardRow label="CDI hoje" amount={`${cdiAnnual.toFixed(2).replace('.', ',')}% a.a.`} />
         ) : null}
         {netValue ? (
-          <CardRow label="Líquido se resgatar hoje">
-            <Fit minScale={0.65} style={{ color: T.text, ...TY.value, textAlign: 'right' }}>{netValue}</Fit>
-          </CardRow>
+          <CardRow label="Líquido se resgatar hoje" amount={netValue} />
         ) : null}
       </>, 'inv', onOpenCarteira) : null}
       {v.usd ? box(<>
@@ -52,13 +44,9 @@ export function TotalsSplit({ snap, hidden, close, variant: _variant, cdiAnnual,
           <Text numberOfLines={1} style={{ color: T.dim, ...TY.label, flex: 1 }}>{v.usd.title}</Text>
         </View>
         <Fit style={{ color: T.text, ...TY.valueHero, marginTop: S.sm, marginBottom: S.sm }}>{v.usd.usd}</Fit>
-        <CardRow label="Em reais">
-          <Fit minScale={0.65} style={{ color: T.text, ...TY.value, textAlign: 'right' }}>{v.usd.brl}</Fit>
-        </CardRow>
+        <CardRow label="Em reais" amount={v.usd.brl} />
         {v.usd.dayPct ? (
-          <CardRow label="Variação do dólar hoje">
-            <Text numberOfLines={1} style={{ color: tone(v.usd.tone), ...TY.pct, ...tabular }}>{v.usd.dayPct}</Text>
-          </CardRow>
+          <CardRow label="Variação do dólar hoje" pct={v.usd.dayPct} tone={v.usd.tone} />
         ) : null}
       </>, 'usd') : null}
       {v.combined ? <Fit minScale={0.7} style={{ color: T.dim, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>{`${v.combined.label}  ${v.combined.value}`}</Fit> : null}

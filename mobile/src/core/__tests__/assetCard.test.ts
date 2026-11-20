@@ -97,4 +97,10 @@ describe('snapshot passa a quantidade e a tela usa os cartões', () => {
     expect(carteira).toMatch(/<AssetRow /);
     expect(carteira + ui).not.toMatch(/Comprar|Vender|Saldo disponível/);
   });
+  test('no cartão do ativo a % fica à esquerda do dinheiro, com seta na coluna da %', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '../../components/ui.tsx'), 'utf8');
+    expect(ui).toMatch(/pct=\{r\.hint\} amount=\{r\.value\} tone=\{r\.tone\} arrow=\{r\.arrow\}/);
+    expect(ui).toMatch(/width: COL\.arrow/);
+    expect(ui).toMatch(/arrow === 'up' \? 'arrow-up' : 'arrow-down'/);
+  });
 });
