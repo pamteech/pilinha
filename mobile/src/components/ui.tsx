@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text as RNText, TextProps, TextStyle, View, ViewStyle } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { T, S, R, fontFor, lineHeightFor } from '../lib/theme';
 // Text com Manrope (a família muda conforme o peso).
 export const Text = ({ style, ...p }: TextProps) => { const f = StyleSheet.flatten(style) || {}; return <RNText maxFontSizeMultiplier={1.3} {...p} style={[style, { fontFamily: fontFor(f.fontWeight), fontWeight: undefined, lineHeight: lineHeightFor(f.fontSize ?? 15, f.lineHeight) }]} />; };
@@ -47,6 +48,37 @@ export function AssetRow({ item, hidden, label, last }: { item: import('../core'
         {market && item.avgPrice != null && <Text style={{ color: T.dim, fontSize: 11 }}>PM {money(item.avgPrice, hidden)}</Text>}
       </View>
     </View>
+  );
+}
+// Cartão de um papel na aba Ações e FIIs: ícone do tipo, valor em destaque e linhas rotuladas.
+export function AssetCard({ item, hidden }: { item: import('../core').LineItem; hidden: boolean }) {
+  const v = require('../core').assetCardView(item, hidden);
+  const tone = (t?: 'up' | 'down' | 'neutral') => (t === 'up' ? T.up : t === 'down' ? T.down : T.text);
+  return (
+    <Card style={{ gap: S.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.champLight, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialCommunityIcons name={v.icon as any} size={22} color={T.lilacDeep} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: T.text, fontSize: 15, fontWeight: '700' }}>{v.title}</Text>
+          <Text style={{ color: T.dim, fontSize: 12, marginTop: 2 }}>{v.subtitle}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={T.dim} />
+      </View>
+      <Text style={{ color: T.text, fontSize: 22, fontWeight: '800', lineHeight: 28 }}>{v.total}</Text>
+      <View style={{ gap: S.sm }}>
+        {v.rows.map((r: import('../core').AssetCardRow) => (
+          <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.md }}>
+            <Text style={{ color: T.dim, fontSize: 13 }}>{r.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {r.arrow ? <MaterialCommunityIcons name={r.arrow === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'} size={14} color={tone(r.tone)} /> : null}
+              <Text style={{ color: r.arrow ? tone(r.tone) : T.text, fontSize: 15, fontWeight: '600' }}>{r.value}</Text>
+              {r.hint ? <Text style={{ color: tone(r.tone), fontSize: 13, fontWeight: '600' }}>{r.hint}</Text> : null}
+            </View>
+          </View>))}
+      </View>
+    </Card>
   );
 }
 // Campos e botões compartilhados (Ajustes, Alertas).

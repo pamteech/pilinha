@@ -3,8 +3,8 @@ import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Rect } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { Button, Card, Chip, Field, SectionTitle, Screen, Txt, AssetRow, Measure, money } from '../../components/ui';
-import { ALLOC_ORDERS, ALLOC_TITLES, AllocOrder, AllocSlice, AllocTargets, allocation, aporteSuggestion, groupItems, parseNumberBR, pct, brl, sharePct, sortAllocation, WatchRow } from '../../core';
+import { Button, Card, Chip, Field, SectionTitle, Screen, Txt, AssetRow, AssetCard, Measure, money } from '../../components/ui';
+import { ALLOC_ORDERS, ALLOC_TITLES, AllocOrder, AllocSlice, AllocTargets, allocation, aporteSuggestion, groupItems, parseNumberBR, pct, brl, sharePct, sortAllocation, WatchRow, LineItem } from '../../core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePilinha } from '../../lib/store';
 import { S, T } from '../../lib/theme';
@@ -22,10 +22,12 @@ export default function Carteira() {
         <Allocation slices={slices} hidden={hidden} order={order} setOrder={o => setSettings({ ...settings, allocOrder: o })} chart={chart} setChart={c => setSettings({ ...settings, allocChart: c })} />
         <Aporte key={settings.plan?.monthly ?? 0} slices={slices} targets={settings.allocTargets} monthly={settings.plan?.monthly} hidden={hidden} open={() => router.push('/alocacao')} />
       </View> }] : []),
-    ...groupItems(snap!.items).map(g => ({ key: g.key, title: g.title, node: (
+    ...groupItems(snap!.items).map(g => ({ key: g.key, title: g.title, node: g.key === 'acoes'
+      ? <EquityList items={g.items} total={g.total} dayPct={g.dayPct} hidden={hidden} onOpen={i => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })} />
+      : (
         <Card style={{ paddingBottom: S.xs, gap: 0 }}>
           <SectionTitle first right={<Txt style={{ fontWeight: '700' }}>{money(g.total, hidden)}{g.dayPct != null ? <Txt style={{ fontWeight: '700', color: g.dayPct >= 0 ? T.up : T.down }}>{'  ' + pct(g.dayPct)}</Txt> : null}</Txt>}>{g.title}</SectionTitle>
-          {g.items.map((i, n) => <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })}><AssetRow item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'fii' ? 'FII' : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} /></Pressable>)}
+          {g.items.map((i, n) => <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => router.push({ pathname: '/adicionar', params: { cat: i.category, name: i.name } })}><AssetRow item={i} hidden={hidden} last={n === g.items.length - 1} label={g.key === 'renda' ? cat[i.category] : i.category === 'dolar' && i.quantity != null && !hidden ? `US$ ${i.quantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined} /></Pressable>)}
         </Card>) })),
     ...(snap?.watch?.length ? [{ key: 'watch', title: 'Quero comprar', node: <Watch rows={snap.watch} hidden={hidden} /> }] : []),
   ];
@@ -36,6 +38,21 @@ export default function Carteira() {
       <Pager pages={pages} />
     </Screen>
   );
+}
+
+/** Aba Ações e FIIs: um cartão por papel, com espaço entre eles. O toque abre o detalhe (editar). */
+function EquityList({ items, total, dayPct, hidden, onOpen }: { items: LineItem[]; total: number; dayPct: number | null; hidden: boolean; onOpen: (i: LineItem) => void }) {
+  return (
+    <View style={{ gap: S.md }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: S.xs }}>
+        <Txt style={{ fontWeight: '700' }}>{money(total, hidden)}</Txt>
+        {dayPct != null ? <Txt style={{ fontWeight: '700', color: dayPct >= 0 ? T.up : T.down }}>{pct(dayPct)}</Txt> : null}
+      </View>
+      {items.map(i => (
+        <Pressable key={i.category + i.name} accessibilityRole="button" accessibilityHint="Abre para editar" onPress={() => onOpen(i)}>
+          <AssetCard item={i} hidden={hidden} />
+        </Pressable>))}
+    </View>);
 }
 
 /** Paginação da carteira: títulos (toque para pular), páginas largura cheia com altura da página atual, e bolinhas. */

@@ -56,7 +56,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
     const r = qs[i];
     if (r.status === 'rejected') { errors.push(msg(r.reason)); return; }
     const q = r.value, v = q.price * s.quantity; cash = cash.concat(q.dividends);
-    items.push({ name: s.ticker.toUpperCase(), category: s.ticker.endsWith('11') ? 'fii' : 'acao', invested: s.averagePrice != null ? s.averagePrice * s.quantity : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.price, avgPrice: s.averagePrice ?? null });
+    items.push({ name: s.ticker.toUpperCase(), category: s.ticker.endsWith('11') ? 'fii' : 'acao', invested: s.averagePrice != null ? s.averagePrice * s.quantity : null, current: v, dayChange: chg(v, q.changePct), net: null, unitPrice: q.price, avgPrice: s.averagePrice ?? null, quantity: s.quantity });
   });
   if (p.crypto.length) {
     try {
@@ -64,7 +64,7 @@ export async function snapshot(p: Portfolio, opts: { brapiToken?: string | null;
       for (const c of p.crypto) {
         const q = px[c.coinId]; if (!q) { errors.push(`${c.symbol}: sem preço`); continue; }
         const v = q.price * c.quantity;
-        items.push({ name: c.symbol, category: 'cripto', invested: c.averagePriceBRL != null ? c.averagePriceBRL * c.quantity : null, current: v, dayChange: chg(v, q.change24h), net: null, unitPrice: q.price, avgPrice: c.averagePriceBRL ?? null });
+        items.push({ name: c.symbol, category: 'cripto', invested: c.averagePriceBRL != null ? c.averagePriceBRL * c.quantity : null, current: v, dayChange: chg(v, q.change24h), net: null, unitPrice: q.price, avgPrice: c.averagePriceBRL ?? null, quantity: c.quantity });
       }
     } catch (e) { errors.push(`cripto: ${msg(e)}`); }
   }
