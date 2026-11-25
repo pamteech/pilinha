@@ -1,9 +1,8 @@
 # 🐷 Pilinha
 
-> **Seus investimentos morando no entalhe do Mac, cuidados pela Pilinha, um porquinho que sorri quando o dinheiro rende.**
+> **Seus investimentos cuidados pela Pilinha, um porquinho que sorri quando o dinheiro rende: no entalhe do Mac e no iPhone.**
 
-App de entalhe (notch) do Mac para acompanhar investimentos: renda fixa pelo CDI, ações e FIIs da B3 e bitcoin, tudo
-numa ilhazinha preta em volta da câmera. **Só leitura, sem banco, dados só no seu Mac.**
+App de acompanhamento de investimentos (renda fixa pelo CDI, ações e FIIs da B3, bitcoin e dólar): ilha no entalhe do Mac (Swift) e app no iPhone (Expo / React Native, iOS 17+). **Só leitura, sem banco.** Os dados ficam nos aparelhos. A sincronização Mac ↔ iPhone é opcional e vai cifrada de ponta a ponta (o servidor só guarda um blob cifrado).
 
 > 🐷 **Pilinha** é o nome do app *e* do porquinho que mora no entalhe — "pila" é gíria gaúcha pra dinheiro, e a Pilinha é quem
 > cuida das suas pilas. (O repositório e o código continuam como `notch-invest`/`NotchInvest*` por compatibilidade.)
@@ -120,6 +119,18 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pamtech.pilinha.plis
 ### Ícone
 `Support/AppIcon.icns` é gerado a partir do ícone do app (`mobile/assets/images/pilinha-icon.png`): `python3 Support/make-icon.py` (Pillow).
 
+
+## 📱 Instalação no iPhone
+
+O app do iPhone (Expo / React Native, iOS 17+) vive em `mobile/`: carteira, widgets, Ilha Dinâmica e sincronização opcional cifrada com o Mac. Desenvolvimento, TestFlight e widgets estão em [mobile/README.md](mobile/README.md).
+
+```bash
+cd mobile
+npm install
+npm test
+npx expo start
+```
+
 ## 📝 O `portfolio.json` (para quem prefere editar à mão)
 ```json
 {
@@ -166,6 +177,8 @@ Tests/NotchInvestCoreTests/   testes do núcleo (swift-testing)
 Support/             build-app.sh (gera o .app), make-icon.py + AppIcon.icns, entitlements (só para build com sandbox)
 personagem/opcao2d/  arte do porquinho: folha_ia.jpg, superres.py (amplia 4x com Real-ESRGAN → folha_hi.jpg) e gera_folhas.py (12 humores em WebP, stills, prévias)
 previews/            GIFs e mockups do README
+mobile/              app iPhone (Expo / React Native, iOS 17+): telas, widgets e Ilha Dinâmica
+sync-worker/         sincronização Mac ↔ iPhone (blob cifrado ponta a ponta, Cloudflare Worker + KV)
 docs/                notas de arquitetura
 ```
 Para regenerar o porquinho: `python3 personagem/opcao2d/gera_folhas.py` (Pillow e NumPy; usa folha_hi.jpg, que vem de `superres.py` com os modelos do Real-ESRGAN).
@@ -182,10 +195,10 @@ Para regenerar o porquinho: `python3 personagem/opcao2d/gera_folhas.py` (Pillow 
 - [ ] 🧾 IR sobre ações/cripto na venda e JCP líquido
 
 ## 🙏 Créditos
-- Feito por **Pam Tech**.
+- Feito por **Pam Teech**.
 - A técnica de janela no entalhe foi **inspirada no [Coucou](https://github.com/Louis-CFM/coucou) (licença MIT)**, reescrita do zero
   (veja `NOTICE`). **Este projeto não usa o nome Coucou, o personagem Mochi, ícones, sons nem nenhum outro asset dele.**
 - Porquinho original deste projeto. Dados públicos: Banco Central do Brasil (SGS), brapi.dev, Yahoo Finance, CoinGecko. Gráficos: TradingView.
 
 ## 📄 Licença
-[MIT](LICENSE) © 2026 Pam Tech
+[MIT](LICENSE) © 2026 Pam Teech
