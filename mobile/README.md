@@ -56,15 +56,15 @@ Widgets e Live Activity **não funcionam no Expo Go**; só no app instalado pelo
 Coloque o Team ID da conta Apple (developer.apple.com → Membership, 10 letras/números) em `app.json`:
 `"ios": { "appleTeamId": "XXXXXXXXXX", ... }`. O EAS também pergunta e cria o App Group `group.com.pamtech.pilinha` e os perfis do app e do widget.
 
-## Mandar para o TestFlight (no Mac da Pamella, sem Xcode)
+## Mandar para o TestFlight (sem Xcode)
 1. `npm i -g eas-cli`
-2. `eas login` (conta Expo **pamssoares**)
+2. `eas login` (sua conta Expo)
 3. `cd mobile && npm install`
 4. `eas build -p ios --profile production`
    - Na primeira vez o EAS pede login da conta Apple Developer e cria certificado e perfil sozinho (responda "sim").
 5. `eas submit -p ios --latest`
    - Pede o app no App Store Connect; deixe o EAS criar (ou crie antes com o bundle `com.pamtech.pilinha`).
-6. No App Store Connect → TestFlight: adicione a namorada como testadora (e-mail do Apple ID dela). Ela instala o app **TestFlight** e aceita o convite.
+6. No App Store Connect → TestFlight: adicione as pessoas testadoras (e-mail do Apple ID de cada uma). Elas instalam o app **TestFlight** e aceitam o convite.
 
 Perfis em `eas.json`: `development` (dev client), `preview` (instalação interna por link), `production` (TestFlight/App Store).
 
