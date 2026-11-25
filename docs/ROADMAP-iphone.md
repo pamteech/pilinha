@@ -5,7 +5,7 @@ Privacidade: só leitura, sem conexão com banco, dados só no aparelho (carteir
 ## Rota escolhida: Expo + EAS (sem Xcode local)
 - App em `mobile/` (Expo SDK 58, TypeScript, expo-router), só iOS, bundle `com.pamtech.pilinha`.
 - Build na nuvem com `eas build`, envio ao TestFlight com `eas submit`.
-- Projeto EAS: `@pamssoares/pilinha` (conta Expo da Pamella).
+- Projeto EAS configurado em `app.json` / `eas.json` (o `projectId` e o que o EAS exige para o build ficam só nesses arquivos de config).
 
 ## Marco 1 — pronto
 - [x] Núcleo portado para TS (`mobile/src/core`): CDI (BCB SGS 12), brapi (token opcional) com Yahoo de reserva (query1 → query2), bitcoin pela CoinGecko, IR regressivo + IOF por aporte, LCI/LCA isentas, proventos 12 meses, humor do porquinho, histórico diário.

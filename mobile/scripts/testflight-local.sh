@@ -1,7 +1,7 @@
 #!/bin/bash
 # Gera o build de produção do iPhone NESTE Mac (build local não gasta o limite mensal do Expo) e envia ao TestFlight.
 # Uso, no Terminal, dentro da pasta do projeto:  ./mobile/scripts/testflight-local.sh
-# Precisa: Xcode (App Store), CocoaPods e fastlane (brew install cocoapods fastlane), Node e login na conta Expo pamssoares.
+# Precisa: Xcode (App Store), CocoaPods e fastlane (brew install cocoapods fastlane), Node e login na conta Expo (`eas login`).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if ! xcodebuild -version >/dev/null 2>&1; then
