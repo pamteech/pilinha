@@ -1,5 +1,8 @@
 # 🐷 Pilinha
 
+[![testes](https://img.shields.io/github/actions/workflow/status/pamteech/pilinha/ci.yml?label=testes&labelColor=0D0B1E&color=39FF88)](https://github.com/pamteech/pilinha/actions/workflows/ci.yml)
+[![Demo](https://img.shields.io/badge/demo-pilinvest.vercel.app-A855F7?labelColor=0D0B1E)](https://pilinvest.vercel.app)
+
 > **Seus investimentos cuidados pela Pilinha, um porquinho que sorri quando o dinheiro rende: no entalhe do Mac e no iPhone.**
 
 App de acompanhamento de investimentos (renda fixa pelo CDI, ações e FIIs da B3, bitcoin e dólar): ilha no entalhe do Mac (Swift) e app no iPhone (Expo / React Native, iOS 17+). **Só leitura, sem banco.** Os dados ficam nos aparelhos. A sincronização Mac ↔ iPhone é opcional e vai cifrada de ponta a ponta (o servidor só guarda um blob cifrado).
@@ -15,6 +18,8 @@ App de acompanhamento de investimentos (renda fixa pelo CDI, ações e FIIs da B
   <img src="personagem/opcao2d/previews/ganhou.gif" width="96" alt="porquinho comemorando">
   <img src="personagem/opcao2d/previews/erro.gif" width="96" alt="porquinho confuso">
 </p>
+
+**Demo do site:** [pilinvest.vercel.app](https://pilinvest.vercel.app)
 
 | Ilha fechada | Ilha aberta |
 |:---:|:---:|
